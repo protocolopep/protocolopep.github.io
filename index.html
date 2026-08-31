@@ -1056,7 +1056,10 @@
       </div>
     </div>
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
-    <div class="panel"><div id="ad-members"></div></div>
+    <div class="panel">
+      <input class="txt" id="mb-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
+      <div id="ad-members"></div>
+    </div>
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
     <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados, os números de uso, e pode suspender uma conta por um número de dias — enquanto suspensa, a pessoa não consegue entrar no aplicativo e verá uma mensagem para contatar o suporte. A lista de contas mostra quem entrou a partir desta versão.</div>
@@ -1269,7 +1272,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, onSnapshot, increment, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAgZbBSdko3RQuAH5j48abJ7k5HPsyyGu8",
@@ -1311,7 +1314,15 @@ let POP_ID = null;
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
-  setDoc(doc(db,'users',currentUser.uid), {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}, {merge:true}).catch(e=>console.warn('save',e));
+  const ref = doc(db,'users',currentUser.uid);
+  // updateDoc substitui o valor de "logs"/"protocol"/"patients" por inteiro (sem mesclar por dentro),
+  // então uma dose desmarcada (removida do objeto local) realmente some no Firestore.
+  // Com setDoc(...,{merge:true}) isso não acontecia: o Firestore mescla objetos aninhados e nunca
+  // apaga uma chave que só deixou de ser enviada — por isso a dose desmarcada "voltava".
+  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}).catch(e=>{
+    // primeira gravação: o documento pode ainda não existir
+    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}, {merge:true}).catch(e2=>console.warn('save',e2));
+  });
 }
 function saveProtocol(){ cloudSave(); }
 
@@ -2122,6 +2133,7 @@ let pendingBanMsg = null;      // mensagem a exibir na tela de login após ser d
 let adminMembers = [];
 let membersExpanded = false;   // controla a setinha "mostrar mais / mostrar menos"
 let openSuspendUid = null;     // uid da conta com o painel de suspensão aberto
+let memberSearchQuery = "";    // termo digitado na caixinha de pesquisa por e-mail
 const MEMBERS_VISIBLE = 8;     // quantos e-mails mostrar antes da setinha de "ver mais"
 const authScreen = document.getElementById("auth-screen");
 const authErr = document.getElementById("auth-err");
@@ -2199,10 +2211,18 @@ function renderMembers(){
   document.getElementById("ad-users").textContent = arr.length;
   if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
 
-  const shown = membersExpanded ? arr : arr.slice(0, MEMBERS_VISIBLE);
-  const restante = arr.length - shown.length;
+  const q = memberSearchQuery;
+  const filtered = q ? arr.filter(m=>(m.email||'').toLowerCase().includes(q)) : arr;
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty-note">Nenhuma conta com e-mail contendo "${esc(q)}".</div>`;
+    return;
+  }
+
+  const usePaging = !q; // com uma busca ativa, mostra todos os resultados sem "mostrar mais"
+  const shown = usePaging ? (membersExpanded ? filtered : filtered.slice(0, MEMBERS_VISIBLE)) : filtered;
+  const restante = usePaging ? filtered.length - shown.length : 0;
   let html = shown.map(memberRowHtml).join('');
-  if(restante>0 || (membersExpanded && arr.length>MEMBERS_VISIBLE)){
+  if(usePaging && (restante>0 || (membersExpanded && filtered.length>MEMBERS_VISIBLE))){
     html += `<button type="button" class="mb-toggle${membersExpanded?' open':''}" id="mb-toggle">
       <span class="arrow">▾</span> ${membersExpanded ? 'Mostrar menos' : `Mostrar mais (${restante})`}
     </button>`;
@@ -2257,6 +2277,15 @@ document.getElementById("admin-btn").onclick=()=>{
   if(navInd) navInd.style.opacity="0";
   window.scrollTo({top:0,behavior:"smooth"});
 };
+{
+  const mbSearchEl = document.getElementById("mb-search");
+  if(mbSearchEl){
+    mbSearchEl.addEventListener("input", ()=>{
+      memberSearchQuery = mbSearchEl.value.trim().toLowerCase();
+      renderMembers();
+    });
+  }
+}
 
 function displayNameFor(user){
   // 1º: apelido da nuvem (sincronizado); 2º: cache local; 3º: parte antes do @
@@ -2354,6 +2383,10 @@ function showAuth(){
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
+  membersExpanded=false;
+  openSuspendUid=null;
+  memberSearchQuery="";
+  { const s=document.getElementById("mb-search"); if(s) s.value=""; }
   NICKNAME="";
   authScreen.classList.add("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="hidden";
