@@ -497,42 +497,50 @@
   #ev-modal .fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
   /* ---------- banner de parceria / anúncio ---------- */
-  #partner-box{margin:18px 0 4px;}
-  .pt-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;overflow:hidden;}
+  /* fica logo abaixo do letreiro de recados, fora das views: acompanha todas as abas.
+     Formato compacto porque ocupa o topo permanentemente. */
+  #partner-box{margin:10px 16px 0;}
+  .pt-card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden;position:relative;}
   .pt-tag{
-    display:inline-block;margin:12px 14px 0;padding:3px 9px;border-radius:20px;
-    background:var(--surface3);color:var(--muted2);
-    font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+    position:absolute;top:8px;left:10px;z-index:2;
+    padding:3px 8px;border-radius:20px;
+    background:rgba(11,16,23,.72);backdrop-filter:blur(4px);color:var(--muted);
+    font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
   }
-  .pt-img{display:block;width:100%;height:auto;margin-top:12px;}
-  .pt-body{padding:12px 15px 15px;}
-  .pt-title{font-family:var(--display);font-weight:700;font-size:16px;margin-bottom:4px;}
-  .pt-text{color:var(--muted);font-size:13px;line-height:1.5;white-space:pre-wrap;}
+  .pt-img{display:block;width:100%;max-height:110px;object-fit:cover;}
+  .pt-body{padding:10px 13px 12px;}
+  .pt-title{font-family:var(--display);font-weight:700;font-size:14.5px;margin-bottom:2px;}
+  .pt-text{color:var(--muted);font-size:12.5px;line-height:1.45;white-space:pre-wrap;}
   .pt-btn{
     display:flex;align-items:center;justify-content:center;gap:7px;
-    margin-top:12px;width:100%;padding:12px;border-radius:12px;
+    margin-top:10px;width:100%;padding:10px;border-radius:10px;
     background:var(--primary);border:none;color:#0B1017;
-    font-family:var(--font);font-weight:700;font-size:14px;cursor:pointer;
+    font-family:var(--font);font-weight:700;font-size:13.5px;cursor:pointer;
     text-decoration:none;box-sizing:border-box;
   }
   body.light .pt-btn{color:#053b39;}
+  /* anúncio só com texto: etiqueta entra no fluxo para não cobrir o título */
+  .pt-nomedia .pt-tag{position:static;display:inline-block;margin:11px 0 0 13px;background:var(--surface3);}
+  .pt-nomedia .pt-body{padding-top:6px;}
   /* espaço de teste "Anuncie aqui" — usado enquanto não há banner real */
   .pt-ph{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-    margin-top:12px;padding:30px 16px;
-    border-top:1px dashed var(--border2);border-bottom:1px dashed var(--border2);
-    background:var(--surface2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:22px 16px;background:var(--surface2);
   }
-  .pt-ph-t{font-family:var(--display);font-weight:700;font-size:19px;color:var(--muted);letter-spacing:.3px;}
-  .pt-ph-s{font-size:12px;color:var(--muted2);}
-  .pt-ph-ico{font-size:22px;opacity:.6;line-height:1;}
-  /* pop-up: o card interno já tem borda/fundo, então o modal só emoldura */
+  .pt-ph-t{font-family:var(--display);font-weight:700;font-size:16px;color:var(--muted);letter-spacing:.3px;}
+  .pt-ph-s{font-size:11px;color:var(--muted2);}
+  .pt-ph-ico{font-size:18px;opacity:.6;line-height:1;}
+  /* no pop-up pode ser maior: lá o anúncio é o conteúdo principal */
   .pt-modal{padding:22px 18px 18px;}
   .pt-modal .pt-card{border:none;background:none;}
-  .pt-modal .pt-tag{margin-left:0;margin-top:0;}
-  .pt-modal .pt-img{border-radius:12px;}
+  .pt-modal .pt-tag{position:static;display:inline-block;margin-bottom:10px;background:var(--surface3);}
+  .pt-modal .pt-img{border-radius:12px;max-height:220px;}
   .pt-modal .pt-body{padding:12px 0 0;}
-  .pt-modal .pt-ph{border-radius:12px;border:1px dashed var(--border2);}
+  .pt-modal .pt-title{font-size:17px;}
+  .pt-modal .pt-text{font-size:13.5px;}
+  .pt-modal .pt-ph{border-radius:12px;border:1px dashed var(--border2);padding:36px 16px;}
+  .pt-modal .pt-ph-t{font-size:19px;}
+  .pt-modal .pt-ph-ico{font-size:22px;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -937,6 +945,9 @@
     <button class="notice-x" id="notice-x">✕</button>
   </div>
 
+  <!-- anúncio/parceria: fora das views, então acompanha todas as abas -->
+  <div id="partner-box" style="display:none"></div>
+
   <!-- HOJE -->
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
@@ -976,7 +987,6 @@
     </div>
     <div id="today-cards"></div>
     <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeos/Hormônios</button>
-    <div id="partner-box" style="display:none"></div>
     <div class="tools-row">
       <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
@@ -3633,7 +3643,8 @@ function partnerHTML(d){
   const href=partnerHref(d.link, d.msg);
   const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
   const vazio = !img && !d.title && !d.text;
-  let h='<div class="pt-card">';
+  const temMidia = img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
+  let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+'">';
   h+='<span class="pt-tag">Parceria</span>';
   if(vazio){
     h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
