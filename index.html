@@ -447,6 +447,8 @@
   #add-modal.oral-mode #fx-calcbox{display:none!important;}
   #add-modal.oral-mode .form .fld:has(#fx-mode){display:none!important;}
   #add-modal.oral-mode #f-ui-dose-row{display:grid!important;}
+  #lib-tabs{flex-wrap:wrap;}
+  #lib-tabs button{flex:1 1 50%;font-size:12px;padding:9px 6px;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -856,7 +858,7 @@
       </div>
     </div>
     <div id="today-cards"></div>
-    <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeo</button>
+    <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeos/Hormônios</button>
     <div class="tools-row">
       <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
@@ -1119,7 +1121,7 @@
     </div>
     <div class="fld"><label>Para quem é este protocolo? (nome da pessoa/paciente)</label><input class="txt" id="builder-name" placeholder="Ex.: João — cicatrização"></div>
     <div id="builder-list"></div>
-    <button class="add-pep" id="builder-add"><span>＋</span> Adicionar peptídeo</button>
+    <button class="add-pep" id="builder-add"><span>＋</span> Adicionar peptídeos/Hormônios</button>
     <button class="share-cta" id="builder-send" style="border:none;cursor:pointer;width:100%;margin-top:14px">📲 Enviar este protocolo</button>
     <div class="share-disc">Este protocolo fica salvo só na sua conta. Ao enviar, é gerado um link só-leitura para o paciente.</div>
   </div>
@@ -1195,12 +1197,12 @@
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
-      <div class="sheet-title" id="modal-title">Adicionar peptídeo</div>
+      <div class="sheet-title" id="modal-title">Adicionar peptídeos/Hormônios</div>
       <button class="sheet-x" id="modal-close">✕</button>
     </div>
     <div class="sheet-body">
       <div id="lib-wrap">
-        <div class="segbtns" id="lib-tabs" style="margin-bottom:12px"><button data-t="po" class="on">Em pó (diluir)</button><button data-t="diluido">Já diluído (frasco)</button><button data-t="oral">Comprimido/Cápsula (oral)</button></div>
+        <div class="segbtns" id="lib-tabs" style="margin-bottom:12px"><button data-t="po" class="on">Em pó (diluir)</button><button data-t="diluido">Já diluído (frasco)</button><button data-t="hormonios">Hormônios</button><button data-t="oral">Comprimido/Cápsula (oral)</button></div>
         <div id="lib-po">
           <p class="mini-lab">Biblioteca — toque para preencher</p>
           <input class="txt" id="lib-search" placeholder="🔍 Buscar peptídeo..." style="margin-bottom:10px">
@@ -1210,6 +1212,11 @@
           <p class="mini-lab">Produtos já diluídos — toque para ver a guia de dosagem</p>
           <div class="lib-chips" id="dil-prod-chips" style="max-height:none"></div>
           <div id="dil-guide"></div>
+        </div>
+        <div id="lib-hormonios" style="display:none">
+          <p class="mini-lab">Hormônios / esteroides — toque para preencher</p>
+          <input class="txt" id="lib-search-horm" placeholder="🔍 Buscar hormônio..." style="margin-bottom:10px">
+          <div class="lib-chips" id="lib-chips-horm"></div>
         </div>
       </div>
       <div class="form">
@@ -1347,33 +1354,6 @@ function saveProtocol(){ cloudSave(); }
 
 // Biblioteca de peptídeos para adição rápida
 const LIBRARY = [
-  // ---- Hormônios ----
-  {name:"Testosterona Cipionato",sub:"hormônio · TRT (injetável)"},
-  {name:"Testosterona Enantato",sub:"hormônio · TRT (injetável)"},
-  {name:"Testosterona Propionato",sub:"hormônio · TRT (injetável)"},
-  {name:"Estradiol",sub:"hormônio · reposição"},
-  {name:"Progesterona",sub:"hormônio · reposição (frequente via oral)"},
-  {name:"Anastrozol",sub:"inibidor de aromatase (via oral)"},
-  {name:"Tamoxifeno",sub:"modulador estrogênico · SERM (via oral)"},
-  {name:"Levotiroxina",sub:"hormônio tireoidiano (via oral)"},
-  // ---- Esteroides anabolizantes — via oral ----
-  {name:"Oxandrolona (Anavar)",sub:"esteroide anabolizante (via oral)"},
-  {name:"Estanozolol (Winstrol)",sub:"esteroide anabolizante (via oral)"},
-  {name:"Metandrostenolona (Dianabol)",sub:"esteroide anabolizante (via oral)"},
-  {name:"Turinabol",sub:"esteroide anabolizante (via oral)"},
-  {name:"Superdrol",sub:"esteroide anabolizante (via oral)"},
-  {name:"Halotestin (Fluoximesterona)",sub:"esteroide anabolizante (via oral)"},
-  {name:"Anadrol (Oximetolona)",sub:"esteroide anabolizante (via oral)"},
-  // ---- Esteroides anabolizantes — injetáveis ----
-  {name:"Testosterona Undecanoato",sub:"esteroide anabolizante (injetável)"},
-  {name:"Nandrolona (Deca-Durabolin)",sub:"esteroide anabolizante (injetável)"},
-  {name:"Trembolona Acetato",sub:"esteroide anabolizante (injetável)"},
-  {name:"Trembolona Enantato",sub:"esteroide anabolizante (injetável)"},
-  {name:"Boldenona (Equipoise)",sub:"esteroide anabolizante (injetável)"},
-  {name:"Primobolan (Metenolona)",sub:"esteroide anabolizante · existe versão oral (injetável mais comum)"},
-  {name:"Masteron (Drostanolona)",sub:"esteroide anabolizante (injetável)"},
-  // ---- Outros hormônios relacionados ----
-  {name:"Insulina",sub:"hormônio glicêmico (injetável)"},
   {name:"Tirzepatida",sub:"GLP-1 / GIP"},
   {name:"Retatrutida",sub:"GLP-1 / GIP / glucagon"},
   {name:"Semaglutida",sub:"GLP-1"},
@@ -1466,6 +1446,39 @@ const LIBRARY = [
   {name:"Blend Retatrutida 20mg + Tirzepatida 40mg",sub:"blend GLP-1"},
   {name:"Água bacteriostática",sub:"diluente"},
 ];
+
+// Biblioteca exclusiva de Hormônios / esteroides anabolizantes (aba própria, separada dos peptídeos)
+const HORMONE_LIBRARY = [
+  // ---- Hormônios ----
+  {name:"Testosterona Cipionato",sub:"hormônio · TRT (injetável)"},
+  {name:"Testosterona Enantato",sub:"hormônio · TRT (injetável)"},
+  {name:"Testosterona Propionato",sub:"hormônio · TRT (injetável)"},
+  {name:"Testosterona Undecanoato",sub:"hormônio · TRT (injetável)"},
+  {name:"Estradiol",sub:"hormônio · reposição"},
+  {name:"Progesterona",sub:"hormônio · reposição (frequente via oral)"},
+  {name:"Anastrozol",sub:"inibidor de aromatase (via oral)"},
+  {name:"Tamoxifeno",sub:"modulador estrogênico · SERM (via oral)"},
+  {name:"Levotiroxina",sub:"hormônio tireoidiano (via oral)"},
+  // ---- Esteroides anabolizantes — via oral ----
+  {name:"Oxandrolona (Anavar)",sub:"esteroide anabolizante (via oral)"},
+  {name:"Estanozolol (Winstrol)",sub:"esteroide anabolizante (via oral)"},
+  {name:"Metandrostenolona (Dianabol)",sub:"esteroide anabolizante (via oral)"},
+  {name:"Turinabol",sub:"esteroide anabolizante (via oral)"},
+  {name:"Superdrol",sub:"esteroide anabolizante (via oral)"},
+  {name:"Halotestin (Fluoximesterona)",sub:"esteroide anabolizante (via oral)"},
+  {name:"Anadrol (Oximetolona)",sub:"esteroide anabolizante (via oral)"},
+  // ---- Esteroides anabolizantes — injetáveis ----
+  {name:"Nandrolona (Deca-Durabolin)",sub:"esteroide anabolizante (injetável)"},
+  {name:"Trembolona Acetato",sub:"esteroide anabolizante (injetável)"},
+  {name:"Trembolona Enantato",sub:"esteroide anabolizante (injetável)"},
+  {name:"Boldenona (Equipoise)",sub:"esteroide anabolizante (injetável)"},
+  {name:"Primobolan (Metenolona)",sub:"esteroide anabolizante · existe versão oral (injetável mais comum)"},
+  {name:"Masteron (Drostanolona)",sub:"esteroide anabolizante (injetável)"},
+  // ---- Outros hormônios relacionados ----
+  {name:"GH (Hormônio do Crescimento)",sub:"hormônio de crescimento (injetável)"},
+  {name:"Insulina",sub:"hormônio glicêmico (injetável)"},
+  {name:"HCG",sub:"gonadotrofina (injetável) · pós-ciclo/fertilidade"},
+];
 const PALETTE=["#2FD8AC","#F59158","#8593F7","#D89A5C","#2CC5C0","#E5709B","#67C15E","#E2C452","#A78BFA","#5EC8E5"];
 function nextColor(){ const used=PEPTIDES.map(p=>p.accent); return PALETTE.find(c=>!used.includes(c))||PALETTE[PEPTIDES.length%PALETTE.length]; }
 const DAY_FULL=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -1522,7 +1535,7 @@ function renderToday(){
   const due = PEPTIDES;            // mostra o protocolo inteiro, independente do dia
   let taken=0;
   if(PEPTIDES.length===0){
-    cont.innerHTML='<div class="empty-note">Nenhum peptídeo no protocolo ainda.<br>Toque em "Adicionar peptídeo" para começar.</div>';
+    cont.innerHTML='<div class="empty-note">Nenhum peptídeo/hormônio no protocolo ainda.<br>Toque em "Adicionar peptídeos/Hormônios" para começar.</div>';
   }
   due.forEach(p=>{
     const perDay = p.perDay || 1;
@@ -1857,6 +1870,22 @@ function buildLibrary(filter){
 }
 document.getElementById("lib-search").addEventListener("input",e=>buildLibrary(e.target.value));
 
+// biblioteca exclusiva de Hormônios/esteroides (aba própria, separada dos peptídeos)
+function buildLibraryHorm(filter){
+  const c=document.getElementById("lib-chips-horm");
+  c.innerHTML="";
+  const q=(filter||"").toLowerCase().trim();
+  const items = q ? HORMONE_LIBRARY.filter(it=>(it.name+" "+it.sub).toLowerCase().includes(q)) : HORMONE_LIBRARY;
+  if(!items.length){ c.innerHTML='<span style="color:var(--muted2);font-size:12px">Nenhum encontrado — digite o nome manualmente no campo abaixo.</span>'; return; }
+  items.forEach(item=>{
+    const b=document.createElement("button");
+    b.className="lib-chip"; b.textContent=item.name;
+    b.onclick=()=>{ document.querySelector(F.name).value=item.name; document.querySelector(F.sub).value=item.sub; };
+    c.appendChild(b);
+  });
+}
+document.getElementById("lib-search-horm").addEventListener("input",e=>buildLibraryHorm(e.target.value));
+
 /* ---- Produtos já diluídos + guia de dosagem ---- */
 const DIL_DOSES=[2.5,3.5,3.75,5,6,6.5,7.5,8.5,9.5,10,11.5,12.5,13.5,15];
 const DIL_GROUPS={
@@ -1901,14 +1930,18 @@ function renderGuide(prod){
     box.querySelectorAll(".dg-row").forEach(r=>r.classList.remove("sel")); b.classList.add("sel");
   });
 }
-document.querySelectorAll("#lib-tabs button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x===b));
-  const dil=b.dataset.t==="diluido";
-  const oral=b.dataset.t==="oral";
-  document.getElementById("lib-po").style.display=dil?"none":"block";
-  document.getElementById("lib-diluido").style.display=dil?"block":"none";
-  setOralMode(oral);
-});
+document.querySelectorAll("#lib-tabs button").forEach(b=>b.onclick=()=>selectLibTab(b.dataset.t));
+// centraliza a troca de aba da biblioteca: qual seção de chips mostrar + se ativa o modo oral.
+// "po" = biblioteca de peptídeos (calculadora/reconstituição); "hormonios" = biblioteca de
+// hormônios/esteroides (mesma calculadora); "diluido" = produtos já diluídos (guia próprio);
+// "oral" = comprimido/cápsula, reaproveitando a biblioteca de hormônios (é o caso mais comum de uso oral)
+function selectLibTab(tab){
+  document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x.dataset.t===tab));
+  document.getElementById("lib-po").style.display        = tab==="po" ? "block" : "none";
+  document.getElementById("lib-hormonios").style.display = (tab==="hormonios"||tab==="oral") ? "block" : "none";
+  document.getElementById("lib-diluido").style.display    = tab==="diluido" ? "block" : "none";
+  setOralMode(tab==="oral");
+}
 // alterna a modal para o modo "comprimido/cápsula (oral)": some com a calculadora de
 // reconstituição (que não se aplica) e mostra o campo de quantidade + a forma (comprimido/cápsula)
 function setOralMode(on){
@@ -1945,23 +1978,20 @@ document.getElementById("f-moon").onchange=e=>fMoon=e.target.checked;
 
 function openModal(pep){
   editingId = (pep && pep.id) ? pep.id : null;
-  document.getElementById("modal-title").textContent = editingId ? "Editar peptídeo" : "Adicionar peptídeo";
+  document.getElementById("modal-title").textContent = editingId ? "Editar peptídeo/hormônio" : "Adicionar peptídeos/Hormônios";
   document.getElementById("modal-save").textContent = editingId ? "Salvar alterações" : "Adicionar ao protocolo";
   document.getElementById("lib-wrap").style.display = editingId ? "none" : "block";
   const _ls=document.getElementById("lib-search"); if(_ls){ _ls.value=""; buildLibrary(); }
-  document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x.dataset.t==="po"));
-  document.getElementById("lib-po").style.display="block";
-  document.getElementById("lib-diluido").style.display="none";
+  const _lsh=document.getElementById("lib-search-horm"); if(_lsh){ _lsh.value=""; buildLibraryHorm(); }
   document.getElementById("dil-guide").innerHTML="";
   document.querySelectorAll("#dil-prod-chips .lib-chip").forEach(x=>x.classList.remove("on"));
   const isOral = !!(editingId && pep && (pep.unit==="comprimido" || pep.unit==="cápsula"));
+  selectLibTab(isOral ? "oral" : "po");
   if(isOral){
-    document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x.dataset.t==="oral"));
     document.querySelectorAll("#f-oral-unit button").forEach(x=>x.classList.toggle("on",x.dataset.u===pep.unit));
   } else {
     document.querySelectorAll("#f-oral-unit button").forEach(x=>x.classList.toggle("on",x.dataset.u==="comprimido"));
   }
-  setOralMode(isOral);
   if(editingId){
     document.querySelector(F.name).value = pep.name||"";
     document.querySelector(F.sub).value = pep.sub||"";
@@ -2036,6 +2066,7 @@ document.getElementById("modal-save").onclick=()=>{
   else { renderToday(); renderWeek(); renderHistory(); document.querySelector("button[data-v='hoje']").click(); }
 };
 buildLibrary();
+buildLibraryHorm();
 buildDiluted();
 
 /* =========================================================
@@ -2760,7 +2791,7 @@ function renderBuilder(){
   if(!builderProto) return;
   const list=document.getElementById("builder-list");
   const arr=builderProto.protocol||[];
-  list.innerHTML = arr.length? arr.map(builderCardHTML).join('') : '<div class="empty-note">Nenhum peptídeo. Toque em "Adicionar peptídeo".</div>';
+  list.innerHTML = arr.length? arr.map(builderCardHTML).join('') : '<div class="empty-note">Nenhum peptídeo/hormônio. Toque em "Adicionar peptídeos/Hormônios".</div>';
   list.querySelectorAll(".bl-edit").forEach(b=>b.onclick=()=>{ const p=builderProto.protocol.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
   list.querySelectorAll(".bl-del").forEach(b=>b.onclick=()=>{ const p=builderProto.protocol.find(x=>x.id===b.dataset.id); if(p&&confirm(`Remover ${p.name}?`)){ builderProto.protocol=builderProto.protocol.filter(x=>x.id!==b.dataset.id); cloudSave(); renderBuilder(); } });
 }
