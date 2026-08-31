@@ -496,6 +496,34 @@
   /* o CSS de .fld2 é escopado em .form; o modal de medidas não usa .form, então replica aqui */
   #ev-modal .fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
+  /* ---------- layout desktop: evolução e anúncio lado a lado (50/50) ---------- */
+  /* No celular nada muda: tudo empilhado, largura total.
+     A partir de 1000px, na aba Protocolo, a linha da evolução vira 2 colunas
+     iguais e o card do anúncio estica para ter a mesma altura do painel.
+     Nas outras abas o anúncio volta para o topo, em largura total (o JS troca
+     qual dos dois contêineres fica visível). */
+  @media (min-width:1000px){
+    .evo-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    .evo-row > .ev-panel{margin:0;min-width:0;}
+    .evo-row > #partner-evo{margin:0;min-width:0;display:flex;}
+    /* quadro compacto: não estica até a altura do painel de evolução */
+    .evo-row > #partner-evo .pt-card{flex:1;display:flex;flex-direction:column;max-height:250px;}
+    .evo-row > #partner-evo .pt-img{max-height:none;flex:1;min-height:0;}
+    .evo-row > #partner-evo .pt-ph{flex:1;gap:4px;padding:18px 16px;}
+    .evo-row > #partner-evo .pt-ph-ico{font-size:22px;}
+    .evo-row > #partner-evo .pt-ph-t{font-size:18px;}
+    .evo-row > #partner-evo .pt-ph-s{font-size:11.5px;}
+    .evo-row > #partner-evo .pt-body{flex:none;padding:9px 12px 11px;}
+    .evo-row > #partner-evo .pt-title{font-size:15px;}
+    .evo-row > #partner-evo .pt-text{font-size:12.5px;}
+    .evo-row > #partner-evo .pt-btn{font-size:13px;padding:9px;margin-top:8px;}
+  }
+
   /* ---------- banner de parceria / anúncio ---------- */
   /* fica logo abaixo do letreiro de recados, fora das views: acompanha todas as abas.
      Formato compacto porque ocupa o topo permanentemente. */
@@ -946,6 +974,8 @@
   </div>
 
   <!-- anúncio/parceria: fora das views, então acompanha todas as abas -->
+  <!-- wrapper de layout: no desktop vira 2 colunas (conteúdo | anúncio) -->
+  <div class="main-wrap">
   <div id="partner-box" style="display:none"></div>
 
   <!-- HOJE -->
@@ -953,6 +983,8 @@
     <div class="eyebrow-row">
       <p class="eyebrow">Sua evolução</p>
     </div>
+    <!-- no desktop esta linha vira 2 colunas: evolução | anúncio -->
+    <div class="evo-row">
     <div class="panel ev-panel">
       <div class="ev-tabs" id="ev-tabs"></div>
       <div class="ev-head">
@@ -975,6 +1007,8 @@
       <button class="ev-add" id="ev-add-btn"><span>＋</span> Registrar medidas de hoje</button>
       <div class="ev-log" id="ev-log"></div>
     </div>
+    <div id="partner-evo" style="display:none"></div>
+    </div><!-- /.evo-row -->
     <div class="eyebrow-row" style="margin-top:22px">
       <p class="eyebrow">Seu protocolo</p>
     </div>
@@ -1240,6 +1274,7 @@
     Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
     Confirme doses, diluição e segurança com um profissional de saúde.
   </div>
+  </div><!-- /.main-wrap -->
 </div>
 
 <!-- tela de login / cadastro -->
@@ -2208,6 +2243,7 @@ document.querySelectorAll(".nav button").forEach(b=>{
     b.classList.add("on");
     document.getElementById("v-"+b.dataset.v).classList.add("on");
     moveNavInd(b);
+    try{ applyPartnerPlacement(); }catch(e){}
     window.scrollTo({top:0,behavior:"smooth"});
   };
 });
@@ -2748,6 +2784,7 @@ document.getElementById("admin-btn").onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
   document.getElementById("v-admin").classList.add("on");
   if(navInd) navInd.style.opacity="0";
+  try{ applyPartnerPlacement(); }catch(e){}
   window.scrollTo({top:0,behavior:"smooth"});
 };
 {
@@ -3682,12 +3719,36 @@ function partnerHTML(d){
 }
 function renderPartner(){
   const box=document.getElementById("partner-box");
+  const evo=document.getElementById("partner-evo");
   if(!box) return;
   const d=partnerData||{};
-  if(!d.active){ box.style.display="none"; box.innerHTML=""; return; }
-  box.innerHTML=partnerHTML(d);
-  box.style.display="block";
+  if(!d.active){
+    box.style.display="none"; box.innerHTML="";
+    if(evo){ evo.style.display="none"; evo.innerHTML=""; }
+    return;
+  }
+  const h=partnerHTML(d);
+  box.innerHTML=h;
+  if(evo) evo.innerHTML=h;
+  applyPartnerPlacement();
 }
+// decide onde o anúncio aparece:
+// - desktop (>=1000px) na aba Protocolo -> ao lado da evolução, 50/50
+// - qualquer outro caso -> no topo, largura total
+function applyPartnerPlacement(){
+  const box=document.getElementById("partner-box");
+  const evo=document.getElementById("partner-evo");
+  if(!box || !evo) return;
+  const ativo = !!(partnerData && partnerData.active);
+  if(!ativo){ box.style.display="none"; evo.style.display="none"; return; }
+  const desktop = window.matchMedia("(min-width:1000px)").matches;
+  const abaProtocolo = (document.getElementById("v-hoje")||{}).classList
+                        ? document.getElementById("v-hoje").classList.contains("on") : false;
+  const naEvolucao = desktop && abaProtocolo;
+  evo.style.display = naEvolucao ? "flex"  : "none";
+  box.style.display = naEvolucao ? "none"  : "block";
+}
+window.addEventListener("resize", applyPartnerPlacement);
 /* ---- pop-up: mostra 1x e só volta depois do intervalo em dias ---- */
 function maybeShowPartnerPop(){
   const d=partnerData||{};
