@@ -1529,12 +1529,18 @@ function unitLabel(p){
 let LOGS = {};
 let PATIENTS = [];
 let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, note}]
+// TRAVA DE SEGURANÇA: só grava na nuvem depois de ter recebido os dados de lá.
+// Sem isso, qualquer gravação feita antes do primeiro carregamento escreveria
+// as listas vazias em cima do protocolo real, apagando tudo.
+let dataLoaded = false;
+let contouNovaConta = false;   // evita contar a mesma conta nova mais de uma vez
 let currentUser = null;
 let NICKNAME = "";
 let POP_ID = null;
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
+  if(!dataLoaded){ console.warn("cloudSave ignorado: dados da nuvem ainda não carregaram"); return; }
   const ref = doc(db,'users',currentUser.uid);
   // updateDoc substitui o valor de "logs"/"protocol"/"patients" por inteiro (sem mesclar por dentro),
   // então uma dose desmarcada (removida do objeto local) realmente some no Firestore.
@@ -2833,20 +2839,33 @@ async function showApp(user){
         try{ if(NICKNAME) localStorage.setItem("apelido-"+user.uid, NICKNAME); else localStorage.removeItem("apelido-"+user.uid); }catch(e){}
         renderAcctName();
       }
+      dataLoaded = true;   // a partir daqui é seguro gravar
       if(!d.counted){ bumpStats({users:increment(1)}); setDoc(ref,{counted:true},{merge:true}).catch(()=>{}); }
     } else {
+      // conta nova (documento não existe): NÃO grava nada agora.
+      // Antes isso escrevia um documento vazio — se a leitura tivesse falhado
+      // por qualquer motivo, o protocolo real era apagado. Agora o documento
+      // é criado só quando a pessoa realmente adicionar o primeiro item.
       PEPTIDES = [];
       LOGS = {};
       METRICS = [];
-      setDoc(ref, {protocol:PEPTIDES, logs:LOGS, counted:true}).catch(e=>console.warn(e));
-      bumpStats({users:increment(1)});
+      PATIENTS = [];
+      dataLoaded = true;
+      if(!contouNovaConta){ contouNovaConta = true; bumpStats({users:increment(1)}); }
     }
     renderToday(); renderWeek(); renderHistory(); renderEvolution();
-  }, err=>console.warn('snap',err));
+  }, err=>{
+    // leitura negada/falhou: mantém a trava fechada para não sobrescrever nada
+    dataLoaded = false;
+    console.warn('snap', err);
+    alert("Não consegui carregar seu protocolo da nuvem.\n\nErro: "+((err&&err.code)||(err&&err.message)||"desconhecido")+"\n\nPara sua segurança, o app não vai salvar nada até conseguir carregar. Feche e abra novamente; se continuar, me avise antes de mexer no protocolo.");
+  });
 }
 function showAuth(){
   if(SHARE_MODE) return;
   currentUser = null;
+  dataLoaded = false;
+  contouNovaConta = false;
   if(unsub){ unsub(); unsub=null; }
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
