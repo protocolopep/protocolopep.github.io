@@ -3737,7 +3737,15 @@ document.getElementById("pt-publish").onclick=()=>{
       try{ localStorage.removeItem("pt-pop-visto"); }catch(e){}   // para você mesmo ver o pop-up de novo ao testar
       alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
     })
-    .catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
+    .catch(e=>{
+      const cod=(e && e.code) || "";
+      if(cod.indexOf("permission")>=0 || cod.indexOf("denied")>=0){
+        alert('Bloqueado pelas regras do Firestore.\n\nO documento "meta/partner" não tem permissão de escrita. Libere-o no console do Firebase (Firestore → Regras) e publique de novo.');
+      } else {
+        alert("Não consegui publicar.\n\nErro: "+(cod || (e && e.message) || "desconhecido"));
+      }
+      console.warn("partner-publish", e);
+    });
 };
 document.getElementById("pt-remove").onclick=()=>{
   if(!confirm("Remover o anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
