@@ -449,6 +449,52 @@
   #add-modal.oral-mode #f-ui-dose-row{display:grid!important;}
   #lib-tabs{flex-wrap:wrap;}
   #lib-tabs button{flex:1 1 50%;font-size:12px;padding:9px 6px;}
+
+  /* ---------- evolução / métricas ---------- */
+  .ev-panel{padding:14px 14px 12px;}
+  .ev-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;}
+  .ev-tabs::-webkit-scrollbar{display:none;}
+  .ev-tabs button{
+    flex:none;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);
+    font-family:var(--font);font-weight:600;font-size:12px;padding:7px 12px;border-radius:20px;cursor:pointer;white-space:nowrap;
+  }
+  .ev-tabs button.on{background:color-mix(in srgb,var(--primary) 15%,transparent);border-color:var(--primary);color:var(--primary);}
+  .ev-tabs button .ev-tab-n{opacity:.6;font-weight:500;margin-left:4px;}
+  .ev-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 10px;}
+  .ev-cur{display:flex;align-items:baseline;gap:5px;min-width:0;}
+  .ev-val{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;}
+  .ev-unit{color:var(--muted);font-size:13px;font-weight:600;}
+  .ev-delta{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);white-space:nowrap;}
+  .ev-delta.up{background:color-mix(in srgb,var(--aod) 16%,transparent);color:var(--aod);}
+  .ev-delta.down{background:color-mix(in srgb,var(--motsc) 16%,transparent);color:var(--motsc);}
+  .ev-chart-wrap{position:relative;}
+  .ev-chart{width:100%;height:150px;display:block;overflow:visible;}
+  .ev-chart .ev-grid{stroke:var(--border);stroke-width:1;}
+  .ev-chart .ev-line{fill:none;stroke:var(--primary);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .ev-chart .ev-area{fill:color-mix(in srgb,var(--primary) 14%,transparent);stroke:none;}
+  .ev-chart .ev-pt{fill:var(--primary);stroke:var(--surface);stroke-width:2;cursor:pointer;}
+  .ev-chart .ev-lab{fill:var(--muted2);font-family:var(--font);font-size:9px;}
+  .ev-empty{color:var(--muted);text-align:center;font-size:13px;padding:44px 10px;}
+  .ev-range{display:flex;gap:6px;margin:8px 0 12px;}
+  .ev-range button{
+    flex:1;background:none;border:1px solid var(--border);color:var(--muted2);
+    font-family:var(--font);font-weight:600;font-size:11.5px;padding:7px 4px;border-radius:9px;cursor:pointer;
+  }
+  .ev-range button.on{border-color:var(--primary);color:var(--primary);background:color-mix(in srgb,var(--primary) 9%,transparent);}
+  .ev-add{
+    width:100%;background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);
+    font-family:var(--font);font-weight:700;font-size:13.5px;padding:12px;border-radius:12px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .ev-add span{font-size:16px;font-weight:700;}
+  .ev-log{margin-top:6px;}
+  .ev-log-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px;border-top:1px solid var(--border);cursor:pointer;}
+  .ev-log-row:hover{background:var(--surface2);}
+  .ev-log-d{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none;}
+  .ev-log-v{font-size:12.5px;color:var(--text);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ev-log-more{width:100%;background:none;border:none;border-top:1px solid var(--border);color:var(--primary);font-family:var(--font);font-weight:700;font-size:12.5px;padding:12px 4px 4px;cursor:pointer;}
+  /* o CSS de .fld2 é escopado em .form; o modal de medidas não usa .form, então replica aqui */
+  #ev-modal .fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -848,6 +894,31 @@
   <!-- HOJE -->
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
+      <p class="eyebrow">Sua evolução</p>
+    </div>
+    <div class="panel ev-panel">
+      <div class="ev-tabs" id="ev-tabs"></div>
+      <div class="ev-head">
+        <div class="ev-cur">
+          <span class="ev-val" id="ev-val">—</span>
+          <span class="ev-unit" id="ev-unit"></span>
+        </div>
+        <div class="ev-delta" id="ev-delta"></div>
+      </div>
+      <div class="ev-chart-wrap">
+        <svg class="ev-chart" id="ev-chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg>
+        <div class="ev-empty" id="ev-empty">Registre sua primeira medida para ver o gráfico.</div>
+      </div>
+      <div class="ev-range" id="ev-range">
+        <button data-r="30" class="on">30 dias</button>
+        <button data-r="90">3 meses</button>
+        <button data-r="365">1 ano</button>
+        <button data-r="0">Tudo</button>
+      </div>
+      <button class="ev-add" id="ev-add-btn"><span>＋</span> Registrar medidas de hoje</button>
+      <div class="ev-log" id="ev-log"></div>
+    </div>
+    <div class="eyebrow-row" style="margin-top:22px">
       <p class="eyebrow">Seu protocolo</p>
     </div>
     <div class="todayhead">
@@ -1194,6 +1265,38 @@
 </div>
 
 <!-- modal adicionar peptídeo -->
+<!-- modal: registrar medidas / evolução -->
+<div class="modal" id="ev-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="ev-modal-title">Registrar medidas</div>
+      <button class="sheet-x" id="ev-close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="fld"><label>Data</label><input class="txt" id="ev-date" type="date"></div>
+      <p class="nf-note" style="margin-top:0">Preencha só o que quiser acompanhar — os campos em branco são ignorados. Peso em kg, medidas em cm.</p>
+      <div class="fld2">
+        <div class="fld"><label>Peso (kg)</label><input class="num" id="ev-peso" inputmode="decimal" placeholder="Ex.: 82,5"></div>
+        <div class="fld"><label>Cintura (cm)</label><input class="num" id="ev-cintura" inputmode="decimal" placeholder="Ex.: 88"></div>
+      </div>
+      <div class="fld2">
+        <div class="fld"><label>Braço (cm)</label><input class="num" id="ev-braco" inputmode="decimal" placeholder="Ex.: 36"></div>
+        <div class="fld"><label>Peito (cm)</label><input class="num" id="ev-peito" inputmode="decimal" placeholder="Ex.: 102"></div>
+      </div>
+      <div class="fld2">
+        <div class="fld"><label>Quadril (cm)</label><input class="num" id="ev-quadril" inputmode="decimal" placeholder="Ex.: 98"></div>
+        <div class="fld"><label>Coxa (cm)</label><input class="num" id="ev-coxa" inputmode="decimal" placeholder="Ex.: 58"></div>
+      </div>
+      <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="ev-note" rows="2" placeholder="Ex.: medido em jejum, de manhã"></textarea></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="ev-del" style="display:none">Excluir</button>
+      <button class="btn-ghost" id="ev-cancel">Cancelar</button>
+      <button class="btn-primary" id="ev-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -1334,6 +1437,7 @@ function unitLabel(p){
 }
 let LOGS = {};
 let PATIENTS = [];
+let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, note}]
 let currentUser = null;
 let NICKNAME = "";
 let POP_ID = null;
@@ -1345,9 +1449,9 @@ function cloudSave(){
   // então uma dose desmarcada (removida do objeto local) realmente some no Firestore.
   // Com setDoc(...,{merge:true}) isso não acontecia: o Firestore mescla objetos aninhados e nunca
   // apaga uma chave que só deixou de ser enviada — por isso a dose desmarcada "voltava".
-  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}).catch(e=>{
+  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}).catch(e=>{
     // primeira gravação: o documento pode ainda não existir
-    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}, {merge:true}).catch(e2=>console.warn('save',e2));
+    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true}).catch(e2=>console.warn('save',e2));
   });
 }
 function saveProtocol(){ cloudSave(); }
@@ -1820,6 +1924,175 @@ function renderHistory(){
 document.getElementById("reset-btn").onclick=()=>{ if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); renderToday(); renderWeek(); renderHistory(); } };
 
 /* =========================================================
+   EVOLUÇÃO / MEDIDAS CORPORAIS
+   ========================================================= */
+const EV_FIELDS=[
+  {k:"peso",    label:"Peso",    unit:"kg"},
+  {k:"cintura", label:"Cintura", unit:"cm"},
+  {k:"braco",   label:"Braço",   unit:"cm"},
+  {k:"peito",   label:"Peito",   unit:"cm"},
+  {k:"quadril", label:"Quadril", unit:"cm"},
+  {k:"coxa",    label:"Coxa",    unit:"cm"},
+];
+let evMetric="peso";       // métrica exibida no gráfico
+let evRange=30;            // janela em dias (0 = tudo)
+let evLogExpanded=false;   // "ver mais" na lista de registros
+let evEditDate=null;       // data do registro sendo editado no modal
+
+const evNum = v => (v===""||v==null||isNaN(parseFloat(v))) ? null : parseFloat(String(v).replace(",","."));
+const evFmt = v => (v==null) ? "—" : String(Math.round(v*10)/10).replace(".",",");
+// registros ordenados por data (antigo → recente) que tenham a métrica preenchida
+function evSeries(k){
+  return METRICS
+    .filter(m=>m && m.date && evNum(m[k])!=null)
+    .map(m=>({date:m.date, v:evNum(m[k])}))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+}
+function evInRange(arr){
+  if(!evRange) return arr;
+  const limite=new Date(); limite.setHours(0,0,0,0); limite.setDate(limite.getDate()-evRange);
+  const lk=dateKey(limite);
+  return arr.filter(p=>p.date>=lk);
+}
+
+function drawEvChart(pts){
+  const svg=document.getElementById("ev-chart");
+  const empty=document.getElementById("ev-empty");
+  if(!svg||!empty) return;
+  if(pts.length===0){ svg.innerHTML=""; svg.style.display="none"; empty.style.display="block"; return; }
+  svg.style.display="block"; empty.style.display="none";
+  const W=320,H=150, padL=30,padR=10,padT=12,padB=20;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const vals=pts.map(p=>p.v);
+  let min=Math.min(...vals), max=Math.max(...vals);
+  if(min===max){ min-=1; max+=1; }                  // série constante: dá respiro vertical
+  const span=max-min, pad=span*0.12; min-=pad; max+=pad;
+  const X = i => pts.length===1 ? padL+iw/2 : padL + (i/(pts.length-1))*iw;
+  const Y = v => padT + ih - ((v-min)/(max-min))*ih;
+
+  let h="";
+  // 3 linhas de grade + rótulos do eixo Y
+  for(let i=0;i<3;i++){
+    const v = min + (max-min)*(i/2);
+    const y = Y(v);
+    h+=`<line class="ev-grid" x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`;
+    h+=`<text class="ev-lab" x="${padL-5}" y="${(y+3).toFixed(1)}" text-anchor="end">${evFmt(v)}</text>`;
+  }
+  const d = pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+  if(pts.length>1){
+    h+=`<path class="ev-area" d="${d} L${X(pts.length-1).toFixed(1)},${(padT+ih).toFixed(1)} L${X(0).toFixed(1)},${(padT+ih).toFixed(1)} Z"/>`;
+    h+=`<path class="ev-line" d="${d}"/>`;
+  }
+  pts.forEach((p,i)=>{
+    h+=`<circle class="ev-pt" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" data-date="${p.date}"><title>${fmtBR(p.date)} · ${evFmt(p.v)}</title></circle>`;
+  });
+  // rótulos de data: primeiro e último ponto
+  const dLab = s => { const [,m,dd]=s.split("-"); return dd+"/"+m; };
+  h+=`<text class="ev-lab" x="${X(0).toFixed(1)}" y="${H-6}" text-anchor="start">${dLab(pts[0].date)}</text>`;
+  if(pts.length>1) h+=`<text class="ev-lab" x="${X(pts.length-1).toFixed(1)}" y="${H-6}" text-anchor="end">${dLab(pts[pts.length-1].date)}</text>`;
+  svg.innerHTML=h;
+  svg.querySelectorAll(".ev-pt").forEach(c=>c.onclick=()=>openEvModal(c.dataset.date));
+}
+
+function renderEvolution(){
+  const tabs=document.getElementById("ev-tabs");
+  if(!tabs) return;
+  // abas por métrica, mostrando quantos registros cada uma tem
+  tabs.innerHTML = EV_FIELDS.map(f=>{
+    const n=evSeries(f.k).length;
+    return `<button data-k="${f.k}" class="${f.k===evMetric?'on':''}">${f.label}${n?`<span class="ev-tab-n">${n}</span>`:''}</button>`;
+  }).join('');
+  tabs.querySelectorAll("button").forEach(b=>b.onclick=()=>{ evMetric=b.dataset.k; renderEvolution(); });
+
+  const f = EV_FIELDS.find(x=>x.k===evMetric)||EV_FIELDS[0];
+  const all = evSeries(evMetric);
+  const pts = evInRange(all);
+  drawEvChart(pts);
+
+  // valor atual + variação dentro da janela escolhida
+  const atual = all.length ? all[all.length-1].v : null;
+  document.getElementById("ev-val").textContent = evFmt(atual);
+  document.getElementById("ev-unit").textContent = atual==null ? "" : f.unit;
+  const dEl=document.getElementById("ev-delta");
+  if(pts.length>=2){
+    const diff = pts[pts.length-1].v - pts[0].v;
+    const sinal = diff>0?"+":(diff<0?"−":"");
+    dEl.textContent = `${sinal}${evFmt(Math.abs(diff))} ${f.unit}`;
+    dEl.className = "ev-delta "+(diff>0?"up":(diff<0?"down":""));
+    dEl.style.display="block";
+  } else { dEl.style.display="none"; }
+
+  document.querySelectorAll("#ev-range button").forEach(b=>b.classList.toggle("on", +b.dataset.r===evRange));
+
+  // lista de registros (mais recentes primeiro)
+  const log=document.getElementById("ev-log");
+  const ordenados=[...METRICS].filter(m=>m&&m.date).sort((a,b)=>b.date.localeCompare(a.date));
+  if(ordenados.length===0){ log.innerHTML=""; return; }
+  const mostrar = evLogExpanded ? ordenados : ordenados.slice(0,4);
+  let h = mostrar.map(m=>{
+    const resumo = EV_FIELDS.filter(x=>evNum(m[x.k])!=null)
+      .map(x=>`${x.label} ${evFmt(evNum(m[x.k]))}${x.unit}`).join(" · ");
+    return `<div class="ev-log-row" data-date="${m.date}">
+      <span class="ev-log-d">${fmtBR(m.date)}</span>
+      <span class="ev-log-v">${esc(resumo||"—")}</span>
+    </div>`;
+  }).join('');
+  if(ordenados.length>4){
+    h+=`<button class="ev-log-more" id="ev-log-more">${evLogExpanded?'Mostrar menos':`Mostrar todos (${ordenados.length-4})`}</button>`;
+  }
+  log.innerHTML=h;
+  log.querySelectorAll(".ev-log-row").forEach(r=>r.onclick=()=>openEvModal(r.dataset.date));
+  const more=document.getElementById("ev-log-more");
+  if(more) more.onclick=()=>{ evLogExpanded=!evLogExpanded; renderEvolution(); };
+}
+
+document.querySelectorAll("#ev-range button").forEach(b=>b.onclick=()=>{ evRange=+b.dataset.r; renderEvolution(); });
+
+/* ---- modal de registro de medidas ---- */
+const evModal=document.getElementById("ev-modal");
+function openEvModal(date){
+  const existente = date ? METRICS.find(m=>m&&m.date===date) : null;
+  evEditDate = existente ? existente.date : null;
+  document.getElementById("ev-modal-title").textContent = existente ? "Editar medidas" : "Registrar medidas";
+  document.getElementById("ev-date").value = existente ? existente.date : dateKey(new Date());
+  EV_FIELDS.forEach(f=>{
+    const el=document.getElementById("ev-"+f.k);
+    if(el) el.value = existente && evNum(existente[f.k])!=null ? String(existente[f.k]).replace(".",",") : "";
+  });
+  document.getElementById("ev-note").value = existente ? (existente.note||"") : "";
+  document.getElementById("ev-del").style.display = existente ? "block" : "none";
+  evModal.classList.add("on");
+}
+function closeEvModal(){ evModal.classList.remove("on"); }
+document.getElementById("ev-add-btn").onclick=()=>openEvModal(null);
+document.getElementById("ev-close").onclick=closeEvModal;
+document.getElementById("ev-cancel").onclick=closeEvModal;
+evModal.onclick=e=>{ if(e.target===evModal) closeEvModal(); };
+
+document.getElementById("ev-save").onclick=()=>{
+  const date=document.getElementById("ev-date").value;
+  if(!date){ alert("Escolha a data do registro."); return; }
+  const reg={date, note:document.getElementById("ev-note").value.trim()};
+  let algum=false;
+  EV_FIELDS.forEach(f=>{
+    const v=evNum((document.getElementById("ev-"+f.k)||{}).value);
+    if(v!=null && v>0){ reg[f.k]=v; algum=true; }
+  });
+  if(!algum){ alert("Preencha ao menos uma medida (peso, cintura, etc.)."); return; }
+  // um registro por data: se já existe (ou a data foi alterada), substitui
+  METRICS = METRICS.filter(m=>m && m.date!==date && m.date!==evEditDate);
+  METRICS.push(reg);
+  METRICS.sort((a,b)=>a.date.localeCompare(b.date));
+  cloudSave(); closeEvModal(); renderEvolution();
+};
+document.getElementById("ev-del").onclick=()=>{
+  if(!evEditDate) return;
+  if(!confirm("Excluir as medidas deste dia?")) return;
+  METRICS = METRICS.filter(m=>m && m.date!==evEditDate);
+  cloudSave(); closeEvModal(); renderEvolution();
+};
+
+/* =========================================================
    NAVEGAÇÃO
    ========================================================= */
 const navInd=document.getElementById("nav-ind");
@@ -2068,6 +2341,7 @@ document.getElementById("modal-save").onclick=()=>{
 buildLibrary();
 buildLibraryHorm();
 buildDiluted();
+renderEvolution();
 
 /* =========================================================
    CALCULADORA UNIVERSAL
@@ -2460,6 +2734,7 @@ async function showApp(user){
       PEPTIDES = Array.isArray(d.protocol) ? d.protocol : [];
       LOGS = d.logs || {};
       PATIENTS = Array.isArray(d.patients) ? d.patients : [];
+      METRICS = Array.isArray(d.metrics) ? d.metrics : [];
       if(typeof d.nickname === "string"){
         NICKNAME = d.nickname;
         try{ if(NICKNAME) localStorage.setItem("apelido-"+user.uid, NICKNAME); else localStorage.removeItem("apelido-"+user.uid); }catch(e){}
@@ -2469,10 +2744,11 @@ async function showApp(user){
     } else {
       PEPTIDES = [];
       LOGS = {};
+      METRICS = [];
       setDoc(ref, {protocol:PEPTIDES, logs:LOGS, counted:true}).catch(e=>console.warn(e));
       bumpStats({users:increment(1)});
     }
-    renderToday(); renderWeek(); renderHistory();
+    renderToday(); renderWeek(); renderHistory(); renderEvolution();
   }, err=>console.warn('snap',err));
 }
 function showAuth(){
@@ -2485,6 +2761,9 @@ function showAuth(){
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
+  METRICS=[];
+  evLogExpanded=false;
+  renderEvolution();
   membersExpanded=false;
   openSuspendUid=null;
   memberSearchQuery="";
@@ -2863,7 +3142,7 @@ document.getElementById('install-btn').onclick=async()=>{
    BACKUP / EXPORTAR / IMPORTAR
    ========================================================= */
 document.getElementById("export-btn").onclick=()=>{
-  const data={ protocol:PEPTIDES, logs:LOGS, exportedAt:new Date().toISOString(), email:currentUser?.email||"" };
+  const data={ protocol:PEPTIDES, logs:LOGS, metrics:METRICS, exportedAt:new Date().toISOString(), email:currentUser?.email||"" };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
@@ -2881,7 +3160,8 @@ document.getElementById("import-file").addEventListener("change",e=>{
       if(!Array.isArray(d.protocol)) throw new Error("formato");
       if(!confirm("Isto vai SUBSTITUIR seu protocolo e histórico atuais pelos do arquivo. Continuar?")) return;
       PEPTIDES=d.protocol; LOGS=d.logs&&typeof d.logs==="object"?d.logs:{};
-      cloudSave(); renderToday(); renderWeek(); renderHistory();
+      METRICS=Array.isArray(d.metrics)?d.metrics:[];
+      cloudSave(); renderToday(); renderWeek(); renderHistory(); renderEvolution();
       alert("Backup importado com sucesso!");
     }catch(err){ alert("Arquivo inválido. Use um backup exportado por este app."); }
   };
