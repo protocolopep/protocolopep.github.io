@@ -495,6 +495,44 @@
   .ev-log-more{width:100%;background:none;border:none;border-top:1px solid var(--border);color:var(--primary);font-family:var(--font);font-weight:700;font-size:12.5px;padding:12px 4px 4px;cursor:pointer;}
   /* o CSS de .fld2 é escopado em .form; o modal de medidas não usa .form, então replica aqui */
   #ev-modal .fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  /* ---------- banner de parceria / anúncio ---------- */
+  #partner-box{margin:18px 0 4px;}
+  .pt-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;overflow:hidden;}
+  .pt-tag{
+    display:inline-block;margin:12px 14px 0;padding:3px 9px;border-radius:20px;
+    background:var(--surface3);color:var(--muted2);
+    font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  }
+  .pt-img{display:block;width:100%;height:auto;margin-top:12px;}
+  .pt-body{padding:12px 15px 15px;}
+  .pt-title{font-family:var(--display);font-weight:700;font-size:16px;margin-bottom:4px;}
+  .pt-text{color:var(--muted);font-size:13px;line-height:1.5;white-space:pre-wrap;}
+  .pt-btn{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    margin-top:12px;width:100%;padding:12px;border-radius:12px;
+    background:var(--primary);border:none;color:#0B1017;
+    font-family:var(--font);font-weight:700;font-size:14px;cursor:pointer;
+    text-decoration:none;box-sizing:border-box;
+  }
+  body.light .pt-btn{color:#053b39;}
+  /* espaço de teste "Anuncie aqui" — usado enquanto não há banner real */
+  .pt-ph{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    margin-top:12px;padding:30px 16px;
+    border-top:1px dashed var(--border2);border-bottom:1px dashed var(--border2);
+    background:var(--surface2);
+  }
+  .pt-ph-t{font-family:var(--display);font-weight:700;font-size:19px;color:var(--muted);letter-spacing:.3px;}
+  .pt-ph-s{font-size:12px;color:var(--muted2);}
+  .pt-ph-ico{font-size:22px;opacity:.6;line-height:1;}
+  /* pop-up: o card interno já tem borda/fundo, então o modal só emoldura */
+  .pt-modal{padding:22px 18px 18px;}
+  .pt-modal .pt-card{border:none;background:none;}
+  .pt-modal .pt-tag{margin-left:0;margin-top:0;}
+  .pt-modal .pt-img{border-radius:12px;}
+  .pt-modal .pt-body{padding:12px 0 0;}
+  .pt-modal .pt-ph{border-radius:12px;border:1px dashed var(--border2);}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -857,6 +895,14 @@
     </div>
   </div>
 
+  <!-- pop-up de anúncio / parceria (respeita o intervalo em dias configurado no painel) -->
+  <div class="nv-overlay" id="pt-overlay" style="display:none">
+    <div class="nv-modal pt-modal">
+      <button class="nv-close" id="pt-pop-close" aria-label="Fechar">✕</button>
+      <div id="pt-pop-content"></div>
+    </div>
+  </div>
+
   <div class="topbar">
     <div class="tb-left">
       <div class="brand">
@@ -930,6 +976,7 @@
     </div>
     <div id="today-cards"></div>
     <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeos/Hormônios</button>
+    <div id="partner-box" style="display:none"></div>
     <div class="tools-row">
       <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
@@ -1133,6 +1180,30 @@
       <div class="inrow" style="margin-top:10px">
         <button class="btn-primary" id="nv-publish" style="flex:2">Publicar novidade</button>
         <button class="btn-ghost" id="nv-remove" style="flex:1">Remover</button>
+      </div>
+    </div>
+    <p class="eyebrow" style="margin-top:22px">Anúncio / Parceria <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparece na aba Protocolo)</span></p>
+    <div class="panel">
+      <div class="ad-note" style="margin-bottom:12px">💡 O bloco aparece identificado como <b>Parceria</b> para os usuários. Deixe a imagem em branco se quiser só texto. O botão pode abrir um link ou o WhatsApp.</div>
+      <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt" id="pt-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
+      <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area" id="pt-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
+      <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt" id="pt-img" placeholder="https://..." style="margin-top:5px"></div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
+        <div class="fld"><label>Texto do botão</label><input class="txt" id="pt-btn" placeholder="Ex.: Falar agora" style="margin-top:5px"></div>
+        <div class="fld"><label>Link ou WhatsApp</label><input class="txt" id="pt-link" placeholder="https://... ou 84999937819" style="margin-top:5px"></div>
+      </div>
+      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(opcional — só vale para link de WhatsApp)</span></label><input class="txt" id="pt-msg" placeholder="Deixe em branco para usar a mensagem padrão de indicação" style="margin-top:5px"></div>
+      <div id="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
+      <label class="check" style="margin:6px 0"><input type="checkbox" id="pt-pop"> Mostrar também como pop-up ao abrir o app</label>
+      <div class="inrow" style="align-items:center">
+        <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Repetir a cada</label>
+        <input class="txt" id="pt-pop-days" type="number" min="1" max="365" step="1" value="7" style="flex:none;width:90px;text-align:center">
+        <span style="color:var(--muted);font-size:13px">dias</span>
+      </div>
+      <div class="ad-note" style="margin:8px 0 0">Deixe todos os campos em branco e publique para usar o espaço de teste <b>"Anuncie aqui"</b>.</div>
+      <div class="inrow" style="margin-top:10px">
+        <button class="btn-primary" id="pt-publish" style="flex:2">Publicar anúncio</button>
+        <button class="btn-ghost" id="pt-remove" style="flex:1">Remover</button>
       </div>
     </div>
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
@@ -2727,6 +2798,8 @@ async function showApp(user){
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
+  if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
+  partnerUnsub = onSnapshot(doc(db,'meta','partner'), s=>{ partnerData = s.exists()?s.data():null; renderPartner(); fillPartnerForm(); maybeShowPartnerPop(); }, e=>console.warn('partner',e));
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
@@ -2759,6 +2832,8 @@ function showAuth(){
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(banUnsub){ banUnsub(); banUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
+  if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
+  partnerData=null; renderPartner();
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
   METRICS=[];
@@ -3434,6 +3509,8 @@ function renderNovidades(){
 function fecharNovidades(){
   try{ if(noticeData&&noticeData.nvTs) localStorage.setItem("novidades-vista",String(noticeData.nvTs)); }catch(e){}
   document.getElementById("nv-overlay").style.display="none";
+  // libera o pop-up de anúncio, que tinha ficado esperando para não empilhar
+  try{ maybeShowPartnerPop(); }catch(e){}
 }
 document.getElementById("nv-close").onclick=fecharNovidades;
 document.getElementById("nv-ok").onclick=fecharNovidades;
@@ -3487,6 +3564,146 @@ document.getElementById("notice-publish").onclick=()=>{
 document.getElementById("notice-remove").onclick=()=>{
   const atual = noticeData || {};
   setDoc(doc(db,'meta','notice'), {text:atual.text||"", secs:atual.secs||5, ts:atual.ts||Date.now(), active:false, nvTitle:atual.nvTitle||"", nvBody:atual.nvBody||"", nvTs:atual.nvTs||0, nvActive:atual.nvActive||false}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
+};
+
+/* =========================================================
+   ANÚNCIO / PARCERIA
+   Doc próprio (meta/partner) em vez de compartilhar meta/notice:
+   assim publicar o anúncio não corre risco de apagar os recados.
+   ========================================================= */
+let partnerUnsub=null, partnerData=null;
+
+// mensagem padrão de indicação (usada quando o admin não define uma própria)
+const PT_MSG_PADRAO = "Olá! Vim por indicação do app Protocolo Pep e gostaria de mais informações.";
+
+// aceita URL completa ou um número de telefone (vira link do WhatsApp).
+// Em link de WhatsApp, já embute a mensagem pronta via ?text=
+function partnerHref(raw, msg){
+  const v=String(raw||"").trim();
+  if(!v) return "";
+  if(/^https?:\/\//i.test(v)){
+    // se já for um wa.me/api.whatsapp sem texto, ainda dá para anexar a mensagem
+    if(/^https?:\/\/(wa\.me|api\.whatsapp\.com)/i.test(v) && !/[?&]text=/i.test(v)){
+      const t=String(msg||PT_MSG_PADRAO).trim();
+      if(t) return v+(v.indexOf("?")>=0?"&":"?")+"text="+encodeURIComponent(t);
+    }
+    return v;
+  }
+  const num=v.replace(/\D/g,"");
+  if(num.length>=10){
+    const full = num.length<=11 ? "55"+num : num;
+    const t=String(msg||PT_MSG_PADRAO).trim();
+    return "https://wa.me/"+full+(t?"?text="+encodeURIComponent(t):"");
+  }
+  return "";
+}
+// monta o conteúdo do anúncio (usado no banner e no pop-up).
+// Sem imagem/título/texto, cai no espaço de teste "Anuncie aqui".
+function partnerHTML(d){
+  const href=partnerHref(d.link, d.msg);
+  const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
+  const vazio = !img && !d.title && !d.text;
+  let h='<div class="pt-card">';
+  h+='<span class="pt-tag">Parceria</span>';
+  if(vazio){
+    h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
+  } else if(img){
+    h+=`<img class="pt-img" src="${esc(img)}" alt="${esc(d.title||'Parceria')}" loading="lazy" onerror="this.style.display='none'">`;
+  }
+  if(d.title || d.text || href){
+    h+='<div class="pt-body">';
+    if(d.title) h+=`<div class="pt-title">${esc(d.title)}</div>`;
+    if(d.text)  h+=`<div class="pt-text">${esc(d.text)}</div>`;
+    if(href)    h+=`<a class="pt-btn" href="${esc(href)}" target="_blank" rel="noopener nofollow sponsored">${esc(d.btn||"Saber mais")} →</a>`;
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+function renderPartner(){
+  const box=document.getElementById("partner-box");
+  if(!box) return;
+  const d=partnerData||{};
+  if(!d.active){ box.style.display="none"; box.innerHTML=""; return; }
+  box.innerHTML=partnerHTML(d);
+  box.style.display="block";
+}
+/* ---- pop-up: mostra 1x e só volta depois do intervalo em dias ---- */
+function maybeShowPartnerPop(){
+  const d=partnerData||{};
+  const ov=document.getElementById("pt-overlay");
+  if(!ov) return;
+  if(!d.active || !d.pop){ ov.style.display="none"; return; }
+  // se o pop-up de Novidades estiver aberto, não empilha: o de anúncio espera ele ser fechado
+  const nv=document.getElementById("nv-overlay");
+  if(nv && nv.style.display!=="none" && nv.style.display!=="") return;
+  const dias=Math.min(365, Math.max(1, Number(d.popDays)||7));
+  let visto=0;
+  try{ visto=Number(localStorage.getItem("pt-pop-visto"))||0; }catch(e){}
+  // republicar o anúncio (ts novo) faz o pop-up aparecer de novo mesmo dentro do intervalo
+  const tsPub=Number(d.ts)||0;
+  const expirou = (Date.now()-visto) >= dias*24*60*60*1000;
+  if(visto && visto>=tsPub && !expirou) return;
+  document.getElementById("pt-pop-content").innerHTML=partnerHTML(d);
+  ov.style.display="flex";
+}
+function fecharPartnerPop(){
+  const ov=document.getElementById("pt-overlay");
+  if(ov) ov.style.display="none";
+  try{ localStorage.setItem("pt-pop-visto", String(Date.now())); }catch(e){}
+}
+document.getElementById("pt-pop-close").onclick=fecharPartnerPop;
+document.getElementById("pt-overlay").onclick=(e)=>{ if(e.target.id==="pt-overlay") fecharPartnerPop(); };
+// tocar no botão do anúncio dentro do pop-up também registra como visto
+document.getElementById("pt-pop-content").addEventListener("click",e=>{
+  if(e.target.closest && e.target.closest(".pt-btn")) fecharPartnerPop();
+});
+// preenche o formulário do admin com o que está publicado
+function fillPartnerForm(){
+  const d=partnerData||{};
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||""; };
+  set("pt-title",d.title); set("pt-text",d.text); set("pt-img",d.img);
+  set("pt-btn",d.btn);     set("pt-link",d.link);
+  set("pt-msg",d.msg);
+  const chk=document.getElementById("pt-pop");
+  if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
+  const dd=document.getElementById("pt-pop-days");
+  if(dd && document.activeElement!==dd) dd.value=Number(d.popDays)||7;
+  const st=document.getElementById("pt-status");
+  if(st){
+    if(!d.active) st.textContent="Nenhum anúncio ativo no momento.";
+    else {
+      const tipo = (!d.img && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
+      st.textContent = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
+    }
+  }
+}
+document.getElementById("pt-publish").onclick=()=>{
+  const title=document.getElementById("pt-title").value.trim();
+  const text =document.getElementById("pt-text").value.trim();
+  const img  =document.getElementById("pt-img").value.trim();
+  const btn  =document.getElementById("pt-btn").value.trim();
+  const link =document.getElementById("pt-link").value.trim();
+  const msg  =document.getElementById("pt-msg").value.trim();
+  const pop  =document.getElementById("pt-pop").checked;
+  const popDays=Math.min(365, Math.max(1, parseInt(document.getElementById("pt-pop-days").value)||7));
+  if(link && !partnerHref(link, msg)){ alert("O link não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+  if(!title && !text && !img){
+    if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
+  }
+  setDoc(doc(db,'meta','partner'), {title, text, img, btn, link, msg, pop, popDays, active:true, ts:Date.now()})
+    .then(()=>{
+      try{ localStorage.removeItem("pt-pop-visto"); }catch(e){}   // para você mesmo ver o pop-up de novo ao testar
+      alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
+    })
+    .catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
+};
+document.getElementById("pt-remove").onclick=()=>{
+  if(!confirm("Remover o anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
+  const d=partnerData||{};
+  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", btn:d.btn||"", link:d.link||"", msg:d.msg||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
+    .then(()=>alert("Anúncio removido."))
+    .catch(e=>console.warn(e));
 };
 </script>
 <!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->
