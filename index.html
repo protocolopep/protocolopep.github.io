@@ -417,10 +417,29 @@
   .ad-bar span{display:block;height:100%;background:var(--primary);border-radius:5px;}
   .ad-ct{flex:none;font-family:var(--display);font-weight:700;font-size:13px;color:var(--muted);min-width:24px;text-align:right;}
   .ad-note{color:var(--muted2);font-size:11.5px;line-height:1.55;margin-top:16px;padding:0 4px;}
+  .mb-head{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 12px;}
+  .mb-head .mb-total{font-size:12.5px;color:var(--muted);}
+  .mb-head .mb-total b{color:var(--text);font-family:var(--display);}
   .mb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-top:1px solid var(--border);}
   .mb-row:first-child{border-top:none;}
+  .mb-row.mb-row-banned{background:color-mix(in srgb, var(--danger) 7%, transparent);border-radius:10px;margin-top:2px;}
+  .mb-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
   .mb-email{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mb-date{flex:none;font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;}
+  .mb-banned-tag{color:var(--danger);font-weight:700;}
+  .mb-actions{flex:none;display:flex;gap:6px;}
+  .mb-susp-btn,.mb-unban-btn{border:1px solid var(--border2);background:var(--surface2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 10px;border-radius:9px;cursor:pointer;white-space:nowrap;}
+  .mb-susp-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .mb-unban-btn{border-color:var(--primary);color:var(--primary);}
+  .mb-unban-btn:hover{background:color-mix(in srgb, var(--primary) 12%, transparent);}
+  .mb-susp-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 6px 14px;border-top:1px dashed var(--border2);font-size:12.5px;color:var(--muted);}
+  .mb-susp-panel select{font-family:var(--font);font-size:12.5px;padding:7px 8px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);}
+  .mb-susp-confirm{background:var(--danger);border:none;color:#fff;font-family:var(--font);font-weight:700;font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;}
+  .mb-susp-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;}
+  .mb-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border);color:var(--primary);font-family:var(--font);font-weight:700;font-size:12.5px;padding:14px 4px 4px;cursor:pointer;margin-top:6px;}
+  .mb-toggle:hover{opacity:.8;}
+  .mb-toggle .arrow{display:inline-block;transition:transform .15s;}
+  .mb-toggle.open .arrow{transform:rotate(180deg);}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -449,6 +468,15 @@
   .auth-in{width:100%;font-family:var(--font);font-size:16px;padding:13px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface);color:var(--text);margin-bottom:11px;}
   .auth-in:focus{outline:none;border-color:var(--primary);}
   .auth-in::placeholder{color:var(--muted2);}
+  .auth-pass-wrap{position:relative;margin-bottom:11px;}
+  .auth-pass-wrap .auth-in{margin-bottom:0;padding-right:46px;}
+  .auth-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:9px;padding:0;}
+  .auth-eye:hover{color:var(--text);background:var(--surface3);}
+  .auth-eye.on{color:var(--primary);}
+  .auth-eye svg{width:20px;height:20px;}
+  .auth-eye .eye-off{display:none;}
+  .auth-eye.on .eye-on{display:none;}
+  .auth-eye.on .eye-off{display:block;}
   .auth-err{display:none;color:var(--danger);font-size:12.5px;margin-bottom:10px;text-align:left;line-height:1.4;}
   .auth-submit{width:100%;background:var(--primary);border:none;color:#0B1017;font-family:var(--font);font-weight:700;font-size:15px;padding:14px;border-radius:12px;cursor:pointer;margin-top:4px;}
   .auth-submit:disabled{opacity:.6;cursor:default;}
@@ -1031,7 +1059,7 @@
     <div class="panel"><div id="ad-members"></div></div>
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
-    <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados e os números de uso. A lista de contas mostra quem entrou a partir desta versão.</div>
+    <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados, os números de uso, e pode suspender uma conta por um número de dias — enquanto suspensa, a pessoa não consegue entrar no aplicativo e verá uma mensagem para contatar o suporte. A lista de contas mostra quem entrou a partir desta versão.</div>
   </section>
 
   <div class="disclaimer">
@@ -1057,7 +1085,13 @@
       <button data-m="signup">Criar conta</button>
     </div>
     <input class="auth-in" id="auth-email" type="email" inputmode="email" placeholder="Seu e-mail" autocomplete="email">
-    <input class="auth-in" id="auth-pass" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
+    <div class="auth-pass-wrap">
+      <input class="auth-in" id="auth-pass" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
+      <button type="button" class="auth-eye" id="auth-eye" aria-label="Mostrar senha" tabindex="-1">
+        <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a20.4 20.4 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+      </button>
+    </div>
     <label class="auth-remember"><input type="checkbox" id="auth-remember" checked> Manter conectado neste aparelho</label>
     <div class="auth-err" id="auth-err"></div>
     <button class="auth-submit" id="auth-submit">Entrar</button>
@@ -2083,23 +2117,126 @@ calc();
 let unsub = null;
 let statsUnsub = null;
 let membersUnsub = null;
+let banUnsub = null;           // observa em tempo real se a própria conta foi suspensa
+let pendingBanMsg = null;      // mensagem a exibir na tela de login após ser deslogado por suspensão
 let adminMembers = [];
+let membersExpanded = false;   // controla a setinha "mostrar mais / mostrar menos"
+let openSuspendUid = null;     // uid da conta com o painel de suspensão aberto
+const MEMBERS_VISIBLE = 8;     // quantos e-mails mostrar antes da setinha de "ver mais"
 const authScreen = document.getElementById("auth-screen");
 const authErr = document.getElementById("auth-err");
+
+/* timestamp aproximado para ordenar por data de criação (mais recentes primeiro) */
+function memberTs(m){
+  if(m.ts) return m.ts;
+  if(m.d){
+    const partes=String(m.d).split('/');
+    const dd=+partes[0], mm=+partes[1];
+    if(dd && mm) return new Date(new Date().getFullYear(), mm-1, dd).getTime();
+  }
+  return 0;
+}
+function fmtBanDate(ts){
+  return new Date(ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function isBanned(m){ return !!(m && m.banned && m.bannedUntil && m.bannedUntil > Date.now()); }
+
+function memberRowHtml(m){
+  const banned = isBanned(m);
+  const canManage = !!m.uid; // só é possível suspender contas com login registrado nesta versão (têm uid salvo)
+  let actionHtml='';
+  if(canManage){
+    actionHtml = banned
+      ? `<button type="button" class="mb-unban-btn" data-uid="${m.uid}">Reativar</button>`
+      : `<button type="button" class="mb-susp-btn" data-uid="${m.uid}">Suspender</button>`;
+  }
+  const dateLabel = banned
+    ? `${m.d||''} · <span class="mb-banned-tag">Suspenso até ${fmtBanDate(m.bannedUntil)}</span>`
+    : (m.d||'');
+  const panelHtml = (canManage && openSuspendUid===m.uid) ? `
+    <div class="mb-susp-panel">
+      <span>Suspender por</span>
+      <select id="mb-days-${m.uid}">
+        <option value="1">1 dia</option>
+        <option value="3">3 dias</option>
+        <option value="7" selected>7 dias</option>
+        <option value="15">15 dias</option>
+        <option value="30">30 dias</option>
+        <option value="90">90 dias</option>
+        <option value="36500">Permanente</option>
+      </select>
+      <button type="button" class="mb-susp-confirm" data-uid="${m.uid}">Confirmar suspensão</button>
+      <button type="button" class="mb-susp-cancel">Cancelar</button>
+    </div>` : '';
+  return `<div class="mb-row${banned?' mb-row-banned':''}">
+      <div class="mb-info">
+        <span class="mb-email">${esc(m.email)}</span>
+        <span class="mb-date">${dateLabel}</span>
+      </div>
+      <div class="mb-actions">${actionHtml}</div>
+    </div>${panelHtml}`;
+}
 
 function renderMembers(){
   const list=document.getElementById("ad-members");
   if(!list) return;
   const map=new Map();
-  SEED_MEMBERS.forEach(m=>map.set(m.email.toLowerCase(), {email:m.email, d:m.d}));
+  SEED_MEMBERS.forEach(m=>map.set(m.email.toLowerCase(), {email:m.email, d:m.d, ts:memberTs(m)}));
   adminMembers.forEach(m=>{
     const e=(m.email||'').toLowerCase(); if(!e) return;
-    if(!map.has(e)){ const d=m.ts?new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}):''; map.set(e,{email:m.email,d}); }
+    const prev = map.get(e) || {};
+    const d = m.ts ? new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}) : prev.d;
+    map.set(e, {
+      email: m.email || prev.email,
+      d: d || '',
+      ts: m.ts || prev.ts || 0,
+      uid: m.uid,
+      banned: !!m.banned,
+      bannedUntil: m.bannedUntil || null
+    });
   });
-  const arr=[...map.values()];
+  const arr=[...map.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
   document.getElementById("ad-users").textContent = arr.length;
   if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
-  list.innerHTML=arr.map(m=>`<div class="mb-row"><span class="mb-email">${esc(m.email)}</span><span class="mb-date">${m.d||''}</span></div>`).join('');
+
+  const shown = membersExpanded ? arr : arr.slice(0, MEMBERS_VISIBLE);
+  const restante = arr.length - shown.length;
+  let html = shown.map(memberRowHtml).join('');
+  if(restante>0 || (membersExpanded && arr.length>MEMBERS_VISIBLE)){
+    html += `<button type="button" class="mb-toggle${membersExpanded?' open':''}" id="mb-toggle">
+      <span class="arrow">▾</span> ${membersExpanded ? 'Mostrar menos' : `Mostrar mais (${restante})`}
+    </button>`;
+  }
+  list.innerHTML = html;
+
+  const tgl=document.getElementById("mb-toggle");
+  if(tgl) tgl.onclick=()=>{ membersExpanded=!membersExpanded; renderMembers(); };
+  list.querySelectorAll(".mb-susp-btn").forEach(b=>{
+    b.onclick=()=>{ openSuspendUid = (openSuspendUid===b.dataset.uid) ? null : b.dataset.uid; renderMembers(); };
+  });
+  list.querySelectorAll(".mb-susp-cancel").forEach(b=>{
+    b.onclick=()=>{ openSuspendUid=null; renderMembers(); };
+  });
+  list.querySelectorAll(".mb-susp-confirm").forEach(b=>{
+    b.onclick=()=>{
+      const uid=b.dataset.uid;
+      const sel=document.getElementById("mb-days-"+uid);
+      const dias=+((sel&&sel.value)||7);
+      const permanente = dias>=36500;
+      if(!confirm(permanente
+        ? "Suspender esta conta permanentemente? A pessoa não conseguirá mais entrar até você reativar."
+        : `Suspender esta conta por ${dias} dia${dias>1?'s':''}? A pessoa não conseguirá entrar até essa data.`)) return;
+      const bannedUntil = Date.now() + dias*24*60*60*1000;
+      setDoc(doc(db,'members',uid), {banned:true, bannedUntil}, {merge:true}).catch(e=>{ console.warn('ban',e); alert('Não foi possível suspender a conta.'); });
+      openSuspendUid=null;
+    };
+  });
+  list.querySelectorAll(".mb-unban-btn").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Reativar esta conta? A pessoa poderá entrar normalmente de novo.")) return;
+      setDoc(doc(db,'members',b.dataset.uid), {banned:false, bannedUntil:null}, {merge:true}).catch(e=>console.warn('unban',e));
+    };
+  });
 }
 
 function renderAdmin(d){
@@ -2135,8 +2272,27 @@ function renderAcctName(){
   const el = document.getElementById("acct-name-txt");
   if(el) el.textContent = displayNameFor(currentUser);
 }
-function showApp(user){
+function banMessage(bannedUntil){
+  return `Sua conta foi suspensa até ${fmtBanDate(bannedUntil)}. Entre em contato com o suporte para mais informações.`;
+}
+async function showApp(user){
   if(SHARE_MODE) return;
+  // ---- checagem de suspensão: impede o login se a conta estiver banida ----
+  try{
+    const mSnap = await getDoc(doc(db,'members',user.uid));
+    if(mSnap.exists()){
+      const md = mSnap.data();
+      if(isBanned(md)){
+        pendingBanMsg = banMessage(md.bannedUntil);
+        await signOut(auth);
+        return;
+      }
+      if(md.banned && (!md.bannedUntil || md.bannedUntil<=Date.now())){
+        // suspensão já expirou: limpa a flag automaticamente
+        setDoc(doc(db,'members',user.uid), {banned:false, bannedUntil:null}, {merge:true}).catch(()=>{});
+      }
+    }
+  }catch(e){ console.warn('ban-check',e); }
   currentUser = user;
   authScreen.classList.remove("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="visible";
@@ -2147,12 +2303,21 @@ function showApp(user){
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
   try{ setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now()}, {merge:true}); }catch(e){}
+  // ---- observa em tempo real: se o admin suspender a conta enquanto ela está em uso, desloga na hora ----
+  if(banUnsub){ banUnsub(); banUnsub=null; }
+  banUnsub = onSnapshot(doc(db,'members',user.uid), s=>{
+    const d = s.exists()? s.data() : {};
+    if(isBanned(d)){
+      pendingBanMsg = banMessage(d.bannedUntil);
+      signOut(auth);
+    }
+  }, e=>console.warn('ban-watch',e));
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(isAdmin){
     renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
-    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>d.data()); renderMembers(); }, e=>console.warn('members',e));
+    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({...d.data(), uid:d.id})); renderMembers(); }, e=>console.warn('members',e));
   }
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
@@ -2185,6 +2350,7 @@ function showAuth(){
   if(unsub){ unsub(); unsub=null; }
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
+  if(banUnsub){ banUnsub(); banUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
@@ -2194,7 +2360,12 @@ function showAuth(){
   const _nav=document.querySelector(".nav"); if(_nav) _nav.style.visibility="hidden";
   document.getElementById("acct-row").style.display = "none";
   document.getElementById("admin-btn").style.display = "none";
-  try{ const rem=localStorage.getItem("lembrar-email"); if(rem){ const e=document.getElementById("auth-email"); if(e && !e.value) e.value=rem; document.getElementById("auth-pass").focus(); } }catch(e){}
+  if(pendingBanMsg){
+    showErr(pendingBanMsg);
+    pendingBanMsg = null;
+  } else {
+    try{ const rem=localStorage.getItem("lembrar-email"); if(rem){ const e=document.getElementById("auth-email"); if(e && !e.value) e.value=rem; document.getElementById("auth-pass").focus(); } }catch(e){}
+  }
 }
 const shareId = new URLSearchParams(location.search).get('share');
 const SHARE_MODE = !!shareId;
@@ -2252,6 +2423,16 @@ document.getElementById("auth-forgot").onclick=async ()=>{
   catch(e){ showErr(mapErr(e)); }
 };
 document.getElementById("auth-pass").addEventListener("keydown",e=>{ if(e.key==='Enter') document.getElementById("auth-submit").click(); });
+document.getElementById("auth-eye").onclick=()=>{
+  const inp=document.getElementById("auth-pass");
+  const btn=document.getElementById("auth-eye");
+  const show = inp.type==="password";
+  inp.type = show?"text":"password";
+  inp.focus();
+  try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
+  btn.classList.toggle("on", show);
+  btn.setAttribute("aria-label", show?"Ocultar senha":"Mostrar senha");
+};
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
 
 /* editar nome/apelido de exibição */
