@@ -345,7 +345,6 @@
     display:inline-block;
     white-space:nowrap;
   }
-  .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
   .nv-overlay{
@@ -970,7 +969,6 @@
   <div class="notice-banner" id="notice-banner" style="display:none">
     <span class="notice-ic">📢</span>
     <span class="notice-text" id="notice-text"></span>
-    <button class="notice-x" id="notice-x">✕</button>
   </div>
 
   <!-- anúncio/parceria: fora das views, então acompanha todas as abas -->
@@ -3354,13 +3352,16 @@ function linkifyNotice(msg){
 function renderNotice(){
   const banner=document.getElementById("notice-banner");
   const el=document.getElementById("notice-text");
-  const dismissed=(()=>{ try{ return localStorage.getItem("notice-dismissed"); }catch(e){ return null; } })();
+  // o letreiro é fixo: não há mais botão de fechar e o registro antigo de
+  // "já fechei" é apagado, senão quem fechou algum recado no passado nunca
+  // mais voltaria a ver o letreiro
+  try{ localStorage.removeItem("notice-dismissed"); }catch(e){}
   if(noticeRotTimer){ clearInterval(noticeRotTimer); noticeRotTimer=null; }
   if(window.__noticeAnim){ clearTimeout(window.__noticeAnim); window.__noticeAnim=null; }
   if(window.__noticeCurrentAnim){ try{ window.__noticeCurrentAnim.cancel(); }catch(e){} window.__noticeCurrentAnim=null; }
   // marca esta execução como a "atual" — execuções antigas param de se atualizar
   const myRun = (window.__noticeRun = (window.__noticeRun||0) + 1);
-  const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
+  const active = noticeData && noticeData.active && noticeData.text;
   if(!active){ banner.style.display="none"; return; }
 
   // separar frases: por linha (prioridade), ou por pontuação se for tudo numa linha só
@@ -3560,10 +3561,7 @@ function renderNotice(){
   dateInp.onchange = carregarDia;
 })();
 
-document.getElementById("notice-x").onclick=()=>{
-  try{ if(noticeData&&noticeData.ts) localStorage.setItem("notice-dismissed",String(noticeData.ts)); }catch(e){}
-  document.getElementById("notice-banner").style.display="none";
-};
+/* o letreiro de recados não tem mais botão de fechar: fica fixo para todos */
 
 /* ---- novidades / atualizações (pop-up 1x) — guardadas dentro do doc 'notice' ---- */
 function renderNovidades(){
