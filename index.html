@@ -1613,19 +1613,32 @@ let POP_ID = null;
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
-  if(!dataLoaded){ console.warn("cloudSave ignorado: dados da nuvem ainda não carregaram"); return; }
+  if(!dataLoaded){ console.warn("cloudSave ignorado: dados da nuvem ainda não carregaram"); alert("SALVAMENTO BLOQUEADO: os dados da nuvem não carregaram (trava de segurança ativa). Nada foi salvo na nuvem. Me avise que isso apareceu."); return; }
   const ref = doc(db,'users',currentUser.uid);
   // updateDoc substitui o valor de "logs"/"protocol"/"patients" por inteiro (sem mesclar por dentro),
   // então uma dose desmarcada (removida do objeto local) realmente some no Firestore.
   // Com setDoc(...,{merge:true}) isso não acontecia: o Firestore mescla objetos aninhados e nunca
   // apaga uma chave que só deixou de ser enviada — por isso a dose desmarcada "voltava".
-  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}).catch(e=>{
+  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS})
+    .then(()=>{ console.log("save OK (servidor confirmou)"); })
+    .catch(e=>{
     // primeira gravação: o documento pode ainda não existir
-    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true}).catch(e2=>{
+    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true})
+      .then(()=>{ console.log("save OK via setDoc"); })
+      .catch(e2=>{
       console.warn('save',e2);
       alert("ERRO AO SALVAR NA NUVEM (me manda esse texto): "+((e2&&e2.code)||(e2&&e2.message)||e2));
     });
   });
+  // se em 8 segundos o servidor não confirmou nada, avisa — indica conexão bloqueada
+  setTimeout(()=>{
+    getDoc(ref).then(s=>{
+      const remoto = s.exists() ? (s.data().protocol||[]) : [];
+      if(remoto.length !== PEPTIDES.length){
+        alert("AVISO: a nuvem ainda não recebeu as alterações (local="+PEPTIDES.length+" itens, nuvem="+remoto.length+"). Me manda esse número.");
+      }
+    }).catch(()=>{});
+  }, 8000);
 }
 function saveProtocol(){ cloudSave(); }
 
