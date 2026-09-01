@@ -267,6 +267,17 @@
   input:focus{outline:none;border-color:var(--primary);}
   input::placeholder,textarea::placeholder{color:var(--muted2);}
   .note-line{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+  /* ---------- ampola/frasco: indicador visual de estoque no card ---------- */
+  .vial-wrap{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border2);display:flex;align-items:center;gap:10px;}
+  .vial-ico{flex:none;width:22px;display:flex;flex-direction:column;align-items:center;}
+  .vial-cap{width:11px;height:5px;background:var(--muted2);border-radius:2px 2px 0 0;}
+  .vial-body{width:20px;height:30px;border:1.5px solid var(--border2);border-top:none;border-radius:0 0 8px 8px;background:var(--surface3);overflow:hidden;display:flex;align-items:flex-end;}
+  .vial-fill{width:100%;transition:height .35s ease, background .35s ease;}
+  .vial-info{flex:1;min-width:0;}
+  .vial-text{font-size:12px;color:var(--muted);}
+  .vial-text b{color:var(--text);font-weight:700;}
+  .vial-reset{margin-top:2px;font-size:11px;font-weight:700;color:var(--primary);background:none;border:none;padding:0;cursor:pointer;}
+  .vial-reset:active{opacity:.6;}
   .note-start{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--surface3);padding:3px 9px;border-radius:8px;}
   .note-txt{font-size:12px;color:var(--muted);font-style:italic;}
   .unittoggle{display:flex;border:1px solid var(--border2);border-radius:11px;overflow:hidden;flex:none;}
@@ -1483,6 +1494,7 @@
         <div class="fld"><label>Horário do lembrete <span class="desc">(opcional)</span></label><input class="txt" id="f-time" type="time"></div>
         <label class="check" id="f-remind-row" style="margin:-4px 0 6px"><input type="checkbox" id="f-remind"> 🔔 Notificar nesse horário</label>
         <div class="ad-note" id="f-remind-hint" style="display:none;margin:-4px 0 10px"></div>
+        <div class="fld"><label>Doses no frasco <span class="desc">(opcional — mostra o nível do frasco no card)</span></label><input class="txt" id="f-vial-doses" type="number" min="0" step="0.5" inputmode="decimal" placeholder="Ex.: 20"></div>
         <div class="fld"><label>Data de início <span class="desc">(opcional)</span></label><input class="txt" id="f-start" type="date"></div>
         <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="f-note" rows="2" placeholder="Ex.: começar com meia dose na 1ª semana"></textarea></div>
         <div class="fld"><label>Cor</label><div class="swatches" id="f-colors"></div></div>
@@ -1827,6 +1839,23 @@ function renderToday(){
     el.className="card"+(done?" done":"");
     el.style.setProperty('--acc',p.accent);
 
+    // ---------- ampola: nível de estoque do frasco (opcional, por peptídeo) ----------
+    let vialHTML = '';
+    if(p.vialDoses>0){
+      const restanteDoses = Math.max(0, p.vialDoses - (p.vialUsed||0));
+      const restanteUI = Math.round(restanteDoses * p.ui * 10)/10;
+      const pct = Math.max(0, Math.min(100, (restanteDoses / p.vialDoses) * 100));
+      const cor = restanteDoses<=0 ? 'var(--danger)' : (restanteDoses<1 ? 'var(--aod)' : p.accent);
+      const doseTxt = (Math.abs(restanteDoses-Math.round(restanteDoses))<0.05) ? String(Math.round(restanteDoses)) : String(Math.round(restanteDoses*10)/10).replace('.',',');
+      vialHTML = `<div class="vial-wrap">
+        <div class="vial-ico"><div class="vial-cap"></div><div class="vial-body"><div class="vial-fill" style="height:${pct}%;background:${cor}"></div></div></div>
+        <div class="vial-info">
+          <div class="vial-text">Restam: <b>${restanteUI} ${unitLabel(p)}</b> · ~${doseTxt} dose${doseTxt==="1"?"":"s"}</div>
+          <button class="vial-reset" data-id="${p.id}">🔄 Novo frasco</button>
+        </div>
+      </div>`;
+    }
+
     // controle: botão simples (1x) ou caixinhas (múltiplas)
     let ctrlHTML;
     if(perDay <= 1){
@@ -1865,6 +1894,7 @@ function renderToday(){
           <span class="chip-acc">${p.dose}/${p.per}</span>
         </div>
         ${(p.start||p.note||p.time)?`<div class="note-line">${p.time?`<span class="note-start">⏰ ${p.time}</span>`:''}${p.start?`<span class="note-start">início ${fmtBR(p.start)}</span>`:''}${p.note?`<span class="note-txt">${esc(p.note)}</span>`:''}</div>`:''}
+        ${vialHTML}
       </div>
       <div class="ctrls">
         <button class="gear" data-id="${p.id}" aria-label="Editar">
@@ -1910,6 +1940,11 @@ function renderToday(){
   cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>removeDose(b.dataset.id));
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  cont.querySelectorAll(".vial-reset").forEach(b=>b.onclick=()=>{
+    const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(!p) return;
+    if(!confirm(`Zerar o nível do frasco de ${p.name} de volta pra 100%?`)) return;
+    p.vialUsed=0; cloudSave(); renderToday();
+  });
 }
 
 function removePep(id){
@@ -1951,6 +1986,7 @@ function addDose(id){
     arr.push(nova);
     rec[id] = arr;
   }
+  if(p.vialDoses){ p.vialUsed = (p.vialUsed||0) + 1; }
   bumpStats({doses:increment(1)});
   LOGS[todayKey]=rec; saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
@@ -1966,6 +2002,8 @@ function removeDose(id){
   } else {
     delete rec[id];
   }
+  const p = PEPTIDES.find(x=>x.id===id);
+  if(p && p.vialDoses){ p.vialUsed = Math.max(0, (p.vialUsed||0) - 1); }
   LOGS[todayKey]=rec; saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
 }
@@ -1975,7 +2013,9 @@ function toggleOnDate(id, dateK){
   const p = PEPTIDES.find(x=>x.id===id) || {};
   if(dosesTaken(rec, id) > 0){
     // já tem dose nesse dia — desmarca (remove todas)
+    const qtd = dosesTaken(rec, id);
     delete rec[id];
+    if(p.vialDoses){ p.vialUsed = Math.max(0, (p.vialUsed||0) - qtd); }
   } else {
     // marca (sem horário específico, pois é um registro retroativo)
     const perDay = p.perDay || 1;
@@ -1985,6 +2025,7 @@ function toggleOnDate(id, dateK){
     } else {
       rec[id] = [marca];  // marca 1 dose; a pessoa pode ajustar depois se quiser
     }
+    if(p.vialDoses){ p.vialUsed = (p.vialUsed||0) + 1; }
     bumpStats({doses:increment(1)});
   }
   if(Object.keys(rec).length===0) delete LOGS[dateK]; else LOGS[dateK]=rec;
@@ -1997,6 +2038,8 @@ function toggle(id){
   if(dosesTaken(rec,id) > 0){
     if(!confirm("Desmarcar esta dose de hoje?")) return;
     delete rec[id];
+    const p = PEPTIDES.find(x=>x.id===id);
+    if(p && p.vialDoses){ p.vialUsed = Math.max(0, (p.vialUsed||0) - 1); }
     LOGS[todayKey]=rec; saveAll(LOGS);
     renderToday(); renderWeek(); renderHistory();
   } else {
@@ -2450,6 +2493,7 @@ function openModal(pep){
     document.getElementById("f-note").value = pep.note||"";
     document.getElementById("f-time").value = pep.time||"";
     document.getElementById("f-remind").checked = !!pep.time && pep.remind !== false;
+    document.getElementById("f-vial-doses").value = pep.vialDoses||"";
     if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; }
     else if(pep.interval && pep.interval>0){ fMode="interval"; fDays=[]; fInterval=pep.interval; }
     else { fMode="daily"; fDays=[]; }
@@ -2459,6 +2503,7 @@ function openModal(pep){
     document.getElementById("f-note").value="";
     document.getElementById("f-time").value="";
     document.getElementById("f-remind").checked=false;
+    document.getElementById("f-vial-doses").value="";
     fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false; fInterval=5; fPerDay=1;
   }
   document.getElementById("f-moon").checked=fMoon;
@@ -2530,14 +2575,14 @@ document.getElementById("modal-save").onclick=()=>{
   const isOralSave = modal.classList.contains("oral-mode");
   const oralUnitBtn = document.querySelector("#f-oral-unit button.on");
   const unit = isOralSave ? (oralUnitBtn ? oralUnitBtn.dataset.u : "comprimido") : "UI";
-  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, interval, perDay:fPerDay, accent:fColor, moon:fMoon, unit, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"", remind: !!(document.getElementById("f-time").value && document.getElementById("f-remind").checked) };
+  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, interval, perDay:fPerDay, accent:fColor, moon:fMoon, unit, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"", remind: !!(document.getElementById("f-time").value && document.getElementById("f-remind").checked), vialDoses: parseFloat(document.getElementById("f-vial-doses").value)||0 };
   const arr = builderProto ? builderProto.protocol : PEPTIDES;
   if(editingId){
     const idx=arr.findIndex(p=>p.id===editingId);
     if(idx>=0) arr[idx]={...arr[idx], ...fields};
   } else {
     const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
-    arr.push({id, ...fields});
+    arr.push({id, vialUsed:0, ...fields});
     if(!builderProto){
       const key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/(^_+|_+$)/g,'')||'x';
       bumpStats({peptides:increment(1), pepCounts:{[key]:{name:name, count:increment(1)}}});
