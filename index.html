@@ -978,9 +978,6 @@
       <div class="datestrip" id="datestrip"></div>
     </div>
     <div class="acct" id="acct-row" style="display:none">
-      <button class="icon-b" id="notif-btn" aria-label="Lembretes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      </button>
       <button class="icon-b" id="theme-btn" aria-label="Tema">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
@@ -1394,27 +1391,6 @@
 </div>
 
 <!-- modal de lembretes -->
-<div class="modal" id="notif-modal">
-  <div class="sheet">
-    <div class="sheet-head">
-      <div class="sheet-title">Lembretes</div>
-      <button class="sheet-x" id="notif-close">✕</button>
-    </div>
-    <div class="sheet-body">
-      <div class="nf-status" id="nf-status"></div>
-      <button class="nf-enable" id="nf-enable">Ativar notificações</button>
-      <div class="fld" style="margin-top:18px"><label>Tipo de alerta</label>
-        <div class="segbtns" id="nf-sound"><button data-s="1" class="on">Som e vibração</button><button data-s="0">Só visual</button></div>
-      </div>
-      <div class="fld"><label>Resumo diário <span class="desc">(um aviso com os peps do dia)</span></label>
-        <div class="inrow"><input class="txt" id="nf-summary" type="time"><button class="btn-ghost" id="nf-sum-clear" style="flex:none">Desligar</button></div>
-      </div>
-      <button class="btn-ghost" id="nf-test" style="width:100%">Enviar notificação de teste</button>
-      <div class="nf-note">Os lembretes tocam com o app aberto ou em segundo plano (inclusive instalado na tela inicial). Com o app totalmente fechado, só com plano pago. O horário de cada peptídeo você define na engrenagem ⚙ dele.</div>
-    </div>
-    <div class="sheet-foot"><button class="btn-primary" id="nf-done" style="flex:1">Concluído</button></div>
-  </div>
-</div>
 
 <!-- modal adicionar peptídeo -->
 <!-- modal: registrar medidas / evolução -->
@@ -1505,6 +1481,8 @@
           <div class="segbtns" id="f-perday"><button data-n="1" class="on">1x</button><button data-n="2">2x</button><button data-n="3">3x</button><button data-n="4">4x</button></div>
         </div>
         <div class="fld"><label>Horário do lembrete <span class="desc">(opcional)</span></label><input class="txt" id="f-time" type="time"></div>
+        <label class="check" id="f-remind-row" style="margin:-4px 0 6px"><input type="checkbox" id="f-remind"> 🔔 Notificar nesse horário</label>
+        <div class="ad-note" id="f-remind-hint" style="display:none;margin:-4px 0 10px"></div>
         <div class="fld"><label>Data de início <span class="desc">(opcional)</span></label><input class="txt" id="f-start" type="date"></div>
         <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="f-note" rows="2" placeholder="Ex.: começar com meia dose na 1ª semana"></textarea></div>
         <div class="fld"><label>Cor</label><div class="swatches" id="f-colors"></div></div>
@@ -2468,6 +2446,7 @@ function openModal(pep){
     document.getElementById("f-start").value = pep.start||"";
     document.getElementById("f-note").value = pep.note||"";
     document.getElementById("f-time").value = pep.time||"";
+    document.getElementById("f-remind").checked = !!pep.time && pep.remind !== false;
     if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; }
     else if(pep.interval && pep.interval>0){ fMode="interval"; fDays=[]; fInterval=pep.interval; }
     else { fMode="daily"; fDays=[]; }
@@ -2476,6 +2455,7 @@ function openModal(pep){
     document.getElementById("f-start").value="";
     document.getElementById("f-note").value="";
     document.getElementById("f-time").value="";
+    document.getElementById("f-remind").checked=false;
     fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false; fInterval=5; fPerDay=1;
   }
   document.getElementById("f-moon").checked=fMoon;
@@ -2494,6 +2474,39 @@ document.getElementById("add-pep-btn").onclick=()=>{ builderProto=null; openModa
 document.getElementById("modal-close").onclick=closeModal;
 document.getElementById("modal-cancel").onclick=closeModal;
 modal.onclick=e=>{ if(e.target===modal) closeModal(); };
+
+/* caixinha "🔔 Notificar nesse horário": ao marcar, pede a permissão de notificação
+   ali mesmo (dentro do gesto de toque, que é o que os navegadores/iPhone exigem) e
+   já registra o token de push. Substitui o antigo modal global de "Lembretes". */
+document.getElementById("f-remind").addEventListener("change", async function(){
+  const hint=document.getElementById("f-remind-hint");
+  hint.style.display="none";
+  if(!this.checked) return;
+  if(!document.getElementById("f-time").value){
+    this.checked=false;
+    hint.style.display="block"; hint.textContent="Defina um horário acima antes de ativar o aviso.";
+    return;
+  }
+  if(!("Notification" in window)){
+    this.checked=false;
+    hint.style.display="block"; hint.textContent="Seu navegador não suporta notificações.";
+    return;
+  }
+  if(Notification.permission==="denied"){
+    this.checked=false;
+    hint.style.display="block"; hint.textContent="Notificações bloqueadas — libere nas configurações do navegador/iPhone e marque de novo.";
+    return;
+  }
+  ensureAudio();
+  if(Notification.permission!=="granted"){
+    try{
+      const p=await Notification.requestPermission();
+      if(p!=="granted"){ this.checked=false; return; }
+    }catch(e){ this.checked=false; return; }
+  }
+  notifCfg.enabled=true; saveNotifCfg();
+  registerPushToken();
+});
 
 document.getElementById("modal-save").onclick=()=>{
   const name=document.querySelector(F.name).value.trim();
@@ -2514,7 +2527,7 @@ document.getElementById("modal-save").onclick=()=>{
   const isOralSave = modal.classList.contains("oral-mode");
   const oralUnitBtn = document.querySelector("#f-oral-unit button.on");
   const unit = isOralSave ? (oralUnitBtn ? oralUnitBtn.dataset.u : "comprimido") : "UI";
-  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, interval, perDay:fPerDay, accent:fColor, moon:fMoon, unit, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"" };
+  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, interval, perDay:fPerDay, accent:fColor, moon:fMoon, unit, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"", remind: !!(document.getElementById("f-time").value && document.getElementById("f-remind").checked) };
   const arr = builderProto ? builderProto.protocol : PEPTIDES;
   if(editingId){
     const idx=arr.findIndex(p=>p.id===editingId);
@@ -3120,7 +3133,7 @@ document.getElementById("evo-hide-btn").onclick=()=>{
 /* =========================================================
    LEMBRETES / NOTIFICAÇÕES
    ========================================================= */
-let notifCfg = { enabled:false, sound:true, summary:"" };
+let notifCfg = { enabled:false };
 try{ const s=JSON.parse(localStorage.getItem("notif-cfg")); if(s) notifCfg={...notifCfg, ...s}; }catch(e){}
 function saveNotifCfg(){ try{ localStorage.setItem("notif-cfg", JSON.stringify(notifCfg)); }catch(e){} }
 
@@ -3130,7 +3143,7 @@ function beep(){ try{ ensureAudio(); if(!audioCtx) return; const t=audioCtx.curr
 function notify(title, body){
   try{
     if(!("Notification" in window) || Notification.permission!=="granted") return;
-    if(notifCfg.sound){ beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
+    beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]);
     // mostra via Service Worker quando possível: costuma disparar mesmo com a aba em segundo
     // plano (o SW roda um pouco mais que o timer da página), com fallback pro jeito antigo.
     if(navigator.serviceWorker && navigator.serviceWorker.ready){
@@ -3163,18 +3176,11 @@ function checkReminders(){
     const hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
     const tk=dateKey(now); const rec=LOGS[tk]||{};
     PEPTIDES.forEach(p=>{
-      if(p.time && p.time===hm && dosesTaken(rec,p.id) < (p.perDay||1)){
+      if(p.time && p.time===hm && p.remind!==false && dosesTaken(rec,p.id) < (p.perDay||1)){
         const k=tk+"|p|"+p.id;
         if(!firedKeys.has(k)){ firedKeys.add(k); notify("Hora do "+p.name, `${p.ui} ${unitLabel(p)}${p.dose&&p.dose!=="—"?" · "+p.dose:""}`); }
       }
     });
-    if(notifCfg.summary && notifCfg.summary===hm){
-      const k=tk+"|s";
-      if(!firedKeys.has(k)){ firedKeys.add(k);
-        const pend=PEPTIDES.filter(p=>!rec[p.id]).length;
-        notify("Resumo do dia", pend>0?`${pend} peptídeo(s) para tomar hoje`:"Tudo em dia! ✓");
-      }
-    }
   }catch(e){}
 }
 setInterval(checkReminders, 20000);
@@ -3201,7 +3207,7 @@ function runCatchUpCheck(){
     const done=getCatchUpSet();
     const pendentes=[];
     PEPTIDES.forEach(p=>{
-      if(p.time && p.time<hm && dosesTaken(rec,p.id) < (p.perDay||1) && !done.has(p.id)) pendentes.push(p);
+      if(p.time && p.time<hm && p.remind!==false && dosesTaken(rec,p.id) < (p.perDay||1) && !done.has(p.id)) pendentes.push(p);
     });
     if(pendentes.length){
       pendentes.forEach(p=>done.add(p.id));
@@ -3215,37 +3221,6 @@ function runCatchUpCheck(){
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") runCatchUpCheck(); });
 window.addEventListener("focus", runCatchUpCheck);
 
-function updateNotifUI(){
-  const perm=("Notification" in window)?Notification.permission:"unsupported";
-  const st=document.getElementById("nf-status");
-  const en=document.getElementById("nf-enable");
-  en.disabled=false;
-  if(perm==="unsupported"){ st.className="nf-status warn"; st.textContent="Seu navegador não suporta notificações."; en.style.display="none"; }
-  else if(perm==="denied"){ st.className="nf-status warn"; st.textContent="Notificações bloqueadas. Libere no cadeado do site (nas configurações do navegador) e volte aqui."; en.textContent="Bloqueado"; en.disabled=true; }
-  else if(perm==="granted"){ st.className="nf-status ok"; st.textContent=notifCfg.enabled?"Ativado ✓":"Permitido — toque em Ativar para ligar."; en.textContent=notifCfg.enabled?"Desativar":"Ativar"; }
-  else { st.className="nf-status"; st.textContent='Toque em "Ativar" e permita as notificações quando o navegador pedir.'; en.textContent="Ativar notificações"; }
-  document.querySelectorAll("#nf-sound button").forEach(b=>b.classList.toggle("on",(b.dataset.s==="1")===!!notifCfg.sound));
-  document.getElementById("nf-summary").value=notifCfg.summary||"";
-}
-document.getElementById("notif-btn").onclick=()=>{ ensureAudio(); updateNotifUI(); document.getElementById("notif-modal").classList.add("on"); };
-document.getElementById("notif-close").onclick=()=>document.getElementById("notif-modal").classList.remove("on");
-document.getElementById("nf-done").onclick=()=>document.getElementById("notif-modal").classList.remove("on");
-document.getElementById("notif-modal").onclick=e=>{ if(e.target.id==="notif-modal") document.getElementById("notif-modal").classList.remove("on"); };
-document.getElementById("nf-enable").onclick=async()=>{
-  ensureAudio();
-  if(!("Notification" in window)) return;
-  if(Notification.permission==="granted"){ notifCfg.enabled=!notifCfg.enabled; saveNotifCfg(); updateNotifUI(); if(notifCfg.enabled) registerPushToken(); return; }
-  try{ const p=await Notification.requestPermission(); if(p==="granted"){ notifCfg.enabled=true; saveNotifCfg(); registerPushToken(); } }catch(e){}
-  updateNotifUI();
-};
-document.querySelectorAll("#nf-sound button").forEach(b=>b.onclick=()=>{ notifCfg.sound=(b.dataset.s==="1"); saveNotifCfg(); updateNotifUI(); if(notifCfg.sound) beep(); });
-document.getElementById("nf-summary").addEventListener("change",e=>{ notifCfg.summary=e.target.value||""; saveNotifCfg(); });
-document.getElementById("nf-sum-clear").onclick=()=>{ notifCfg.summary=""; saveNotifCfg(); updateNotifUI(); };
-document.getElementById("nf-test").onclick=async()=>{
-  ensureAudio();
-  if(("Notification" in window) && Notification.permission!=="granted"){ try{ await Notification.requestPermission(); }catch(e){} updateNotifUI(); }
-  notify("Teste de lembrete", "Se você viu (e ouviu) isso, está funcionando ✓");
-};
 
 /* =========================================================
    COMPARTILHAR PROTOCOLO (link só-leitura)
