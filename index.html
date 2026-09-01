@@ -717,6 +717,16 @@
   /* eyebrow row + manage */
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .eyebrow-row .eyebrow{margin:0;}
+  /* botão pra cada usuário ocultar/mostrar o próprio painel de evolução (ganha espaço na tela) */
+  .evo-hide-btn{
+    flex:none;width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;border:1px solid var(--border2);color:var(--muted);
+    cursor:pointer;padding:0;
+  }
+  .evo-hide-btn svg{width:16px;height:16px;}
+  .evo-hide-btn.off{color:var(--primary);border-color:var(--primary);background:var(--primary-dim);}
+  .evo-hidden-hint{color:var(--muted2);font-size:12px;margin:-6px 0 16px 2px;}
   .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
@@ -994,7 +1004,11 @@
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
       <p class="eyebrow">Sua evolução</p>
+      <button class="evo-hide-btn" id="evo-hide-btn" title="Ocultar evolução" aria-label="Ocultar evolução">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
     </div>
+    <div class="evo-hidden-hint" id="evo-hidden-hint" style="display:none">Evolução oculta — toque no ícone acima pra mostrar de novo.</div>
     <!-- no desktop esta linha vira 2 colunas: evolução | anúncio -->
     <div class="evo-row">
     <div class="panel ev-panel">
@@ -3039,6 +3053,34 @@ document.getElementById("theme-btn").onclick=()=>{
   try{ localStorage.setItem("tema", document.body.classList.contains("light")?"claro":"escuro"); }catch(e){}
 };
 
+/* ---------- ocultar/mostrar "Sua evolução" (preferência de cada usuário, fica salva no aparelho) ----------
+   Quem não usa o gráfico de evolução pode escondê-lo pra ganhar espaço e ver melhor o resto do app.
+   Não afeta outros usuários — é só uma preferência local, igual o tema claro/escuro. */
+let EVO_HIDDEN=false;
+const EVO_EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EVO_EYEOFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 4.22-5.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+function applyEvoVisibility(){
+  const panel=document.querySelector(".ev-panel");
+  const btn=document.getElementById("evo-hide-btn");
+  const hint=document.getElementById("evo-hidden-hint");
+  if(panel) panel.style.display = EVO_HIDDEN ? "none" : "";
+  if(hint)  hint.style.display  = EVO_HIDDEN ? "block" : "none";
+  if(btn){
+    btn.classList.toggle("off", EVO_HIDDEN);
+    btn.title = EVO_HIDDEN ? "Mostrar evolução" : "Ocultar evolução";
+    btn.setAttribute("aria-label", btn.title);
+    btn.innerHTML = EVO_HIDDEN ? EVO_EYEOFF_SVG : EVO_EYE_SVG;
+  }
+  try{ applyPartnerPlacement(); }catch(e){}
+}
+try{ EVO_HIDDEN = localStorage.getItem("evo-oculta")==="1"; }catch(e){}
+applyEvoVisibility();
+document.getElementById("evo-hide-btn").onclick=()=>{
+  EVO_HIDDEN = !EVO_HIDDEN;
+  try{ localStorage.setItem("evo-oculta", EVO_HIDDEN?"1":"0"); }catch(e){}
+  applyEvoVisibility();
+};
+
 /* =========================================================
    LEMBRETES / NOTIFICAÇÕES
    ========================================================= */
@@ -3769,7 +3811,7 @@ function applyPartnerPlacement(){
   const desktop = window.matchMedia("(min-width:1000px)").matches;
   const abaProtocolo = (document.getElementById("v-hoje")||{}).classList
                         ? document.getElementById("v-hoje").classList.contains("on") : false;
-  const naEvolucao = desktop && abaProtocolo;
+  const naEvolucao = desktop && abaProtocolo && !EVO_HIDDEN;
   evo.style.display = naEvolucao ? "flex"  : "none";
   box.style.display = naEvolucao ? "none"  : "block";
 }
