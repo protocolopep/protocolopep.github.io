@@ -27,3 +27,36 @@ self.addEventListener('fetch', e => {
     }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
   );
 });
+
+/* =========================================================
+   PUSH NOTIFICATION (FCM)
+   dispara quando chega um push do servidor e o app NÃO está aberto
+   (com o app aberto, quem mostra é o onMessage() dentro do index.html)
+   ========================================================= */
+self.addEventListener('push', function(event){
+  var dados = {};
+  try{ dados = event.data ? event.data.json() : {}; }catch(e){}
+  var n = dados.notification || {};
+  var title = n.title || 'Protocolo';
+  var body  = n.body  || '';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: body,
+      icon: 'icon-192.png',
+      tag: title
+    })
+  );
+});
+
+// ao tocar na notificação, abre (ou foca) o app
+self.addEventListener('notificationclick', function(event){
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({type:'window', includeUncontrolled:true}).then(function(list){
+      for(var i=0;i<list.length;i++){
+        if('focus' in list[i]) return list[i].focus();
+      }
+      if(self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});
