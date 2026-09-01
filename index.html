@@ -1545,7 +1545,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAgZbBSdko3RQuAH5j48abJ7k5HPsyyGu8",
@@ -1558,6 +1559,38 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
+
+/* ---------- push notification (FCM) ----------
+   Chave gerada em: Firebase Console > Configurações do projeto > Cloud Messaging >
+   "Certificados push da Web" > gerar par de chaves. Cole aqui antes de publicar. */
+const VAPID_KEY = "BE0N5kwhKtnv646-16h1xf2hM68Bw8I6PnUA1ElG0Fg7zWhPa2LS3CVJ-ipvjnfqdiPhZSvha3EE95UDvOc6hqc";
+let messaging = null;
+fcmIsSupported().then(ok=>{ if(ok){ try{ messaging = getMessaging(fbApp); iniciarOuvintePush(); }catch(e){ console.warn('messaging-init', e); } } })
+  .catch(()=>{});
+
+// pede/usa o token do aparelho e guarda no próprio documento do usuário (users/{uid}.fcmTokens),
+// pra a Cloud Function saber pra quais aparelhos mandar o push.
+async function registerPushToken(){
+  try{
+    if(!messaging || !currentUser) return;
+    if(!("serviceWorker" in navigator)) return;
+    if(!("Notification" in window) || Notification.permission!=="granted") return;
+    if(VAPID_KEY.indexOf("COLE_AQUI") === 0){ console.warn('Configure a VAPID_KEY antes de usar push.'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, {vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
+    if(token) await setDoc(doc(db,'users',currentUser.uid), {fcmTokens: arrayUnion(token)}, {merge:true});
+  }catch(e){ console.warn('push-token', e); }
+}
+// enquanto o app está ABERTO, o FCM não mostra nada sozinho — cabe a gente exibir.
+// (com o app fechado, quem mostra é o "push" event lá no sw.js.)
+function iniciarOuvintePush(){
+  try{
+    onMessage(messaging, payload=>{
+      const n = payload && payload.notification || {};
+      notify(n.title || "Lembrete", n.body || "");
+    });
+  }catch(e){}
+}
 const ADMIN_EMAIL = "jlzezo2014@gmail.com";
 const SEED_MEMBERS = [
   {email:"jlzezo2014@gmail.com", d:"12/08"},
@@ -2866,6 +2899,9 @@ async function showApp(user){
   try{ NICKNAME = localStorage.getItem("apelido-"+user.uid) || ""; }catch(e){ NICKNAME = ""; }
   renderAcctName();
   document.getElementById("acct-row").style.display = "flex";
+  // se a pessoa já tinha permitido notificação antes, garante que o token do aparelho
+  // atual está salvo (o token pode mudar entre sessões/reinstalações)
+  if(notifCfg.enabled && ("Notification" in window) && Notification.permission==="granted") registerPushToken();
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   IS_ADMIN = isAdmin;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
@@ -2919,7 +2955,7 @@ async function showApp(user){
       if(!contouNovaConta){ contouNovaConta = true; bumpStats({users:increment(1)}); }
     }
     renderToday(); renderWeek(); renderHistory(); renderEvolution();
-  }, err=>{
+    try{ runCatchUpCheck(); }catch(e){}
     // leitura negada/falhou: mantém a trava fechada para não sobrescrever nada
     dataLoaded = false;
     console.warn('snap', err);
@@ -3094,9 +3130,27 @@ function beep(){ try{ ensureAudio(); if(!audioCtx) return; const t=audioCtx.curr
 function notify(title, body){
   try{
     if(!("Notification" in window) || Notification.permission!=="granted") return;
-    const n=new Notification(title, {body, tag:title, icon:"icon-192.png"});
     if(notifCfg.sound){ beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
-    n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+    // mostra via Service Worker quando possível: costuma disparar mesmo com a aba em segundo
+    // plano (o SW roda um pouco mais que o timer da página), com fallback pro jeito antigo.
+    if(navigator.serviceWorker && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        if(reg && reg.showNotification){
+          reg.showNotification(title, {body, tag:title, icon:"icon-192.png"});
+        } else {
+          const n=new Notification(title, {body, tag:title, icon:"icon-192.png"});
+          n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+        }
+      }).catch(()=>{
+        try{
+          const n=new Notification(title, {body, tag:title, icon:"icon-192.png"});
+          n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+        }catch(e){}
+      });
+    } else {
+      const n=new Notification(title, {body, tag:title, icon:"icon-192.png"});
+      n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+    }
   }catch(e){ console.warn(e); }
 }
 
@@ -3125,6 +3179,42 @@ function checkReminders(){
 }
 setInterval(checkReminders, 20000);
 
+/* ---- resumo ao reabrir o app: cobre o caso mais comum de "não avisou" ----
+   Se o celular travou ou o app ficou fechado, o timer acima simplesmente para de rodar
+   e o horário exato passa em branco. Pra compensar isso, sempre que o app volta a ficar
+   visível (ou termina de carregar), fazemos uma varredura das doses cujo horário já passou
+   hoje e ainda não foram marcadas — e avisamos tudo de uma vez, uma única vez por dose/dia
+   (guardado no localStorage pra não repetir o aviso a cada reabertura). */
+function catchUpKey(){ return "catchup-"+dateKey(new Date()); }
+function getCatchUpSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem(catchUpKey()))||[]); }catch(e){ return new Set(); }
+}
+function saveCatchUpSet(set){ try{ localStorage.setItem(catchUpKey(), JSON.stringify([...set])); }catch(e){} }
+function runCatchUpCheck(){
+  try{
+    if(!notifCfg.enabled) return;
+    if(!("Notification" in window) || Notification.permission!=="granted") return;
+    if(!dataLoaded) return;
+    const now=new Date();
+    const hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+    const tk=dateKey(now); const rec=LOGS[tk]||{};
+    const done=getCatchUpSet();
+    const pendentes=[];
+    PEPTIDES.forEach(p=>{
+      if(p.time && p.time<hm && dosesTaken(rec,p.id) < (p.perDay||1) && !done.has(p.id)) pendentes.push(p);
+    });
+    if(pendentes.length){
+      pendentes.forEach(p=>done.add(p.id));
+      saveCatchUpSet(done);
+      const nomes=pendentes.slice(0,3).map(p=>p.name+" ("+p.time+")").join(", ");
+      const extra=pendentes.length>3?` e mais ${pendentes.length-3}`:"";
+      notify("Doses pendentes de hoje", nomes+extra);
+    }
+  }catch(e){}
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") runCatchUpCheck(); });
+window.addEventListener("focus", runCatchUpCheck);
+
 function updateNotifUI(){
   const perm=("Notification" in window)?Notification.permission:"unsupported";
   const st=document.getElementById("nf-status");
@@ -3144,8 +3234,8 @@ document.getElementById("notif-modal").onclick=e=>{ if(e.target.id==="notif-moda
 document.getElementById("nf-enable").onclick=async()=>{
   ensureAudio();
   if(!("Notification" in window)) return;
-  if(Notification.permission==="granted"){ notifCfg.enabled=!notifCfg.enabled; saveNotifCfg(); updateNotifUI(); return; }
-  try{ const p=await Notification.requestPermission(); if(p==="granted"){ notifCfg.enabled=true; saveNotifCfg(); } }catch(e){}
+  if(Notification.permission==="granted"){ notifCfg.enabled=!notifCfg.enabled; saveNotifCfg(); updateNotifUI(); if(notifCfg.enabled) registerPushToken(); return; }
+  try{ const p=await Notification.requestPermission(); if(p==="granted"){ notifCfg.enabled=true; saveNotifCfg(); registerPushToken(); } }catch(e){}
   updateNotifUI();
 };
 document.querySelectorAll("#nf-sound button").forEach(b=>b.onclick=()=>{ notifCfg.sound=(b.dataset.s==="1"); saveNotifCfg(); updateNotifUI(); if(notifCfg.sound) beep(); });
