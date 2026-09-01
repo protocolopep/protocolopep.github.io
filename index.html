@@ -546,6 +546,20 @@
     text-decoration:none;box-sizing:border-box;
   }
   body.light .pt-btn{color:#053b39;}
+  /* botão do admin para ocultar/mostrar o anúncio para todo mundo, direto no card */
+  .pt-admin-toggle{
+    position:absolute;top:8px;right:10px;z-index:3;
+    display:flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;
+    background:rgba(11,16,23,.72);backdrop-filter:blur(4px);
+    border:1px solid rgba(255,255,255,.18);color:#fff;
+    cursor:pointer;padding:0;line-height:1;font-size:13px;
+  }
+  .pt-admin-toggle:active{transform:scale(.9);}
+  .pt-nomedia .pt-admin-toggle{top:8px;right:10px;}
+  .pt-modal .pt-admin-toggle{top:22px;right:18px;background:rgba(11,16,23,.55);}
+  /* card fica esmaecido só na tela do admin quando ele mesmo ocultou o anúncio dos usuários */
+  .pt-hidden-preview{opacity:.5;}
   /* anúncio só com texto: etiqueta entra no fluxo para não cobrir o título */
   .pt-nomedia .pt-tag{position:static;display:inline-block;margin:11px 0 0 13px;background:var(--surface3);}
   .pt-nomedia .pt-body{padding-top:6px;}
@@ -1568,6 +1582,7 @@ let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, br
 let dataLoaded = false;
 let contouNovaConta = false;   // evita contar a mesma conta nova mais de uma vez
 let currentUser = null;
+let IS_ADMIN = false;
 let NICKNAME = "";
 let POP_ID = null;
 let builderProto = null;
@@ -2838,6 +2853,7 @@ async function showApp(user){
   renderAcctName();
   document.getElementById("acct-row").style.display = "flex";
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
+  IS_ADMIN = isAdmin;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
   try{ setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now()}, {merge:true}); }catch(e){}
   // ---- observa em tempo real: se o admin suspender a conta enquanto ela está em uso, desloga na hora ----
@@ -2899,6 +2915,7 @@ async function showApp(user){
 function showAuth(){
   if(SHARE_MODE) return;
   currentUser = null;
+  IS_ADMIN = false;
   dataLoaded = false;
   contouNovaConta = false;
   if(unsub){ unsub(); unsub=null; }
@@ -3693,13 +3710,16 @@ function partnerHref(raw, msg){
 }
 // monta o conteúdo do anúncio (usado no banner e no pop-up).
 // Sem imagem/título/texto, cai no espaço de teste "Anuncie aqui".
-function partnerHTML(d){
+function partnerHTML(d, admin){
   const href=partnerHref(d.link, d.msg);
   const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
   const vazio = !img && !d.title && !d.text;
   const temMidia = img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
-  let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+'">';
+  let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
   h+='<span class="pt-tag">Parceria</span>';
+  if(admin){
+    h+='<button type="button" class="pt-admin-toggle" title="'+(d.hidden?'Mostrar anúncio para todos':'Ocultar anúncio para todos')+'">'+(d.hidden?'🚫':'👁️')+'</button>';
+  }
   if(vazio){
     h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
   } else if(img){
@@ -3715,17 +3735,24 @@ function partnerHTML(d){
   h+='</div>';
   return h;
 }
+// admin oculta o anúncio de todos com um clique (fica só visível — esmaecido — pra ele mesmo,
+// pra poder mostrar de novo depois); usuário comum nunca vê nada enquanto d.hidden estiver ativo.
+function partnerVisibleToMe(d){
+  if(!d || !d.active) return false;
+  if(d.hidden && !IS_ADMIN) return false;
+  return true;
+}
 function renderPartner(){
   const box=document.getElementById("partner-box");
   const evo=document.getElementById("partner-evo");
   if(!box) return;
   const d=partnerData||{};
-  if(!d.active){
+  if(!partnerVisibleToMe(d)){
     box.style.display="none"; box.innerHTML="";
     if(evo){ evo.style.display="none"; evo.innerHTML=""; }
     return;
   }
-  const h=partnerHTML(d);
+  const h=partnerHTML(d, IS_ADMIN);
   box.innerHTML=h;
   if(evo) evo.innerHTML=h;
   applyPartnerPlacement();
@@ -3737,7 +3764,7 @@ function applyPartnerPlacement(){
   const box=document.getElementById("partner-box");
   const evo=document.getElementById("partner-evo");
   if(!box || !evo) return;
-  const ativo = !!(partnerData && partnerData.active);
+  const ativo = partnerVisibleToMe(partnerData||{});
   if(!ativo){ box.style.display="none"; evo.style.display="none"; return; }
   const desktop = window.matchMedia("(min-width:1000px)").matches;
   const abaProtocolo = (document.getElementById("v-hoje")||{}).classList
@@ -3752,7 +3779,7 @@ function maybeShowPartnerPop(){
   const d=partnerData||{};
   const ov=document.getElementById("pt-overlay");
   if(!ov) return;
-  if(!d.active || !d.pop){ ov.style.display="none"; return; }
+  if(!d.active || !d.pop || d.hidden){ ov.style.display="none"; return; }
   // se o pop-up de Novidades estiver aberto, não empilha: o de anúncio espera ele ser fechado
   const nv=document.getElementById("nv-overlay");
   if(nv && nv.style.display!=="none" && nv.style.display!=="") return;
@@ -3763,7 +3790,7 @@ function maybeShowPartnerPop(){
   const tsPub=Number(d.ts)||0;
   const expirou = (Date.now()-visto) >= dias*24*60*60*1000;
   if(visto && visto>=tsPub && !expirou) return;
-  document.getElementById("pt-pop-content").innerHTML=partnerHTML(d);
+  document.getElementById("pt-pop-content").innerHTML=partnerHTML(d, IS_ADMIN);
   ov.style.display="flex";
 }
 function fecharPartnerPop(){
@@ -3793,7 +3820,9 @@ function fillPartnerForm(){
     if(!d.active) st.textContent="Nenhum anúncio ativo no momento.";
     else {
       const tipo = (!d.img && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
-      st.textContent = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
+      let txt = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
+      if(d.hidden) txt += " · 🚫 oculto agora (toque no ícone do olho no card pra mostrar de novo)";
+      st.textContent = txt;
     }
   }
 }
@@ -3832,6 +3861,23 @@ document.getElementById("pt-remove").onclick=()=>{
     .then(()=>alert("Anúncio removido."))
     .catch(e=>console.warn(e));
 };
+/* ---- botão rápido de ocultar/mostrar o anúncio, direto no card (só o admin vê o botão) ----
+   Ao clicar, esconde/mostra para TODOS os usuários na hora (via campo "hidden" no doc),
+   sem apagar o conteúdo publicado — funciona igual em desktop e celular, pois o card
+   é o mesmo elemento renderizado nos dois layouts. */
+let ptTogglePending=false;
+document.addEventListener("click", function(e){
+  const btn = e.target.closest && e.target.closest(".pt-admin-toggle");
+  if(!btn || !IS_ADMIN || ptTogglePending) return;
+  e.preventDefault();
+  const d = partnerData||{};
+  if(!d.active) return;
+  const novo = !d.hidden;
+  ptTogglePending = true;
+  setDoc(doc(db,'meta','partner'), {hidden:novo}, {merge:true})
+    .catch(err=>{ console.warn('partner-hidden', err); alert("Não consegui atualizar. Tente de novo."); })
+    .finally(()=>{ ptTogglePending=false; });
+});
 </script>
 <!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->
 <style>
