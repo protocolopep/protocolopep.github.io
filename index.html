@@ -1621,7 +1621,10 @@ function cloudSave(){
   // apaga uma chave que só deixou de ser enviada — por isso a dose desmarcada "voltava".
   updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}).catch(e=>{
     // primeira gravação: o documento pode ainda não existir
-    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true}).catch(e2=>console.warn('save',e2));
+    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true}).catch(e2=>{
+      console.warn('save',e2);
+      alert("ERRO AO SALVAR NA NUVEM (me manda esse texto): "+((e2&&e2.code)||(e2&&e2.message)||e2));
+    });
   });
 }
 function saveProtocol(){ cloudSave(); }
@@ -2509,6 +2512,7 @@ document.getElementById("f-remind").addEventListener("change", async function(){
 });
 
 document.getElementById("modal-save").onclick=()=>{
+ try{
   const name=document.querySelector(F.name).value.trim();
   const sub=document.querySelector(F.sub).value.trim();
   const ui=parseFloat(document.querySelector(F.ui).value);
@@ -2543,6 +2547,7 @@ document.getElementById("modal-save").onclick=()=>{
   cloudSave(); closeModal();
   if(builderProto){ renderBuilder(); }
   else { renderToday(); renderWeek(); renderHistory(); document.querySelector("button[data-v='hoje']").click(); }
+ }catch(e){ alert("ERRO AO SALVAR (me manda esse texto): "+(e&&e.message||e)); console.error(e); }
 };
 buildLibrary();
 buildLibraryHorm();
