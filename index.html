@@ -271,8 +271,39 @@
   .vial{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;}
   .vial-ico{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
   .vial-cap{width:10px;height:4px;background:var(--muted2);border-radius:2px 2px 0 0;}
-  .vial-body{width:18px;height:30px;border:1.5px solid var(--border2);border-top:none;border-radius:0 0 7px 7px;background:var(--surface3);overflow:hidden;display:flex;align-items:flex-end;}
-  .vial-fill{width:100%;transition:height .35s ease, background .35s ease;}
+  .vial-body{width:18px;height:30px;border:1.5px solid var(--border2);border-top:none;border-radius:0 0 7px 7px;background:var(--surface3);overflow:hidden;display:flex;align-items:flex-end;box-shadow:inset 0 2px 5px rgba(0,0,0,.3);}
+  .vial-fill{
+    width:100%;position:relative;
+    transition:height .35s ease, background .35s ease, box-shadow .35s ease;
+    box-shadow:0 0 7px 1px var(--glow,transparent), 0 -1px 3px var(--glow,transparent);
+  }
+  /* brilho líquido: um reflexo sutil no topo do preenchimento, dá volume ao invés de bloco chapado */
+  .vial-fill::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(255,255,255,.4), transparent 60%);
+    mix-blend-mode:overlay;pointer-events:none;
+  }
+  /* pulso reativo: dispara via JS quando a dose é marcada/desmarcada ou o frasco é reiniciado */
+  .vial-fill.pulse{animation:vialPulse .55s ease;}
+  @keyframes vialPulse{
+    0%{filter:brightness(1);}
+    40%{filter:brightness(1.7);box-shadow:0 0 16px 4px var(--glow,transparent);}
+    100%{filter:brightness(1);}
+  }
+  /* frasco baixo/vazio: respiração lenta e contínua, chamando atenção sem gritar */
+  .vial-fill.low{animation:vialBreathe 2.4s ease-in-out infinite;}
+  .vial-fill.empty{animation:vialBreatheLow 1.7s ease-in-out infinite;}
+  @keyframes vialBreathe{
+    0%,100%{box-shadow:0 0 6px 0 var(--glow,transparent);}
+    50%{box-shadow:0 0 13px 3px var(--glow,transparent);}
+  }
+  @keyframes vialBreatheLow{
+    0%,100%{opacity:1;box-shadow:0 0 6px 0 var(--glow,transparent);}
+    50%{opacity:.5;box-shadow:0 0 15px 4px var(--glow,transparent);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .vial-fill,.vial-fill.pulse,.vial-fill.low,.vial-fill.empty{animation:none;}
+  }
   .vial-lbl{font-size:9.5px;font-weight:700;color:var(--muted);line-height:1;text-align:center;white-space:nowrap;}
   .vial-lbl.low{color:var(--aod);}
   .vial-lbl.empty{color:var(--danger);}
@@ -1621,6 +1652,7 @@ let currentUser = null;
 let IS_ADMIN = false;
 let NICKNAME = "";
 let POP_ID = null;
+let VIAL_PULSE_ID = null; // dispara o brilho da ampola quando o nível do frasco muda
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
@@ -1848,10 +1880,10 @@ function renderToday(){
       const cls = restanteDoses<=0 ? 'empty' : (restanteDoses<1 ? 'low' : '');
       const doseTxt = (Math.abs(restanteDoses-Math.round(restanteDoses))<0.05) ? String(Math.round(restanteDoses)) : String(Math.round(restanteDoses*10)/10).replace('.',',');
       const titulo = restanteDoses<=0 ? 'Frasco vazio — toque para abrir um novo' : `Restam ${restanteUI} ${unitLabel(p)} (~${doseTxt} dose${doseTxt==="1"?"":"s"}) — toque para novo frasco`;
-      vialHTML = `<div class="vial">
+      vialHTML = `<div class="vial" data-id="${p.id}">
         <div class="vial-ico vial-reset" data-id="${p.id}" title="${titulo}">
           <div class="vial-cap"></div>
-          <div class="vial-body"><div class="vial-fill" style="height:${pct}%;background:${cor}"></div></div>
+          <div class="vial-body"><div class="vial-fill ${cls}" style="height:${pct}%;background:${cor};--glow:${cor}"></div></div>
         </div>
         <div class="vial-lbl ${cls}">${restanteDoses<=0?'vazio':'~'+doseTxt+(doseTxt==="1"?' dose':' doses')}</div>
       </div>`;
@@ -1929,6 +1961,7 @@ function renderToday(){
     // marca para animar com "pop" o botão após re-renderizar (só ao marcar, não ao desmarcar)
     const marcando = !(LOGS[todayKey] && LOGS[todayKey][b.dataset.id]);
     POP_ID = marcando ? b.dataset.id : null;
+    VIAL_PULSE_ID = b.dataset.id; // o nível do frasco muda pra qualquer lado (marcar ou desmarcar)
     toggle(b.dataset.id);
   });
   // aplica o "pop" no botão que acabou de ser marcado (após re-render)
@@ -1937,14 +1970,20 @@ function renderToday(){
     if(pb){ pb.classList.add("pop"); pb.addEventListener("animationend",()=>pb.classList.remove("pop"),{once:true}); }
     POP_ID = null;
   }
-  cont.querySelectorAll(".dose-add").forEach(b=>b.onclick=()=>addDose(b.dataset.id));
-  cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>removeDose(b.dataset.id));
+  // aplica o brilho pulsante na ampola cujo nível acabou de mudar (após re-render)
+  if(VIAL_PULSE_ID){
+    const vf = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .vial-fill`);
+    if(vf){ vf.classList.add("pulse"); vf.addEventListener("animationend",()=>vf.classList.remove("pulse"),{once:true}); }
+    VIAL_PULSE_ID = null;
+  }
+  cont.querySelectorAll(".dose-add").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; addDose(b.dataset.id); });
+  cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; removeDose(b.dataset.id); });
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
   cont.querySelectorAll(".vial-reset").forEach(b=>b.onclick=()=>{
     const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(!p) return;
     if(!confirm(`Zerar o nível do frasco de ${p.name} de volta pra 100%?`)) return;
-    p.vialUsed=0; cloudSave(); renderToday();
+    p.vialUsed=0; cloudSave(); VIAL_PULSE_ID=b.dataset.id; renderToday();
   });
 }
 
