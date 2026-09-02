@@ -268,41 +268,20 @@
   input::placeholder,textarea::placeholder{color:var(--muted2);}
   .note-line{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
   /* ---------- ampola/frasco: indicador visual de estoque, ao lado do botão Tomei ---------- */
-  .vial{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;}
+  .vial{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;}
   .vial-ico{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
-  .vial-cap{width:10px;height:4px;background:var(--muted2);border-radius:2px 2px 0 0;}
-  .vial-body{width:18px;height:30px;border:1.5px solid var(--border2);border-top:none;border-radius:0 0 7px 7px;background:var(--surface3);overflow:hidden;display:flex;align-items:flex-end;box-shadow:inset 0 2px 5px rgba(0,0,0,.3);}
-  .vial-fill{
-    width:100%;position:relative;
-    transition:height .35s ease, background .35s ease, box-shadow .35s ease;
-    box-shadow:0 0 7px 1px var(--glow,transparent), 0 -1px 3px var(--glow,transparent);
-  }
-  /* brilho líquido: um reflexo sutil no topo do preenchimento, dá volume ao invés de bloco chapado */
-  .vial-fill::after{
-    content:"";position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(255,255,255,.4), transparent 60%);
-    mix-blend-mode:overlay;pointer-events:none;
-  }
-  /* pulso reativo: dispara via JS quando a dose é marcada/desmarcada ou o frasco é reiniciado */
-  .vial-fill.pulse{animation:vialPulse .55s ease;}
-  @keyframes vialPulse{
-    0%{filter:brightness(1);}
-    40%{filter:brightness(1.7);box-shadow:0 0 16px 4px var(--glow,transparent);}
-    100%{filter:brightness(1);}
-  }
-  /* frasco baixo/vazio: respiração lenta e contínua, chamando atenção sem gritar */
-  .vial-fill.low{animation:vialBreathe 2.4s ease-in-out infinite;}
-  .vial-fill.empty{animation:vialBreatheLow 1.7s ease-in-out infinite;}
-  @keyframes vialBreathe{
-    0%,100%{box-shadow:0 0 6px 0 var(--glow,transparent);}
-    50%{box-shadow:0 0 13px 3px var(--glow,transparent);}
-  }
-  @keyframes vialBreatheLow{
-    0%,100%{opacity:1;box-shadow:0 0 6px 0 var(--glow,transparent);}
-    50%{opacity:.5;box-shadow:0 0 15px 4px var(--glow,transparent);}
+  .vial-svg{display:block;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));}
+  /* líquido reage (chacoalha) ao marcar/desmarcar dose ou reiniciar o frasco */
+  .vial-liquid{transform-box:fill-box;transform-origin:50% 100%;}
+  .vial-liquid.slosh{animation:vialSlosh .5s cubic-bezier(.36,1.6,.4,1);}
+  @keyframes vialSlosh{
+    0%{transform:scaleY(1) scaleX(1);}
+    30%{transform:scaleY(.9) scaleX(1.05);}
+    60%{transform:scaleY(1.05) scaleX(.97);}
+    100%{transform:scaleY(1) scaleX(1);}
   }
   @media (prefers-reduced-motion: reduce){
-    .vial-fill,.vial-fill.pulse,.vial-fill.low,.vial-fill.empty{animation:none;}
+    .vial-liquid.slosh{animation:none;}
   }
   .vial-lbl{font-size:9.5px;font-weight:700;color:var(--muted);line-height:1;text-align:center;white-space:nowrap;}
   .vial-lbl.low{color:var(--aod);}
@@ -1652,7 +1631,7 @@ let currentUser = null;
 let IS_ADMIN = false;
 let NICKNAME = "";
 let POP_ID = null;
-let VIAL_PULSE_ID = null; // dispara o brilho da ampola quando o nível do frasco muda
+let VIAL_PULSE_ID = null; // dispara o "chacoalhar" do líquido quando o nível do frasco muda
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
@@ -1880,11 +1859,37 @@ function renderToday(){
       const cls = restanteDoses<=0 ? 'empty' : (restanteDoses<1 ? 'low' : '');
       const doseTxt = (Math.abs(restanteDoses-Math.round(restanteDoses))<0.05) ? String(Math.round(restanteDoses)) : String(Math.round(restanteDoses*10)/10).replace('.',',');
       const titulo = restanteDoses<=0 ? 'Frasco vazio — toque para abrir um novo' : `Restam ${restanteUI} ${unitLabel(p)} (~${doseTxt} dose${doseTxt==="1"?"":"s"}) — toque para novo frasco`;
+      // geometria do frasco de vidro (viewBox 32x62); "gid" evita conflito de ids entre cards
+      const gid = 'v'+String(p.id).replace(/[^a-zA-Z0-9_-]/g,'');
+      const innerX=5, innerY=10, innerW=22, innerH=44;
+      const liquidH = innerH*pct/100;
+      const liquidY = innerY+innerH-liquidH;
+      const vialSVG = `<svg class="vial-svg" viewBox="0 0 32 62" width="26" height="50" aria-hidden="true">
+        <defs>
+          <linearGradient id="cap-${gid}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eef2f5"/><stop offset=".55" stop-color="#aab4bc"/><stop offset="1" stop-color="#7e8891"/>
+          </linearGradient>
+          <linearGradient id="liq-${gid}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style="stop-color:${cor};stop-opacity:.92"/><stop offset="1" style="stop-color:${cor};stop-opacity:.68"/>
+          </linearGradient>
+          <linearGradient id="glass-${gid}" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".22" stop-color="#fff" stop-opacity=".05"/>
+            <stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+          </linearGradient>
+          <clipPath id="clip-${gid}"><rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" rx="5"/></clipPath>
+        </defs>
+        <rect x="9" y="0" width="14" height="9" rx="2" fill="url(#cap-${gid})"/>
+        <rect x="9" y="6" width="14" height="3" style="fill:${cor}" opacity=".55"/>
+        <rect x="3" y="8" width="26" height="48" rx="7" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+        <g class="vial-liquid" data-id="${p.id}" clip-path="url(#clip-${gid})">
+          <rect x="${innerX}" y="${liquidY}" width="${innerW}" height="${liquidH}" fill="url(#liq-${gid})"/>
+          <ellipse cx="16" cy="${liquidY}" rx="11" ry="1.6" style="fill:${cor}" opacity=".55"/>
+        </g>
+        <rect x="3" y="8" width="26" height="48" rx="7" fill="url(#glass-${gid})"/>
+        <ellipse cx="16" cy="60" rx="10" ry="1.4" fill="rgba(0,0,0,.28)"/>
+      </svg>`;
       vialHTML = `<div class="vial" data-id="${p.id}">
-        <div class="vial-ico vial-reset" data-id="${p.id}" title="${titulo}">
-          <div class="vial-cap"></div>
-          <div class="vial-body"><div class="vial-fill ${cls}" style="height:${pct}%;background:${cor};--glow:${cor}"></div></div>
-        </div>
+        <div class="vial-ico vial-reset" data-id="${p.id}" title="${titulo}">${vialSVG}</div>
         <div class="vial-lbl ${cls}">${restanteDoses<=0?'vazio':'~'+doseTxt+(doseTxt==="1"?' dose':' doses')}</div>
       </div>`;
     }
@@ -1970,10 +1975,10 @@ function renderToday(){
     if(pb){ pb.classList.add("pop"); pb.addEventListener("animationend",()=>pb.classList.remove("pop"),{once:true}); }
     POP_ID = null;
   }
-  // aplica o brilho pulsante na ampola cujo nível acabou de mudar (após re-render)
+  // faz o líquido "chacoalhar" na ampola cujo nível acabou de mudar (após re-render)
   if(VIAL_PULSE_ID){
-    const vf = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .vial-fill`);
-    if(vf){ vf.classList.add("pulse"); vf.addEventListener("animationend",()=>vf.classList.remove("pulse"),{once:true}); }
+    const vf = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .vial-liquid`);
+    if(vf){ vf.classList.add("slosh"); vf.addEventListener("animationend",()=>vf.classList.remove("slosh"),{once:true}); }
     VIAL_PULSE_ID = null;
   }
   cont.querySelectorAll(".dose-add").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; addDose(b.dataset.id); });
