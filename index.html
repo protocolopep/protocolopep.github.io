@@ -493,19 +493,34 @@
   }
   .ev-tabs button.on{background:color-mix(in srgb,var(--primary) 15%,transparent);border-color:var(--primary);color:var(--primary);}
   .ev-tabs button .ev-tab-n{opacity:.6;font-weight:500;margin-left:4px;}
-  .ev-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 10px;}
-  .ev-cur{display:flex;align-items:baseline;gap:5px;min-width:0;}
-  .ev-val{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;}
-  .ev-unit{color:var(--muted);font-size:13px;font-weight:600;}
-  .ev-delta{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);white-space:nowrap;}
-  .ev-delta.up{background:color-mix(in srgb,var(--aod) 16%,transparent);color:var(--aod);}
-  .ev-delta.down{background:color-mix(in srgb,var(--motsc) 16%,transparent);color:var(--motsc);}
+
+  /* cards de estatística no topo (Mudança total / IMC / Peso / % / Média sem. / Meta) */
+  .ev-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 12px;}
+  .ev-stat{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 10px 11px;min-width:0;}
+  .ev-stat .lbl{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:10.5px;font-weight:600;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev-stat .lbl svg{width:12px;height:12px;flex:none;color:var(--muted2);}
+  .ev-stat .val{font-family:var(--display);font-weight:700;font-size:15.5px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev-stat .val .u{font-size:10.5px;color:var(--muted);font-weight:600;margin-left:1px;}
+  .ev-stat.up .val{color:var(--aod);}
+  .ev-stat.down .val{color:var(--motsc);}
+
+  /* seletor do peptídeo de referência (colore o gráfico pela dose aplicada) */
+  .ev-doserow{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;}
+  .ev-doserow::-webkit-scrollbar{display:none;}
+  .ev-doserow button{
+    flex:none;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);
+    font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 11px;border-radius:20px;cursor:pointer;white-space:nowrap;
+  }
+  .ev-doserow button .dd{width:7px;height:7px;border-radius:50%;flex:none;}
+  .ev-doserow button.on{border-color:var(--border2);color:var(--text);background:var(--surface3);}
+
   .ev-chart-wrap{position:relative;}
   .ev-chart{width:100%;height:150px;display:block;overflow:visible;}
   .ev-chart .ev-grid{stroke:var(--border);stroke-width:1;}
-  .ev-chart .ev-line{fill:none;stroke:var(--primary);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
-  .ev-chart .ev-area{fill:var(--primary);fill-opacity:.14;stroke:none;}
-  .ev-chart .ev-pt{fill:var(--primary);stroke:var(--surface);stroke-width:2;cursor:pointer;}
+  .ev-chart .ev-area{fill-opacity:.14;stroke:none;}
+  .ev-chart .ev-dose-line{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+  .ev-chart .ev-dose-pt{stroke:var(--surface);stroke-width:2;cursor:pointer;}
+  .ev-chart .ev-badge-tx{font-family:var(--font);font-weight:700;font-size:9.5px;}
   .ev-chart .ev-lab{fill:var(--muted2);font-family:var(--font);font-size:9px;}
   .ev-empty{color:var(--muted);text-align:center;font-size:13px;padding:44px 10px;}
   .ev-range{display:flex;gap:6px;margin:8px 0 12px;}
@@ -751,6 +766,15 @@
   /* eyebrow row + manage */
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .eyebrow-row .eyebrow{margin:0;}
+  .eyebrow-actions{display:flex;gap:8px;}
+  /* botão de altura/meta de peso (abre o modal que alimenta os cards de IMC e "para a meta") */
+  .evo-goals-btn{
+    flex:none;width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;border:1px solid var(--border2);color:var(--muted);
+    cursor:pointer;padding:0;
+  }
+  .evo-goals-btn svg{width:16px;height:16px;}
   /* botão pra cada usuário ocultar/mostrar o próprio painel de evolução (ganha espaço na tela) */
   .evo-hide-btn{
     flex:none;width:30px;height:30px;border-radius:9px;
@@ -1035,30 +1059,30 @@
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
       <p class="eyebrow">Sua evolução</p>
-      <button class="evo-hide-btn" id="evo-hide-btn" title="Ocultar evolução" aria-label="Ocultar evolução">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
+      <div class="eyebrow-actions">
+        <button class="evo-goals-btn" id="evo-goals-btn" title="Altura e meta de peso" aria-label="Altura e meta de peso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="5" y2="21"/><polygon points="5,4 19,4 15,8 19,12 5,12"/></svg>
+        </button>
+        <button class="evo-hide-btn" id="evo-hide-btn" title="Ocultar evolução" aria-label="Ocultar evolução">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <div class="evo-hidden-hint" id="evo-hidden-hint" style="display:none">Evolução oculta — toque no ícone acima pra mostrar de novo.</div>
     <!-- no desktop esta linha vira 2 colunas: evolução | anúncio -->
     <div class="evo-row">
     <div class="panel ev-panel">
       <div class="ev-tabs" id="ev-tabs"></div>
-      <div class="ev-head">
-        <div class="ev-cur">
-          <span class="ev-val" id="ev-val">—</span>
-          <span class="ev-unit" id="ev-unit"></span>
-        </div>
-        <div class="ev-delta" id="ev-delta"></div>
-      </div>
+      <div class="ev-stats" id="ev-stats"></div>
+      <div class="ev-doserow" id="ev-doserow"></div>
       <div class="ev-chart-wrap">
         <svg class="ev-chart" id="ev-chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg>
         <div class="ev-empty" id="ev-empty">Registre sua primeira medida para ver o gráfico.</div>
       </div>
       <div class="ev-range" id="ev-range">
-        <button data-r="30" class="on">30 dias</button>
+        <button data-r="30" class="on">1 mês</button>
         <button data-r="90">3 meses</button>
-        <button data-r="365">1 ano</button>
+        <button data-r="180">6 meses</button>
         <button data-r="0">Tudo</button>
       </div>
       <button class="ev-add" id="ev-add-btn"><span>＋</span> Registrar medidas de hoje</button>
@@ -1463,6 +1487,29 @@
   </div>
 </div>
 
+<!-- modal: altura e meta de peso (usados no IMC e no card "Para a meta") -->
+<div class="modal" id="goals-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">Altura e meta de peso</div>
+      <button class="sheet-x" id="goals-close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p class="nf-note" style="margin-top:0">Usados só pra calcular o IMC e quanto falta pra sua meta no gráfico de evolução. Deixe em branco se não quiser acompanhar.</p>
+      <div class="form">
+        <div class="fld2">
+          <div class="fld"><label>Altura (cm)</label><input class="num" id="goal-altura" inputmode="decimal" placeholder="Ex.: 178"></div>
+          <div class="fld"><label>Meta de peso (kg)</label><input class="num" id="goal-peso" inputmode="decimal" placeholder="Ex.: 90"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="goals-cancel">Cancelar</button>
+      <button class="btn-primary" id="goals-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -1641,6 +1688,7 @@ function unitLabel(p){
 let LOGS = {};
 let PATIENTS = [];
 let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, abdsuperior, abdinferior, note}]
+let GOALS = {altura:null, pesoMeta:null};   // altura (cm) e meta de peso (kg) — usados no IMC e no card "Para a meta"
 // TRAVA DE SEGURANÇA: só grava na nuvem depois de ter recebido os dados de lá.
 // Sem isso, qualquer gravação feita antes do primeiro carregamento escreveria
 // as listas vazias em cima do protocolo real, apagando tudo.
@@ -1660,9 +1708,9 @@ function cloudSave(){
   // então uma dose desmarcada (removida do objeto local) realmente some no Firestore.
   // Com setDoc(...,{merge:true}) isso não acontecia: o Firestore mescla objetos aninhados e nunca
   // apaga uma chave que só deixou de ser enviada — por isso a dose desmarcada "voltava".
-  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}).catch(e=>{
+  updateDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS, goals:GOALS}).catch(e=>{
     // primeira gravação: o documento pode ainda não existir
-    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS}, {merge:true}).catch(e2=>{
+    setDoc(ref, {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS, metrics:METRICS, goals:GOALS}, {merge:true}).catch(e2=>{
       console.warn('save',e2);
       alert("Não consegui salvar na nuvem.\n\nErro: "+((e2&&e2.code)||(e2&&e2.message)||"desconhecido"));
     });
@@ -2225,6 +2273,38 @@ let evRange=30;            // janela em dias (0 = tudo)
 let evLogExpanded=false;   // "ver mais" na lista de registros
 let evEditDate=null;       // data do registro sendo editado no modal
 
+// peptídeo de referência pro colorido/etiquetas de dose no gráfico:
+// undefined = ainda não escolhido (usa o 1º do protocolo); "" = usuário desligou de propósito; ou o id do peptídeo
+let evDoseRef;
+try{ const _s=localStorage.getItem("ev-dose-ref"); evDoseRef = (_s===null) ? undefined : _s; }catch(e){ evDoseRef=undefined; }
+
+const ICO_TREND=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>`;
+const ICO_IMC=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.3"/><line x1="12" y1="8" x2="12" y2="15"/><line x1="7.5" y1="11" x2="16.5" y2="11"/><line x1="12" y1="15" x2="8" y2="21"/><line x1="12" y1="15" x2="16" y2="21"/></svg>`;
+const ICO_SCALE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="12" cy="13" r="3.2"/><line x1="12" y1="13" x2="14.2" y2="10.3"/></svg>`;
+const ICO_PCT=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
+const ICO_CLOCK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="12" x2="12" y2="7.5"/><line x1="12" y1="12" x2="15.2" y2="14"/></svg>`;
+const ICO_FLAG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="5" y2="21"/><polygon points="5,4 19,4 15,8 19,12 5,12"/></svg>`;
+
+// histórico de doses aplicadas de um peptídeo, uma entrada por dia em que foi marcado como tomado
+function evDoseSeries(pepId){
+  if(!pepId) return [];
+  const out=[];
+  Object.keys(LOGS).forEach(dk=>{
+    const rec = LOGS[dk] && LOGS[dk][pepId];
+    if(rec && rec.dose) out.push({date:dk, dose:rec.dose});
+  });
+  out.sort((a,b)=>a.date.localeCompare(b.date));
+  return out;
+}
+// dose vigente numa data: a última dose registrada em ou antes dela (null se ainda não havia registro)
+function evDoseAt(series, dateKeyStr){
+  let last=null;
+  for(let i=0;i<series.length;i++){
+    if(series[i].date<=dateKeyStr) last=series[i].dose; else break;
+  }
+  return last;
+}
+
 const evNum = v => (v===""||v==null||isNaN(parseFloat(v))) ? null : parseFloat(String(v).replace(",","."));
 const evFmt = v => (v==null) ? "—" : String(Math.round(v*10)/10).replace(".",",");
 // registros ordenados por data (antigo → recente) que tenham a métrica preenchida
@@ -2241,13 +2321,14 @@ function evInRange(arr){
   return arr.filter(p=>p.date>=lk);
 }
 
-function drawEvChart(pts){
+function drawEvChart(pts, doseSeries){
   const svg=document.getElementById("ev-chart");
   const empty=document.getElementById("ev-empty");
   if(!svg||!empty) return;
   if(pts.length===0){ svg.innerHTML=""; svg.style.display="none"; empty.style.display="block"; return; }
   svg.style.display="block"; empty.style.display="none";
-  const W=320,H=150, padL=30,padR=10,padT=12,padB=20;
+  const temDose = !!(doseSeries && doseSeries.length);
+  const W=320,H=150, padL=30,padR=10,padT=temDose?30:12,padB=20;   // mais espaço em cima quando há etiqueta de dose
   const iw=W-padL-padR, ih=H-padT-padB;
   const vals=pts.map(p=>p.v);
   let min=Math.min(...vals), max=Math.max(...vals);
@@ -2264,20 +2345,75 @@ function drawEvChart(pts){
     h+=`<line class="ev-grid" x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`;
     h+=`<text class="ev-lab" x="${padL-5}" y="${(y+3).toFixed(1)}" text-anchor="end">${evFmt(v)}</text>`;
   }
-  const d = pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+
+  // dose vigente em cada ponto (null se não houver peptídeo de referência ou ainda sem registro)
+  const doses = pts.map(p => temDose ? evDoseAt(doseSeries, p.date) : null);
+  const colorOf = (()=>{ const map=new Map(); let n=0;
+    return dose => {
+      if(dose==null) return "var(--primary)";
+      if(!map.has(dose)) map.set(dose, PALETTE[n++ % PALETTE.length]);
+      return map.get(dose);
+    };
+  })();
+
   if(pts.length>1){
-    h+=`<path class="ev-area" d="${d} L${X(pts.length-1).toFixed(1)},${(padT+ih).toFixed(1)} L${X(0).toFixed(1)},${(padT+ih).toFixed(1)} Z"/>`;
-    h+=`<path class="ev-line" d="${d}"/>`;
+    const dArea = pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ")
+                + ` L${X(pts.length-1).toFixed(1)},${(padT+ih).toFixed(1)} L${X(0).toFixed(1)},${(padT+ih).toFixed(1)} Z`;
+    h+=`<path class="ev-area" style="fill:${colorOf(doses[pts.length-1])}" d="${dArea}"/>`;
+    // linha desenhada em trechos, cada um na cor da dose vigente naquele trecho
+    for(let i=1;i<pts.length;i++){
+      const c=colorOf(doses[i]);
+      h+=`<path class="ev-dose-line" style="stroke:${c}" d="M${X(i-1).toFixed(1)},${Y(pts[i-1].v).toFixed(1)} L${X(i).toFixed(1)},${Y(pts[i].v).toFixed(1)}"/>`;
+    }
   }
+  // pontos + etiquetas flutuantes toda vez que a dose muda em relação ao ponto anterior
+  let lado=0;
   pts.forEach((p,i)=>{
-    h+=`<circle class="ev-pt" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" data-date="${p.date}"><title>${fmtBR(p.date)} · ${evFmt(p.v)}</title></circle>`;
+    const c=colorOf(doses[i]);
+    h+=`<circle class="ev-dose-pt" style="fill:${c}" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" data-date="${p.date}"><title>${fmtBR(p.date)} · ${evFmt(p.v)}</title></circle>`;
+    const mudouDose = doses[i]!=null && (i===0 || doses[i]!==doses[i-1]);
+    if(mudouDose){
+      const txt=String(doses[i]);
+      const bw=Math.max(30, txt.length*5.8+14);
+      const bx=Math.min(W-padR-bw/2, Math.max(padL+bw/2, X(i)));
+      const by=Math.max(11, Y(p.v) - 16 - lado*15);
+      lado = lado?0:1;
+      h+=`<g class="ev-dose-badge">
+            <rect x="${(bx-bw/2).toFixed(1)}" y="${(by-9).toFixed(1)}" width="${bw.toFixed(1)}" height="18" rx="9" style="fill:${c}"/>
+            <text class="ev-badge-tx" x="${bx.toFixed(1)}" y="${(by+3.5).toFixed(1)}" text-anchor="middle" style="fill:#0B1017">${esc(txt)}</text>
+          </g>`;
+    }
   });
   // rótulos de data: primeiro e último ponto
   const dLab = s => { const [,m,dd]=s.split("-"); return dd+"/"+m; };
   h+=`<text class="ev-lab" x="${X(0).toFixed(1)}" y="${H-6}" text-anchor="start">${dLab(pts[0].date)}</text>`;
   if(pts.length>1) h+=`<text class="ev-lab" x="${X(pts.length-1).toFixed(1)}" y="${H-6}" text-anchor="end">${dLab(pts[pts.length-1].date)}</text>`;
   svg.innerHTML=h;
-  svg.querySelectorAll(".ev-pt").forEach(c=>c.onclick=()=>openEvModal(c.dataset.date));
+  svg.querySelectorAll(".ev-dose-pt").forEach(c=>c.onclick=()=>openEvModal(c.dataset.date));
+}
+
+// chips de peptídeo pra colorir/etiquetar o gráfico pela dose aplicada em cada trecho
+function renderDoseRow(){
+  const row=document.getElementById("ev-doserow");
+  if(!row) return;
+  if(!PEPTIDES.length){ row.innerHTML=""; row.style.display="none"; return; }
+  row.style.display="flex";
+  const ref = evEffectiveDoseRef();
+  let h = `<button data-id="" class="${ref===''?'on':''}">Sem dose no gráfico</button>`;
+  h += PEPTIDES.map(p=>`<button data-id="${esc(p.id)}" class="${p.id===ref?'on':''}"><span class="dd" style="background:${p.accent}"></span>${esc(p.name)}</button>`).join('');
+  row.innerHTML=h;
+  row.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    evDoseRef = b.dataset.id;   // string vazia = usuário desligou de propósito
+    try{ localStorage.setItem("ev-dose-ref", evDoseRef); }catch(e){}
+    renderEvolution();
+  });
+}
+// resolve evDoseRef pro id efetivo (cai pro 1º peptídeo se nunca escolhido ou se o escolhido sumiu)
+function evEffectiveDoseRef(){
+  if(evDoseRef===undefined || (evDoseRef && !PEPTIDES.some(p=>p.id===evDoseRef))){
+    return PEPTIDES.length ? PEPTIDES[0].id : "";
+  }
+  return evDoseRef;
 }
 
 function renderEvolution(){
@@ -2293,20 +2429,66 @@ function renderEvolution(){
   const f = EV_FIELDS.find(x=>x.k===evMetric)||EV_FIELDS[0];
   const all = evSeries(evMetric);
   const pts = evInRange(all);
-  drawEvChart(pts);
 
-  // valor atual + variação dentro da janela escolhida
+  renderDoseRow();
+  const refId = evEffectiveDoseRef();
+  const doseSeries = refId ? evDoseSeries(refId) : [];
+  drawEvChart(pts, doseSeries);
+
+  // ---------- cards de estatística do topo ----------
+  const isPeso = evMetric==="peso";
   const atual = all.length ? all[all.length-1].v : null;
-  document.getElementById("ev-val").textContent = evFmt(atual);
-  document.getElementById("ev-unit").textContent = atual==null ? "" : f.unit;
-  const dEl=document.getElementById("ev-delta");
+  const primeiro = all.length ? all[0].v : null;   // baseline geral (fora do range) pra "para a meta"
+  const changeTotal = pts.length>=2 ? (pts[pts.length-1].v - pts[0].v) : null;
+  const pctChange = (pts.length>=2 && pts[0].v) ? (changeTotal/pts[0].v*100) : null;
+  let mediaSemana=null;
   if(pts.length>=2){
-    const diff = pts[pts.length-1].v - pts[0].v;
-    const sinal = diff>0?"+":(diff<0?"−":"");
-    dEl.textContent = `${sinal}${evFmt(Math.abs(diff))} ${f.unit}`;
-    dEl.className = "ev-delta "+(diff>0?"up":(diff<0?"down":""));
-    dEl.style.display="block";
-  } else { dEl.style.display="none"; }
+    const dias=(new Date(pts[pts.length-1].date)-new Date(pts[0].date))/86400000;
+    if(dias>=1) mediaSemana = changeTotal/(dias/7);
+  }
+  const maxV = pts.length ? Math.max(...pts.map(p=>p.v)) : null;
+  const minV = pts.length ? Math.min(...pts.map(p=>p.v)) : null;
+
+  const fmtSigned = v => v==null ? "—" : `${v>0.05?"+":(v<-0.05?"−":"")}${evFmt(Math.abs(v))}`;
+  const clsSigned = v => v==null ? "" : (v>0.05?"up":(v<-0.05?"down":""));
+
+  let card2, card6;
+  if(isPeso){
+    const alturaM = GOALS.altura ? GOALS.altura/100 : null;
+    const imc = (alturaM && atual!=null) ? atual/(alturaM*alturaM) : null;
+    card2 = { icon:ICO_IMC, lbl:"IMC atual", val: imc!=null?evFmt(imc):"—", u: imc!=null?"":"defina a altura" };
+    if(GOALS.pesoMeta!=null && atual!=null){
+      const base = primeiro!=null ? primeiro : atual;
+      const totalNecessario = base - GOALS.pesoMeta;
+      const restante = atual - GOALS.pesoMeta;
+      const bateu = totalNecessario>=0 ? restante<=0.05 : restante>=-0.05;
+      if(bateu){ card6 = { icon:ICO_FLAG, lbl:"Para a meta", val:"Meta batida", u:"🎉" }; }
+      else{
+        const pct = totalNecessario ? Math.min(100, Math.max(0, restante/totalNecessario*100)) : null;
+        card6 = { icon:ICO_FLAG, lbl:"Para a meta", val:evFmt(Math.abs(restante)), u:f.unit+(pct!=null?` (${Math.round(pct)}%)`:"") };
+      }
+    } else { card6 = { icon:ICO_FLAG, lbl:"Para a meta", val:"—", u:"defina a meta" }; }
+  } else {
+    card2 = { icon:ICO_IMC, lbl:"Máximo", val: maxV!=null?evFmt(maxV):"—", u:f.unit };
+    card6 = { icon:ICO_FLAG, lbl:"Mínimo", val: minV!=null?evFmt(minV):"—", u:f.unit };
+  }
+
+  const cards = [
+    { icon:ICO_TREND, lbl:"Mudança total", val:fmtSigned(changeTotal), u:f.unit, cls:clsSigned(changeTotal) },
+    card2,
+    { icon:ICO_SCALE, lbl:f.label, val: atual!=null?evFmt(atual):"—", u:f.unit },
+    { icon:ICO_PCT, lbl:"Por cento", val:fmtSigned(pctChange), u:"%", cls:clsSigned(pctChange) },
+    { icon:ICO_CLOCK, lbl:"Média sem.", val:fmtSigned(mediaSemana), u:f.unit+"/sem", cls:clsSigned(mediaSemana) },
+    card6,
+  ];
+  const statsEl=document.getElementById("ev-stats");
+  if(statsEl){
+    statsEl.innerHTML = cards.map(c=>`
+      <div class="ev-stat ${c.cls||''}">
+        <div class="lbl">${c.icon}<span>${esc(c.lbl)}</span></div>
+        <div class="val">${esc(c.val)}<span class="u">${esc(c.u||'')}</span></div>
+      </div>`).join('');
+  }
 
   document.querySelectorAll("#ev-range button").forEach(b=>b.classList.toggle("on", +b.dataset.r===evRange));
 
@@ -2376,6 +2558,25 @@ document.getElementById("ev-del").onclick=()=>{
   if(!confirm("Excluir as medidas deste dia?")) return;
   METRICS = METRICS.filter(m=>m && m.date!==evEditDate);
   cloudSave(); closeEvModal(); renderEvolution();
+};
+
+/* ---- modal de altura e meta de peso ---- */
+const goalsModal=document.getElementById("goals-modal");
+function openGoalsModal(){
+  document.getElementById("goal-altura").value = GOALS.altura!=null ? String(GOALS.altura).replace(".",",") : "";
+  document.getElementById("goal-peso").value = GOALS.pesoMeta!=null ? String(GOALS.pesoMeta).replace(".",",") : "";
+  goalsModal.classList.add("on");
+}
+function closeGoalsModal(){ goalsModal.classList.remove("on"); }
+document.getElementById("evo-goals-btn").onclick=openGoalsModal;
+document.getElementById("goals-close").onclick=closeGoalsModal;
+document.getElementById("goals-cancel").onclick=closeGoalsModal;
+goalsModal.onclick=e=>{ if(e.target===goalsModal) closeGoalsModal(); };
+document.getElementById("goals-save").onclick=()=>{
+  const alt=evNum(document.getElementById("goal-altura").value);
+  const meta=evNum(document.getElementById("goal-peso").value);
+  GOALS = { altura:(alt>0?alt:null), pesoMeta:(meta>0?meta:null) };
+  cloudSave(); closeGoalsModal(); renderEvolution();
 };
 
 /* =========================================================
@@ -3072,6 +3273,7 @@ async function showApp(user){
       LOGS = d.logs || {};
       PATIENTS = Array.isArray(d.patients) ? d.patients : [];
       METRICS = Array.isArray(d.metrics) ? d.metrics : [];
+      GOALS = (d.goals && typeof d.goals==="object") ? {altura:d.goals.altura||null, pesoMeta:d.goals.pesoMeta||null} : {altura:null, pesoMeta:null};
       if(typeof d.nickname === "string"){
         NICKNAME = d.nickname;
         try{ if(NICKNAME) localStorage.setItem("apelido-"+user.uid, NICKNAME); else localStorage.removeItem("apelido-"+user.uid); }catch(e){}
@@ -3088,6 +3290,7 @@ async function showApp(user){
       LOGS = {};
       METRICS = [];
       PATIENTS = [];
+      GOALS = {altura:null, pesoMeta:null};
       dataLoaded = true;
       if(!contouNovaConta){ contouNovaConta = true; bumpStats({users:increment(1)}); }
     }
@@ -3116,6 +3319,7 @@ function showAuth(){
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
   METRICS=[];
+  GOALS={altura:null, pesoMeta:null};
   evLogExpanded=false;
   renderEvolution();
   membersExpanded=false;
@@ -3540,7 +3744,7 @@ document.getElementById('install-btn').onclick=async()=>{
    BACKUP / EXPORTAR / IMPORTAR
    ========================================================= */
 document.getElementById("export-btn").onclick=()=>{
-  const data={ protocol:PEPTIDES, logs:LOGS, metrics:METRICS, exportedAt:new Date().toISOString(), email:currentUser?.email||"" };
+  const data={ protocol:PEPTIDES, logs:LOGS, metrics:METRICS, goals:GOALS, exportedAt:new Date().toISOString(), email:currentUser?.email||"" };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
@@ -3559,6 +3763,7 @@ document.getElementById("import-file").addEventListener("change",e=>{
       if(!confirm("Isto vai SUBSTITUIR seu protocolo e histórico atuais pelos do arquivo. Continuar?")) return;
       PEPTIDES=d.protocol; LOGS=d.logs&&typeof d.logs==="object"?d.logs:{};
       METRICS=Array.isArray(d.metrics)?d.metrics:[];
+      if(d.goals && typeof d.goals==="object") GOALS={altura:d.goals.altura||null, pesoMeta:d.goals.pesoMeta||null};
       cloudSave(); renderToday(); renderWeek(); renderHistory(); renderEvolution();
       alert("Backup importado com sucesso!");
     }catch(err){ alert("Arquivo inválido. Use um backup exportado por este app."); }
