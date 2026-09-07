@@ -254,14 +254,15 @@
   .vial-svg{display:block;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));}
   /* líquido reage (chacoalha) ao marcar/desmarcar dose ou reiniciar o frasco */
   .vial-liquid{transform-box:fill-box;transform-origin:50% 100%;}
-  .vial-liquid.slosh{animation:vialSlosh 1s cubic-bezier(.36,.9,.4,1);}
+  .vial-liquid.slosh{animation:vialSlosh 1.1s cubic-bezier(.36,.9,.4,1);}
   @keyframes vialSlosh{
     0%{transform:rotate(0deg) scaleY(1);}
-    12%{transform:rotate(-7deg) scaleY(.93);}
-    30%{transform:rotate(6deg) scaleY(1.06);}
-    48%{transform:rotate(-4deg) scaleY(.97);}
-    66%{transform:rotate(2.5deg) scaleY(1.02);}
-    83%{transform:rotate(-1deg) scaleY(.99);}
+    10%{transform:rotate(-16deg) scaleY(.85);}
+    25%{transform:rotate(13deg) scaleY(1.14);}
+    40%{transform:rotate(-9deg) scaleY(.9);}
+    55%{transform:rotate(6deg) scaleY(1.07);}
+    70%{transform:rotate(-3.5deg) scaleY(.96);}
+    85%{transform:rotate(1.5deg) scaleY(1.02);}
     100%{transform:rotate(0deg) scaleY(1);}
   }
   /* superfície do líquido respirando de leve, contínuo — dá vida sem chamar atenção */
@@ -1957,9 +1958,9 @@ function renderToday(){
         ${done&&t?`<span class="at">${t}</span>`:''}
       </button>`;
     } else {
-      // mesma pill do "Tomei": só muda o texto/estado conforme o progresso das doses do dia
-      const label = done ? '✓ Tomado' : (tomadas>0 ? `+ ${tomadas+1}ª dose` : 'Tomei');
-      const sub   = done ? (t?`<span class="at">${t}</span>`:'') : (tomadas>0?`<span class="at">${tomadas}/${perDay}</span>`:'');
+      // mesma pill do "Tomei": texto fica "Tomei" até completar, contador X/Y sempre visível
+      const label = done ? '✓ Tomado' : 'Tomei';
+      const sub   = done ? (t?`<span class="at">${t}</span>`:'') : `<span class="at">${tomadas}/${perDay}</span>`;
       ctrlHTML = `<div class="doses" data-id="${p.id}">
         <button class="take ${done?'done':''}" data-id="${p.id}" data-multi="1">
           <span>${label}</span>
