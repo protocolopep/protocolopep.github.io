@@ -143,33 +143,14 @@
     .take .rip{display:none;}
   }
 
-  /* ---------- doses múltiplas (caixinhas) ---------- */
-  .doses{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:96px;}
-  .doses-count{font-size:12px;font-weight:700;color:var(--acc);}
-  .doses-boxes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
-  .dosebox{
-    width:38px;min-height:38px;border-radius:10px;
-    border:1.5px solid var(--border2);background:var(--surface3);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    transition:all .2s ease;padding:2px;
-  }
-  .dosebox.on{background:var(--acc);border-color:var(--acc);animation:takePop .35s ease;}
-  .dosebox-ico{font-size:14px;font-weight:800;color:var(--muted2);line-height:1;}
-  .dosebox.on .dosebox-ico{color:#0B1017;}
-  .dosebox-t{font-size:8px;font-weight:600;color:#0B1017;opacity:.8;margin-top:1px;line-height:1;}
-  .doses-btns{display:flex;gap:6px;align-items:center;}
-  .dose-add{
-    background:transparent;border:1.5px solid var(--acc);color:var(--acc);
-    font-family:var(--font);font-weight:700;font-size:12px;
-    padding:7px 12px;border-radius:9px;cursor:pointer;transition:all .18s ease;
-  }
-  .dose-add:hover:not(:disabled){background:color-mix(in srgb, var(--acc) 14%, transparent);}
-  .dose-add:active:not(:disabled){transform:scale(.94);}
-  .dose-add:disabled{opacity:.35;cursor:default;border-color:var(--border2);color:var(--muted);}
+  /* ---------- doses múltiplas (mesma pill do "Tomei", só muda texto/estado) ---------- */
+  .doses{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
   .dose-undo{
     background:none;border:none;color:var(--muted);
-    font-family:var(--font);font-size:11px;cursor:pointer;text-decoration:underline;padding:4px;
+    font-family:var(--font);font-size:11px;cursor:pointer;text-decoration:underline;padding:2px 4px;
+    transition:color .15s ease;
   }
+  .dose-undo:hover{color:var(--text);}
 
   /* ---------- week ---------- */
   .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 12px;}
@@ -273,12 +254,15 @@
   .vial-svg{display:block;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));}
   /* líquido reage (chacoalha) ao marcar/desmarcar dose ou reiniciar o frasco */
   .vial-liquid{transform-box:fill-box;transform-origin:50% 100%;}
-  .vial-liquid.slosh{animation:vialSlosh .5s cubic-bezier(.36,1.6,.4,1);}
+  .vial-liquid.slosh{animation:vialSlosh 1s cubic-bezier(.36,.9,.4,1);}
   @keyframes vialSlosh{
-    0%{transform:scaleY(1) scaleX(1);}
-    30%{transform:scaleY(.9) scaleX(1.05);}
-    60%{transform:scaleY(1.05) scaleX(.97);}
-    100%{transform:scaleY(1) scaleX(1);}
+    0%{transform:rotate(0deg) scaleY(1);}
+    12%{transform:rotate(-7deg) scaleY(.93);}
+    30%{transform:rotate(6deg) scaleY(1.06);}
+    48%{transform:rotate(-4deg) scaleY(.97);}
+    66%{transform:rotate(2.5deg) scaleY(1.02);}
+    83%{transform:rotate(-1deg) scaleY(.99);}
+    100%{transform:rotate(0deg) scaleY(1);}
   }
   /* superfície do líquido respirando de leve, contínuo — dá vida sem chamar atenção */
   .vial-liquid .menisco{transform-box:fill-box;transform-origin:50% 50%;animation:menisco 3.2s ease-in-out infinite;}
@@ -1973,23 +1957,15 @@ function renderToday(){
         ${done&&t?`<span class="at">${t}</span>`:''}
       </button>`;
     } else {
-      // caixinhas: uma por dose
-      let boxes = '';
-      for(let i=0;i<perDay;i++){
-        const marcada = i < tomadas;
-        const hora = marcada && horarios[i] ? horarios[i] : '';
-        boxes += `<div class="dosebox ${marcada?'on':''}">
-          <span class="dosebox-ico">${marcada?'✓':(i+1)}</span>
-          ${hora?`<span class="dosebox-t">${hora}</span>`:''}
-        </div>`;
-      }
+      // mesma pill do "Tomei": só muda o texto/estado conforme o progresso das doses do dia
+      const label = done ? '✓ Tomado' : (tomadas>0 ? `+ ${tomadas+1}ª dose` : 'Tomei');
+      const sub   = done ? (t?`<span class="at">${t}</span>`:'') : (tomadas>0?`<span class="at">${tomadas}/${perDay}</span>`:'');
       ctrlHTML = `<div class="doses" data-id="${p.id}">
-        <div class="doses-count">${tomadas} de ${perDay}</div>
-        <div class="doses-boxes">${boxes}</div>
-        <div class="doses-btns">
-          <button class="dose-add" data-id="${p.id}" ${tomadas>=perDay?'disabled':''}>+ dose</button>
-          ${tomadas>0?`<button class="dose-undo" data-id="${p.id}">desfazer</button>`:''}
-        </div>
+        <button class="take ${done?'done':''}" data-id="${p.id}" data-multi="1">
+          <span>${label}</span>
+          ${sub}
+        </button>
+        ${tomadas>0?`<button class="dose-undo" data-id="${p.id}">desfazer</button>`:''}
       </div>`;
     }
 
@@ -2034,7 +2010,26 @@ function renderToday(){
       b.appendChild(r);
       setTimeout(()=>r.remove(),500);
     }catch(e){}
-    // marca para animar com "pop" o botão após re-renderizar (só ao marcar, não ao desmarcar)
+
+    if(b.dataset.multi==="1"){
+      // peptídeo com mais de uma dose/dia: a mesma pill vai avançando as doses do dia
+      const id = b.dataset.id;
+      const p = PEPTIDES.find(x=>x.id===id);
+      const perDay = (p&&p.perDay)||1;
+      const rec = LOGS[todayKey]||{};
+      const tomadas = dosesTaken(rec,id);
+      if(tomadas < perDay){
+        POP_ID = id;
+        VIAL_PULSE_ID = id;
+        addDose(id);
+      } else if(confirm("Desfazer a última dose de hoje?")){
+        VIAL_PULSE_ID = id;
+        removeDose(id);
+      }
+      return;
+    }
+
+    // dose única (comportamento original): marca/desmarca com confirmação
     const marcando = !(LOGS[todayKey] && LOGS[todayKey][b.dataset.id]);
     POP_ID = marcando ? b.dataset.id : null;
     VIAL_PULSE_ID = b.dataset.id; // o nível do frasco muda pra qualquer lado (marcar ou desmarcar)
@@ -2052,7 +2047,6 @@ function renderToday(){
     if(vf){ vf.classList.add("slosh"); vf.addEventListener("animationend",()=>vf.classList.remove("slosh"),{once:true}); }
     VIAL_PULSE_ID = null;
   }
-  cont.querySelectorAll(".dose-add").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; addDose(b.dataset.id); });
   cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; removeDose(b.dataset.id); });
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
