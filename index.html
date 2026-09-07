@@ -1449,6 +1449,10 @@
         <div class="fld"><label>Quadril (cm)</label><input class="num" id="ev-quadril" inputmode="decimal" placeholder="Ex.: 98"></div>
         <div class="fld"><label>Coxa (cm)</label><input class="num" id="ev-coxa" inputmode="decimal" placeholder="Ex.: 58"></div>
       </div>
+      <div class="fld2">
+        <div class="fld"><label>Abdômen superior (cm)</label><input class="num" id="ev-abdsuperior" inputmode="decimal" placeholder="Ex.: 90"></div>
+        <div class="fld"><label>Abdômen inferior (cm)</label><input class="num" id="ev-abdinferior" inputmode="decimal" placeholder="Ex.: 94"></div>
+      </div>
       <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="ev-note" rows="2" placeholder="Ex.: medido em jejum, de manhã"></textarea></div>
     </div>
     <div class="sheet-foot">
@@ -1636,7 +1640,7 @@ function unitLabel(p){
 }
 let LOGS = {};
 let PATIENTS = [];
-let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, note}]
+let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, abdsuperior, abdinferior, note}]
 // TRAVA DE SEGURANÇA: só grava na nuvem depois de ter recebido os dados de lá.
 // Sem isso, qualquer gravação feita antes do primeiro carregamento escreveria
 // as listas vazias em cima do protocolo real, apagando tudo.
@@ -2213,6 +2217,8 @@ const EV_FIELDS=[
   {k:"peito",   label:"Peito",   unit:"cm"},
   {k:"quadril", label:"Quadril", unit:"cm"},
   {k:"coxa",    label:"Coxa",    unit:"cm"},
+  {k:"abdsuperior", label:"Abd. superior", unit:"cm"},
+  {k:"abdinferior", label:"Abd. inferior", unit:"cm"},
 ];
 let evMetric="peso";       // métrica exibida no gráfico
 let evRange=30;            // janela em dias (0 = tudo)
