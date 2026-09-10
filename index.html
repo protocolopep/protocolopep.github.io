@@ -126,9 +126,9 @@
     border:1.5px solid var(--acc);background:transparent;color:var(--acc);
     font-family:var(--font);font-weight:700;font-size:13.5px;
     padding:10px 15px;border-radius:12px;cursor:pointer;white-space:nowrap;
-    display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.2;
     transition:transform .12s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
-    min-width:78px;position:relative;overflow:hidden;
+    min-width:78px;min-height:50px;position:relative;overflow:hidden;
   }
   .take:hover{background:color-mix(in srgb, var(--acc) 12%, transparent);transform:translateY(-1px) scale(1.03);}
   .take:active{transform:scale(.94);}
@@ -268,6 +268,17 @@
   /* superfície do líquido respirando de leve, contínuo — dá vida sem chamar atenção */
   .vial-liquid .menisco{transform-box:fill-box;transform-origin:50% 50%;animation:menisco 3.2s ease-in-out infinite;}
   @keyframes menisco{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.35);}}
+  /* onda na superfície do líquido, disparada no momento de marcar/desfazer a dose
+     (some sozinha; a respiração contínua acima volta a valer depois) */
+  .vial-liquid .menisco.wave{animation:meniscoWave .9s cubic-bezier(.36,.9,.4,1);}
+  @keyframes meniscoWave{
+    0%{transform:scaleX(1) scaleY(1);}
+    20%{transform:scaleX(1.22) scaleY(.5);}
+    40%{transform:scaleX(.88) scaleY(1.6);}
+    60%{transform:scaleX(1.12) scaleY(.7);}
+    80%{transform:scaleX(.97) scaleY(1.15);}
+    100%{transform:scaleX(1) scaleY(1);}
+  }
   /* bolhinhas dentro do líquido, subindo e sumindo em loop (feito estilo "tubo de ensaio") */
   .vial-bubble{transform-box:fill-box;transform-origin:50% 50%;animation:bubbleFloat 2.6s ease-in-out infinite;}
   @keyframes bubbleFloat{
@@ -296,7 +307,7 @@
     100%{transform:scale(1) translateY(0);}
   }
   @media (prefers-reduced-motion: reduce){
-    .vial-liquid.slosh,.vial-liquid .menisco,.vial-bubble,.vial-shine,.vial-band.low,.vial-band.empty,.vial-ico.pop{animation:none;}
+    .vial-liquid.slosh,.vial-liquid .menisco,.vial-liquid .menisco.wave,.vial-bubble,.vial-shine,.vial-band.low,.vial-band.empty,.vial-ico.pop{animation:none;}
   }
   .vial-lbl{font-size:9.5px;font-weight:700;color:var(--muted);line-height:1;text-align:center;white-space:nowrap;}
   .vial-lbl.low{color:var(--aod);}
@@ -1926,10 +1937,11 @@ function renderToday(){
       const cls = restanteDoses<=0 ? 'empty' : (restanteDoses<1 ? 'low' : '');
       const doseTxt = (Math.abs(restanteDoses-Math.round(restanteDoses))<0.05) ? String(Math.round(restanteDoses)) : String(Math.round(restanteDoses*10)/10).replace('.',',');
       const titulo = restanteDoses<=0 ? 'Frasco vazio — toque para abrir um novo' : `Restam ${restanteUI} ${unitLabel(p)} (~${doseTxt} dose${doseTxt==="1"?"":"s"}) — toque para novo frasco`;
-      // geometria do "tubo de ensaio" (viewBox 32x64) — boca aberta em cima, fundo arredondado embaixo,
-      // igual à referência 🧪; "gid" evita conflito de ids entre cards
+      // geometria do "tubo de ensaio" (viewBox 32x64) — tampa em cima, fundo arredondado embaixo
+      // "gid" evita conflito de ids entre cards
       const gid = 'v'+String(p.id).replace(/[^a-zA-Z0-9_-]/g,'');
-      const tubeTop=6, tubeStraightEnd=46, tubeR=10;          // raio do fundo arredondado
+      const capH=9;                                            // altura da tampa
+      const tubeTop=8, tubeStraightEnd=46, tubeR=10;          // raio do fundo arredondado
       const tubeBottom = tubeStraightEnd + tubeR;              // ponto mais baixo do tubo
       const totalH = tubeBottom - tubeTop;
       const liquidH = totalH*pct/100;
@@ -1940,8 +1952,7 @@ function renderToday(){
           <circle class="vial-bubble" style="animation-delay:.1s" cx="12.5" cy="${(tubeBottom-liquidH*0.22).toFixed(1)}" r="1.3" fill="#fff" opacity=".4"/>
           <circle class="vial-bubble" style="animation-delay:1s" cx="18.5" cy="${(tubeBottom-liquidH*0.5).toFixed(1)}" r="1.7" fill="#fff" opacity=".3"/>
           <circle class="vial-bubble" style="animation-delay:.55s" cx="14.5" cy="${(tubeBottom-liquidH*0.76).toFixed(1)}" r="1.1" fill="#fff" opacity=".45"/>` : '';
-      // aviso na boca do tubo: só aparece (pulsando) quando o frasco está baixo/vazio;
-      // no estoque normal a boca fica aberta e limpa, sem nenhuma "tampa" colorida
+      // aviso na costura tampa/tubo: só aparece (pulsando) quando o frasco está baixo/vazio
       const rimWarn = cls ? `<ellipse class="vial-band ${cls}" cx="16" cy="${tubeTop}" rx="9" ry="1.4" style="fill:${cor}" opacity=".7"/>` : '';
       const vialSVG = `<svg class="vial-svg" viewBox="0 0 32 64" width="24" height="48" aria-hidden="true">
         <defs>
@@ -1951,6 +1962,9 @@ function renderToday(){
           <linearGradient id="glass-${gid}" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".22" stop-color="#fff" stop-opacity=".06"/>
             <stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".18"/>
+          </linearGradient>
+          <linearGradient id="cap-${gid}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eef2f5"/><stop offset=".55" stop-color="#aab4bc"/><stop offset="1" stop-color="#7e8891"/>
           </linearGradient>
           <clipPath id="clip-${gid}"><path d="${tubePath} Z"/></clipPath>
         </defs>
@@ -1964,6 +1978,7 @@ function renderToday(){
           <rect class="vial-shine" x="6" y="${tubeTop}" width="7" height="${tubeBottom-tubeTop}" fill="url(#glass-${gid})" transform="skewX(-14)"/>
         </g>
         <path d="${tubePath} Z" fill="url(#glass-${gid})"/>
+        <rect class="vial-cap" x="5" y="0" width="22" height="${capH}" rx="3" fill="url(#cap-${gid})"/>
         ${rimWarn}
         <ellipse cx="16" cy="${tubeBottom+2}" rx="9" ry="1.3" fill="rgba(0,0,0,.26)"/>
       </svg>`;
@@ -2065,10 +2080,12 @@ function renderToday(){
     if(pb){ pb.classList.add("pop"); pb.addEventListener("animationend",()=>pb.classList.remove("pop"),{once:true}); }
     POP_ID = null;
   }
-  // faz o líquido "chacoalhar" na ampola cujo nível acabou de mudar (após re-render)
+  // faz o líquido "chacoalhar" (corpo) + "ondular" (superfície) na ampola que acabou de mudar
   if(VIAL_PULSE_ID){
     const vf = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .vial-liquid`);
     if(vf){ vf.classList.add("slosh"); vf.addEventListener("animationend",()=>vf.classList.remove("slosh"),{once:true}); }
+    const vm = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .menisco`);
+    if(vm){ vm.classList.add("wave"); vm.addEventListener("animationend",()=>vm.classList.remove("wave"),{once:true}); }
     const vi = cont.querySelector(`.vial[data-id="${VIAL_PULSE_ID}"] .vial-ico`);
     if(vi){ vi.classList.add("pop"); vi.addEventListener("animationend",()=>vi.classList.remove("pop"),{once:true}); }
     VIAL_PULSE_ID = null;
