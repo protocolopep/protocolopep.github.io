@@ -248,7 +248,7 @@
   input:focus{outline:none;border-color:var(--primary);}
   input::placeholder,textarea::placeholder{color:var(--muted2);}
   .note-line{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
-  /* ---------- ampola/frasco: indicador visual de estoque, ao lado do botão Tomei ---------- */
+  /* ---------- ampola/frasco (visual "tubo de ensaio"): indicador de estoque, ao lado do botão Tomei ---------- */
   .vial{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;}
   .vial-ico{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
   .vial-svg{display:block;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));}
@@ -268,6 +268,13 @@
   /* superfície do líquido respirando de leve, contínuo — dá vida sem chamar atenção */
   .vial-liquid .menisco{transform-box:fill-box;transform-origin:50% 50%;animation:menisco 3.2s ease-in-out infinite;}
   @keyframes menisco{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.35);}}
+  /* bolhinhas dentro do líquido, subindo e sumindo em loop (feito estilo "tubo de ensaio") */
+  .vial-bubble{transform-box:fill-box;transform-origin:50% 50%;animation:bubbleFloat 2.6s ease-in-out infinite;}
+  @keyframes bubbleFloat{
+    0%{transform:translateY(0) scale(1);opacity:.35;}
+    50%{transform:translateY(-5px) scale(1.15);opacity:.75;}
+    100%{transform:translateY(0) scale(1);opacity:.35;}
+  }
   /* brilho de vidro deslizando devagar pelo frasco, em loop */
   .vial-shine{animation:vialShine 4.2s ease-in-out infinite;}
   @keyframes vialShine{
@@ -276,7 +283,7 @@
     45%{transform:translateX(44px);opacity:0;}
     100%{transform:translateX(44px);opacity:0;}
   }
-  /* frasco baixo/vazio: pulso de atenção mais perceptível, só na tampa (faixa colorida) */
+  /* frasco baixo/vazio: pulso de atenção mais perceptível, na "boca" do tubo */
   .vial-band.low{animation:bandPulse 1.8s ease-in-out infinite;}
   .vial-band.empty{animation:bandPulse 1.1s ease-in-out infinite;}
   @keyframes bandPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
@@ -289,7 +296,7 @@
     100%{transform:scale(1) translateY(0);}
   }
   @media (prefers-reduced-motion: reduce){
-    .vial-liquid.slosh,.vial-liquid .menisco,.vial-shine,.vial-band.low,.vial-band.empty,.vial-ico.pop{animation:none;}
+    .vial-liquid.slosh,.vial-liquid .menisco,.vial-bubble,.vial-shine,.vial-band.low,.vial-band.empty,.vial-ico.pop{animation:none;}
   }
   .vial-lbl{font-size:9.5px;font-weight:700;color:var(--muted);line-height:1;text-align:center;white-space:nowrap;}
   .vial-lbl.low{color:var(--aod);}
@@ -1915,42 +1922,50 @@ function renderToday(){
       const restanteDoses = Math.max(0, p.vialDoses - (p.vialUsed||0));
       const restanteUI = Math.round(restanteDoses * p.ui * 10)/10;
       const pct = Math.max(0, Math.min(100, (restanteDoses / p.vialDoses) * 100));
-      const cor = restanteDoses<=0 ? 'var(--danger)' : (restanteDoses<1 ? 'var(--aod)' : p.accent);
+      const cor = p.accent;
       const cls = restanteDoses<=0 ? 'empty' : (restanteDoses<1 ? 'low' : '');
       const doseTxt = (Math.abs(restanteDoses-Math.round(restanteDoses))<0.05) ? String(Math.round(restanteDoses)) : String(Math.round(restanteDoses*10)/10).replace('.',',');
       const titulo = restanteDoses<=0 ? 'Frasco vazio — toque para abrir um novo' : `Restam ${restanteUI} ${unitLabel(p)} (~${doseTxt} dose${doseTxt==="1"?"":"s"}) — toque para novo frasco`;
-      // geometria do frasco de vidro (viewBox 32x62); "gid" evita conflito de ids entre cards
+      // geometria do "tubo de ensaio" (viewBox 32x64) — boca aberta em cima, fundo arredondado embaixo,
+      // igual à referência 🧪; "gid" evita conflito de ids entre cards
       const gid = 'v'+String(p.id).replace(/[^a-zA-Z0-9_-]/g,'');
-      const innerX=5, innerY=10, innerW=22, innerH=44;
-      const liquidH = innerH*pct/100;
-      const liquidY = innerY+innerH-liquidH;
-      const vialSVG = `<svg class="vial-svg" viewBox="0 0 32 62" width="26" height="50" aria-hidden="true">
+      const tubeTop=6, tubeStraightEnd=46, tubeR=10;          // raio do fundo arredondado
+      const tubeBottom = tubeStraightEnd + tubeR;              // ponto mais baixo do tubo
+      const totalH = tubeBottom - tubeTop;
+      const liquidH = totalH*pct/100;
+      const liquidY = tubeBottom - liquidH;
+      const tubePath = `M6,${tubeTop} L6,${tubeStraightEnd} A${tubeR},${tubeR} 0 0 0 26,${tubeStraightEnd} L26,${tubeTop}`;
+      // bolhinhas: posicionadas como fração da altura do líquido, então acompanham o nível atual
+      const bubbles = pct>6 ? `
+          <circle class="vial-bubble" style="animation-delay:.1s" cx="12.5" cy="${(tubeBottom-liquidH*0.22).toFixed(1)}" r="1.3" fill="#fff" opacity=".4"/>
+          <circle class="vial-bubble" style="animation-delay:1s" cx="18.5" cy="${(tubeBottom-liquidH*0.5).toFixed(1)}" r="1.7" fill="#fff" opacity=".3"/>
+          <circle class="vial-bubble" style="animation-delay:.55s" cx="14.5" cy="${(tubeBottom-liquidH*0.76).toFixed(1)}" r="1.1" fill="#fff" opacity=".45"/>` : '';
+      // aviso na boca do tubo: só aparece (pulsando) quando o frasco está baixo/vazio;
+      // no estoque normal a boca fica aberta e limpa, sem nenhuma "tampa" colorida
+      const rimWarn = cls ? `<ellipse class="vial-band ${cls}" cx="16" cy="${tubeTop}" rx="9" ry="1.4" style="fill:${cor}" opacity=".7"/>` : '';
+      const vialSVG = `<svg class="vial-svg" viewBox="0 0 32 64" width="24" height="48" aria-hidden="true">
         <defs>
-          <linearGradient id="cap-${gid}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#eef2f5"/><stop offset=".55" stop-color="#aab4bc"/><stop offset="1" stop-color="#7e8891"/>
-          </linearGradient>
           <linearGradient id="liq-${gid}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" style="stop-color:${cor};stop-opacity:.92"/><stop offset="1" style="stop-color:${cor};stop-opacity:.68"/>
+            <stop offset="0" style="stop-color:${cor};stop-opacity:.95"/><stop offset="1" style="stop-color:${cor};stop-opacity:.74"/>
           </linearGradient>
           <linearGradient id="glass-${gid}" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".22" stop-color="#fff" stop-opacity=".05"/>
-            <stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+            <stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".22" stop-color="#fff" stop-opacity=".06"/>
+            <stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".18"/>
           </linearGradient>
-          <clipPath id="clip-${gid}"><rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}" rx="5"/></clipPath>
-          <clipPath id="bodyclip-${gid}"><rect x="3" y="8" width="26" height="48" rx="7"/></clipPath>
+          <clipPath id="clip-${gid}"><path d="${tubePath} Z"/></clipPath>
         </defs>
-        <rect x="9" y="0" width="14" height="9" rx="2" fill="url(#cap-${gid})"/>
-        <rect class="vial-band ${cls}" x="9" y="6" width="14" height="3" style="fill:${cor}" opacity=".55"/>
-        <rect x="3" y="8" width="26" height="48" rx="7" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
-        <g class="vial-liquid" data-id="${p.id}" clip-path="url(#clip-${gid})">
-          <rect x="${innerX}" y="${liquidY}" width="${innerW}" height="${liquidH}" fill="url(#liq-${gid})"/>
-          <ellipse class="menisco" cx="16" cy="${liquidY}" rx="11" ry="1.6" style="fill:${cor}" opacity=".55"/>
+        <path d="${tubePath}" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.26)" stroke-width="1.4" stroke-linecap="round"/>
+        <g clip-path="url(#clip-${gid})">
+          <g class="vial-liquid" data-id="${p.id}">
+            <rect class="vial-liquid-fill" x="6" y="${liquidY.toFixed(1)}" width="20" height="${liquidH.toFixed(1)}" fill="url(#liq-${gid})"/>
+            <ellipse class="menisco" cx="16" cy="${liquidY.toFixed(1)}" rx="10" ry="1.5" style="fill:${cor}" opacity=".55"/>
+            ${bubbles}
+          </g>
+          <rect class="vial-shine" x="6" y="${tubeTop}" width="7" height="${tubeBottom-tubeTop}" fill="url(#glass-${gid})" transform="skewX(-14)"/>
         </g>
-        <g clip-path="url(#bodyclip-${gid})">
-          <rect class="vial-shine" x="3" y="8" width="9" height="48" fill="url(#glass-${gid})" transform="skewX(-18)"/>
-        </g>
-        <rect x="3" y="8" width="26" height="48" rx="7" fill="url(#glass-${gid})"/>
-        <ellipse cx="16" cy="60" rx="10" ry="1.4" fill="rgba(0,0,0,.28)"/>
+        <path d="${tubePath} Z" fill="url(#glass-${gid})"/>
+        ${rimWarn}
+        <ellipse cx="16" cy="${tubeBottom+2}" rx="9" ry="1.3" fill="rgba(0,0,0,.26)"/>
       </svg>`;
       vialHTML = `<div class="vial" data-id="${p.id}">
         <div class="vial-ico vial-reset" data-id="${p.id}" title="${titulo}">${vialSVG}</div>
@@ -3510,7 +3525,7 @@ function checkReminders(){
     const hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
     const tk=dateKey(now); const rec=LOGS[tk]||{};
     PEPTIDES.forEach(p=>{
-      if(p.time && p.time===hm && p.remind!==false && dosesTaken(rec,p.id) < (p.perDay||1)){
+      if(p.time && p.time===hm && p.remind!==false && isSchedOn(p, now) && dosesTaken(rec,p.id) < (p.perDay||1)){
         const k=tk+"|p|"+p.id;
         if(!firedKeys.has(k)){ firedKeys.add(k); notify("Hora do "+p.name, `${p.ui} ${unitLabel(p)}${p.dose&&p.dose!=="—"?" · "+p.dose:""}`); }
       }
@@ -3541,7 +3556,7 @@ function runCatchUpCheck(){
     const done=getCatchUpSet();
     const pendentes=[];
     PEPTIDES.forEach(p=>{
-      if(p.time && p.time<hm && p.remind!==false && dosesTaken(rec,p.id) < (p.perDay||1) && !done.has(p.id)) pendentes.push(p);
+      if(p.time && p.time<hm && p.remind!==false && isSchedOn(p, now) && dosesTaken(rec,p.id) < (p.perDay||1) && !done.has(p.id)) pendentes.push(p);
     });
     if(pendentes.length){
       pendentes.forEach(p=>done.add(p.id));
