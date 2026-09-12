@@ -822,7 +822,7 @@
   .card .del:hover{color:var(--danger);border-color:var(--danger);}
   .card{padding-top:34px;}
 
-  .add-pep{width:100%;margin-top:4px;background:transparent;border:1.5px dashed var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+  .add-pep{width:100%;margin-top:4px;background:var(--surface);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
   .add-pep:hover{border-color:var(--primary);color:var(--primary);}
   .add-pep span{font-size:18px;line-height:1;}
   .empty-note{color:var(--muted);text-align:center;font-size:13.5px;padding:18px 0 10px;}
@@ -1117,6 +1117,14 @@
     </div>
     <div id="partner-evo" style="display:none"></div>
     </div><!-- /.evo-row -->
+    <div class="tools-row" style="margin-top:16px">
+      <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
+      <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
+      <button class="tool-b" id="export-btn">⬇ Exportar</button>
+      <button class="tool-b" id="import-btn">⬆ Importar</button>
+      <button class="tool-b" id="install-btn" style="display:none">📲 Instalar app</button>
+      <input type="file" id="import-file" accept="application/json,.json" style="display:none">
+    </div>
     <div class="eyebrow-row" style="margin-top:22px">
       <p class="eyebrow">Seu protocolo</p>
     </div>
@@ -1129,14 +1137,6 @@
     </div>
     <div id="today-cards"></div>
     <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeos/Hormônios</button>
-    <div class="tools-row">
-      <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
-      <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
-      <button class="tool-b" id="export-btn">⬇ Exportar</button>
-      <button class="tool-b" id="import-btn">⬆ Importar</button>
-      <button class="tool-b" id="install-btn" style="display:none">📲 Instalar app</button>
-      <input type="file" id="import-file" accept="application/json,.json" style="display:none">
-    </div>
   </section>
 
   <!-- SEMANA -->
@@ -2396,7 +2396,6 @@ function drawEvChart(pts, doseSeries){
   let h="";
   // 3 linhas de grade + rótulos do eixo Y
   for(let i=0;i<3;i++){
-    const v = min + (max-min)*(i/2);
     const y = Y(v);
     h+=`<line class="ev-grid" x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`;
     h+=`<text class="ev-lab" x="${padL-5}" y="${(y+3).toFixed(1)}" text-anchor="end">${evFmt(v)}</text>`;
@@ -3843,20 +3842,20 @@ function linkifyNotice(msg){
     else if(/^www\./i.test(target)) href='https://'+target.replace(/&amp;/g,'&');
     else { const d=target.replace(/\D/g,''); let num=d; if(d.length<=11 && !d.startsWith('55')) num='55'+d; href='https://wa.me/'+num; }
     tokens.push(`<a class="notice-cta" href="${href}" target="_blank" rel="noopener">${label}</a>`);
-    return ` ${tokens.length-1} `;
+    return ` ${tokens.length-1} `;
   });
   s=s.replace(/\b(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, m=>{
     const href=(m.startsWith('http')?m:'https://'+m).replace(/&amp;/g,'&');
     tokens.push(`<a href="${href}" target="_blank" rel="noopener">${m}</a>`);
-    return ` ${tokens.length-1} `;
+    return ` ${tokens.length-1} `;
   });
   s=s.replace(/(\+?\d[\d\s().-]{8,}\d)/g, m=>{
     const d=m.replace(/\D/g,''); if(d.length<10||d.length>13) return m;
     let num=d; if(d.length<=11 && !d.startsWith('55')) num='55'+d;
     tokens.push(`<a href="https://wa.me/${num}" target="_blank" rel="noopener">${m}</a>`);
-    return ` ${tokens.length-1} `;
+    return ` ${tokens.length-1} `;
   });
-  s=s.replace(/ (\d+) /g,(a,i)=>tokens[+i]);
+  s=s.replace(/ (\d+) /g,(a,i)=>tokens[+i]);
   return s;
 }
 function renderNotice(){
@@ -3883,11 +3882,11 @@ function renderNotice(){
     var linksGuardados = [];
     var semLinks = unica.replace(/\[[^\]]*\]\([^)]*\)/g, function(m){
       linksGuardados.push(m);
-      return " L" + (linksGuardados.length-1) + " ";
+      return " L" + (linksGuardados.length-1) + " ";
     });
     var porPont = semLinks.split(/[.!?]+\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
     porPont = porPont.map(function(s){
-      return s.replace(/ L(\d+) /g, function(_, i){ return linksGuardados[+i]; });
+      return s.replace(/ L(\d+) /g, function(_, i){ return linksGuardados[+i]; });
     });
     frases = porPont.length > 1 ? porPont : [unica];
   }
