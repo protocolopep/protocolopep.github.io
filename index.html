@@ -48,7 +48,7 @@
   }
   html{background:var(--bg);}
   /* conteúdo do app sempre acima do fundo de moléculas */
-  .app{position:relative;z-index:1;}
+  .app{position:relative;z-index:1;padding-bottom:calc(78px + env(safe-area-inset-bottom));}
   /* camada de fundo (gradiente) atrás do canvas de moléculas */
   body::before{
     content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -836,6 +836,22 @@
   .sheet-title{font-family:var(--display);font-weight:700;font-size:17px;}
   .sheet-x{background:var(--surface3);border:none;color:var(--muted);width:30px;height:30px;border-radius:9px;font-size:14px;cursor:pointer;}
   .sheet-body{padding:16px 20px;overflow-y:auto;}
+  /* folha do frasco: status + opções */
+  .vs-status{display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;}
+  .vs-big{font-family:var(--display);font-weight:700;font-size:19px;}
+  .vs-sub{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45;}
+  .vs-opt{width:100%;display:flex;align-items:flex-start;gap:12px;text-align:left;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:13px 14px;margin-bottom:10px;font-family:var(--font);color:var(--text);cursor:pointer;transition:border-color .15s,background .15s;}
+  .vs-opt:hover{border-color:var(--primary);}
+  .vs-opt.hi{border-color:var(--primary);background:rgba(44,197,192,.07);}
+  .vs-opt-ic{flex:none;display:flex;width:20px;height:20px;margin-top:1px;color:var(--muted);}
+  .vs-opt.hi .vs-opt-ic{color:var(--primary);}
+  .vs-opt-ic svg{width:20px;height:20px;}
+  .vs-opt-t{display:block;font-weight:700;font-size:14px;}
+  .vs-opt-s{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45;}
+  .vs-opt-s b{color:var(--primary);font-weight:700;}
+  .vs-opt-arrow{margin-left:auto;align-self:center;color:var(--muted2);font-size:15px;}
+  .vs-manual{display:flex;gap:10px;align-items:center;margin:2px 0 10px;}
+  .vs-manual input{flex:1;}
   .sheet-foot{display:flex;gap:10px;padding:14px 20px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);}
   .mini-lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:600;margin:0 0 10px;font-family:var(--display);}
   .lib-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;max-height:132px;overflow-y:auto;padding-bottom:2px;}
@@ -1537,6 +1553,16 @@
   </div>
 </div>
 
+<div class="modal" id="vial-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="vial-title">Frasco</div>
+      <button class="sheet-x" id="vial-close">✕</button>
+    </div>
+    <div class="sheet-body" id="vial-body"></div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -2114,10 +2140,172 @@ function renderToday(){
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
   cont.querySelectorAll(".vial-reset").forEach(b=>b.onclick=()=>{
     const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(!p) return;
-    if(!confirm(`Zerar o nível do frasco de ${p.name} de volta pra 100%?`)) return;
-    p.vialUsed=0; cloudSave(); VIAL_PULSE_ID=b.dataset.id; renderToday();
+    openVialSheet(p.id);
   });
 }
+
+/* ================= folha do frasco =================
+   Aberta ao tocar no desenho do frasco. Reúne as três ações que mexem
+   no nível: abrir frasco novo, recalcular pelo histórico e informar
+   manualmente quantas doses restam. */
+const vialModal = document.getElementById("vial-modal");
+let VIAL_SHEET_ID = null;
+
+// conta todas as doses de um peptídeo no histórico (opcionalmente a partir de uma data)
+function dosesNoHistorico(id, desdeK){
+  let n = 0;
+  Object.keys(LOGS).forEach(dk=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dk)) return;   // ignora chaves que não são dias
+    if(desdeK && dk < desdeK) return;             // formato ISO: comparar como texto já ordena
+    n += dosesTaken(LOGS[dk] || {}, id);
+  });
+  return n;
+}
+
+// calcula quantas doses do frasco atual já foram usadas, segundo o histórico
+function calcFrascoPeloHistorico(p){
+  const total = p.vialDoses || 0;
+  const hist = dosesNoHistorico(p.id);
+  if(!total) return null;
+  if(p.vialOpenedAt){
+    // caminho exato: sabemos quando este frasco foi aberto
+    const usadas = dosesNoHistorico(p.id, p.vialOpenedAt);
+    return { modo:"data", hist, usadas:Math.min(usadas, total), frascos:null };
+  }
+  // caminho estimado: assume que cada frasco foi usado até o fim antes do próximo
+  const frascos = Math.floor(hist / total);
+  return { modo:"divisao", hist, usadas: hist - frascos*total, frascos };
+}
+
+function fmtDoses(n){
+  const r = Math.round(n*10)/10;
+  return (Math.abs(r-Math.round(r))<0.05 ? String(Math.round(r)) : String(r).replace(".",","));
+}
+
+const ICO_VIAL_NEW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v9.5a4 4 0 1 0 4 0V3"/><path d="M8.5 14h7"/></svg>';
+const ICO_RECALC  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>';
+const ICO_PENCIL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
+function openVialSheet(id){
+  const p = PEPTIDES.find(x=>x.id===id);
+  if(!p || !p.vialDoses){ return; }
+  VIAL_SHEET_ID = id;
+  document.getElementById("vial-title").textContent = "Frasco · " + p.name;
+  renderVialSheet();
+  vialModal.classList.add("on");
+}
+function closeVialSheet(){ vialModal.classList.remove("on"); VIAL_SHEET_ID = null; }
+
+function renderVialSheet(manualAberto){
+  const p = PEPTIDES.find(x=>x.id===VIAL_SHEET_ID);
+  if(!p) return;
+  const body = document.getElementById("vial-body");
+  const total = p.vialDoses;
+  const restante = Math.max(0, total - (p.vialUsed||0));
+  const restanteUI = Math.round(restante * p.ui * 10)/10;
+  const calc = calcFrascoPeloHistorico(p);
+  const restCalc = calc ? Math.max(0, total - calc.usadas) : null;
+
+  const subStatus = [
+    `${restanteUI} ${unitLabel(p)}`,
+    `frasco de ${fmtDoses(total)} doses`,
+    p.vialOpenedAt ? `aberto em ${fmtBR(p.vialOpenedAt)}` : `data de abertura não registrada`
+  ].join(" · ");
+
+  let recalcTxt;
+  if(!calc){
+    recalcTxt = "Sem dados suficientes.";
+  } else if(calc.modo === "data"){
+    recalcTxt = `${fmtDoses(calc.usadas)} dose${calc.usadas===1?"":"s"} registrada${calc.usadas===1?"":"s"} desde ${fmtBR(p.vialOpenedAt)} · <b>restariam ${fmtDoses(restCalc)}</b>`;
+  } else {
+    recalcTxt = `${fmtDoses(calc.hist)} doses no histórico · ${calc.frascos} frasco${calc.frascos===1?"":"s"} completo${calc.frascos===1?"":"s"} · <b>restariam ${fmtDoses(restCalc)}</b>`;
+  }
+  const igual = restCalc!=null && Math.abs(restCalc - restante) < 0.05;
+  if(igual) recalcTxt += " — igual ao valor atual.";
+
+  body.innerHTML = `
+    <div class="vs-status">
+      <div>
+        <div class="vs-big" style="color:${p.accent}">${restante<=0 ? "Frasco vazio" : "Restam ~"+fmtDoses(restante)+" dose"+(fmtDoses(restante)==="1"?"":"s")}</div>
+        <div class="vs-sub">${subStatus}</div>
+      </div>
+    </div>
+
+    <button class="vs-opt" id="vs-novo">
+      <span class="vs-opt-ic">${ICO_VIAL_NEW}</span>
+      <span style="flex:1">
+        <span class="vs-opt-t">Abri um frasco novo</span>
+        <span class="vs-opt-s">Volta o nível para 100% e salva a data de hoje.</span>
+      </span>
+      <span class="vs-opt-arrow">›</span>
+    </button>
+
+    <button class="vs-opt ${igual?"":"hi"}" id="vs-recalc" ${calc?"":"disabled"}>
+      <span class="vs-opt-ic">${ICO_RECALC}</span>
+      <span style="flex:1">
+        <span class="vs-opt-t">Recalcular pelo histórico</span>
+        <span class="vs-opt-s">${recalcTxt}</span>
+      </span>
+      <span class="vs-opt-arrow">›</span>
+    </button>
+
+    ${manualAberto ? `
+      <div class="vs-opt" style="display:block">
+        <span class="vs-opt-t">Informar doses restantes</span>
+        <div class="vs-manual" style="margin-top:8px">
+          <input class="num" id="vs-manual-inp" inputmode="decimal" placeholder="Ex.: ${fmtDoses(restante)}" value="${fmtDoses(restante)}">
+          <button class="btn-primary" id="vs-manual-ok" style="flex:none">Salvar</button>
+        </div>
+        <span class="vs-opt-s">De 0 a ${fmtDoses(total)} doses.</span>
+      </div>` : `
+      <button class="vs-opt" id="vs-manual">
+        <span class="vs-opt-ic">${ICO_PENCIL}</span>
+        <span style="flex:1">
+          <span class="vs-opt-t">Informar doses restantes</span>
+          <span class="vs-opt-s">Digite o número certo se a conta não bater.</span>
+        </span>
+        <span class="vs-opt-arrow">›</span>
+      </button>`}
+  `;
+
+  document.getElementById("vs-novo").onclick = ()=>{
+    if(!confirm(`Abrir um frasco novo de ${p.name}? O nível volta para 100%.`)) return;
+    p.vialUsed = 0;
+    p.vialOpenedAt = todayKey;
+    cloudSave();
+    VIAL_PULSE_ID = p.id;
+    closeVialSheet(); renderToday();
+  };
+
+  const rec = document.getElementById("vs-recalc");
+  if(rec && calc) rec.onclick = ()=>{
+    if(igual){ alert("O nível já está de acordo com o histórico."); return; }
+    const aviso = calc.modo === "divisao"
+      ? "\n\nEsta conta assume que cada frasco foi usado até o fim antes de abrir o próximo. Se você descartou algum frasco pela metade, prefira informar as doses manualmente."
+      : "";
+    if(!confirm(`Ajustar de ${fmtDoses(restante)} para ${fmtDoses(restCalc)} dose(s) restante(s)?${aviso}`)) return;
+    p.vialUsed = Math.min(total, calc.usadas);
+    cloudSave();
+    VIAL_PULSE_ID = p.id;
+    closeVialSheet(); renderToday();
+  };
+
+  const man = document.getElementById("vs-manual");
+  if(man) man.onclick = ()=>{ renderVialSheet(true); document.getElementById("vs-manual-inp").focus(); };
+
+  const manOk = document.getElementById("vs-manual-ok");
+  if(manOk) manOk.onclick = ()=>{
+    const v = parseFloat(String(document.getElementById("vs-manual-inp").value).replace(",","."));
+    if(isNaN(v) || v < 0 || v > total){ alert(`Informe um número entre 0 e ${fmtDoses(total)}.`); return; }
+    p.vialUsed = Math.max(0, total - v);
+    cloudSave();
+    VIAL_PULSE_ID = p.id;
+    closeVialSheet(); renderToday();
+  };
+}
+
+document.getElementById("vial-close").onclick = closeVialSheet;
+vialModal.onclick = e=>{ if(e.target.id==="vial-modal") closeVialSheet(); };
 
 function removePep(id){
   const p=PEPTIDES.find(x=>x.id===id); if(!p) return;
@@ -2221,7 +2409,10 @@ function toggle(id){
 function removeLog(dk, id){
   const rec = LOGS[dk]; if(!rec || !rec[id]) return;
   if(!confirm("Remover esta dose do histórico?")) return;
+  const qtdRem = dosesTaken(rec, id);
   delete rec[id];
+  const pRem = PEPTIDES.find(x=>x.id===id);
+  if(pRem && pRem.vialDoses){ pRem.vialUsed = Math.max(0, (pRem.vialUsed||0) - qtdRem); }
   if(Object.keys(rec).filter(k=>!k.startsWith('_t_')).length===0) delete LOGS[dk];
   saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
@@ -4044,10 +4235,15 @@ function renderNotice(){
       if(cb.checked && !jatem){
         // marcar: sem horário (retroativo)
         rec[id] = {t:"", name:p.name||id, dose:p.dose||"", per:p.per||"", retro:true};
+        // desconta do frasco, igual a marcar a dose de hoje
+        if(p.vialDoses){ p.vialUsed = (p.vialUsed||0) + 1; }
+        bumpStats({doses:increment(1)});
         alterou = true;
       } else if(!cb.checked && jatem){
-        // desmarcar
+        // desmarcar: devolve as doses ao frasco
+        const qtd = dosesTaken(rec, id);
         delete rec[id];
+        if(p.vialDoses){ p.vialUsed = Math.max(0, (p.vialUsed||0) - qtd); }
         alterou = true;
       }
     });
