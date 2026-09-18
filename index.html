@@ -2587,6 +2587,7 @@ function drawEvChart(pts, doseSeries){
   let h="";
   // 3 linhas de grade + rótulos do eixo Y
   for(let i=0;i<3;i++){
+    const v = min + (i/2)*(max-min);
     const y = Y(v);
     h+=`<line class="ev-grid" x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`;
     h+=`<text class="ev-lab" x="${padL-5}" y="${(y+3).toFixed(1)}" text-anchor="end">${evFmt(v)}</text>`;
