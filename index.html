@@ -1371,62 +1371,16 @@
         <button class="btn-ghost" id="nv-remove" style="flex:1">Remover</button>
       </div>
     </div>
-    <p class="eyebrow" style="margin-top:22px">Anúncio / Parceria <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparece na aba Protocolo)</span></p>
-    <div class="panel">
-      <div class="ad-note" style="margin-bottom:12px">💡 O bloco aparece identificado como <b>Parceria</b> para os usuários. Deixe a imagem em branco se quiser só texto. O botão pode abrir um link ou o WhatsApp.</div>
-      <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt" id="pt-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
-      <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area" id="pt-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
-      <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt" id="pt-img" placeholder="https://..." style="margin-top:5px"></div>
-      <div class="fld" style="margin-bottom:6px">
-        <label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label>
-        <div class="inrow" style="margin-top:5px;align-items:center">
-          <input class="txt" id="pt-vid" placeholder="Ex.: anuncio.mp4 ou https://..." style="flex:1">
-          <button type="button" class="btn-ghost" id="pt-vid-upload-btn" style="flex:none;white-space:nowrap">📤 Enviar do PC</button>
-        </div>
-        <input type="file" id="pt-vid-file" accept="video/*" style="display:none">
-        <div id="pt-vid-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
-      </div>
-      <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina. Use o botão "Enviar do PC" para escolher o arquivo direto do seu computador/celular, ou cole uma URL própria.</div>
-      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 atendentes abaixo)</span></label><input class="txt" id="pt-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (https://protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
-      <div class="ad-note" style="margin:0 0 12px">💬 Use <b>{nome}</b> em qualquer parte da mensagem — na hora de abrir o WhatsApp, ele é trocado automaticamente pelo nome do atendente que a pessoa clicou. Atendente sem nome preenchido usa a mensagem sem essa parte. Se citar o link do app na mensagem, escreva com <b>https://</b> na frente (ex.: https://protocolopep.github.io) — assim o WhatsApp reconhece como link clicável de verdade.</div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
-        <div class="fld"><label>Atendente 1 — Nome</label><input class="txt" id="pt-n1" placeholder="Ex.: Guilherme" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt" id="pt-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-      </div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
-        <div class="fld"><label>Atendente 2 — Nome</label><input class="txt" id="pt-n2" placeholder="Ex.: Paulo" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt" id="pt-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-      </div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
-        <div class="fld"><label>Atendente 3 — Nome</label><input class="txt" id="pt-n3" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt" id="pt-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-      </div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
-        <div class="fld"><label>Atendente 4 — Nome</label><input class="txt" id="pt-n4" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt" id="pt-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-      </div>
-      <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar — só aparecem os botões preenchidos. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
-      <div id="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
-      <label class="check" style="margin:6px 0"><input type="checkbox" id="pt-pop"> Mostrar também como pop-up ao abrir o app</label>
-      <div class="inrow" style="align-items:center">
-        <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Repetir a cada</label>
-        <input class="txt" id="pt-pop-days" type="number" min="1" max="365" step="1" value="7" style="flex:none;width:90px;text-align:center">
-        <span style="color:var(--muted);font-size:13px">dias</span>
-      </div>
-      <div class="ad-note" style="margin:8px 0 0">Deixe todos os campos em branco e publique para usar o espaço de teste <b>"Anuncie aqui"</b>.</div>
-      <div class="inrow" style="margin-top:10px">
-        <button class="btn-primary" id="pt-publish" style="flex:2">Publicar anúncio</button>
-        <button class="btn-ghost" id="pt-remove" style="flex:1">Remover</button>
-      </div>
+    <p class="eyebrow" style="margin-top:22px">Anúncios / Parcerias <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparecem na aba Protocolo, um abaixo do outro)</span></p>
+    <div class="ad-note" style="margin-bottom:12px">💡 Cada anúncio aparece identificado como <b>Parceria</b> para os usuários. Você pode publicar quantos quiser — cada novo entra abaixo dos anteriores, com seu próprio vídeo/imagem, mensagem e até 4 atendentes.</div>
+    <div id="pt-ads-editor"></div>
+    <button type="button" class="add-pep" id="pt-ad-add" style="margin-bottom:22px"><span>＋</span> Adicionar novo anúncio</button>
+
+    <p class="eyebrow">Cliques em Atendentes <span style="font-weight:400;text-transform:none;letter-spacing:0">(quem entrou em contato pelos botões dos anúncios)</span></p>
+    <div class="ad-grid" style="grid-template-columns:1fr;margin-bottom:10px">
+      <div class="ad-stat"><div class="ad-v" id="pc-total">0</div><div class="ad-k">Total de cliques (todos os anúncios)</div></div>
     </div>
-    <p class="eyebrow" style="margin-top:22px">Cliques em Atendentes <span style="font-weight:400;text-transform:none;letter-spacing:0">(quem entrou em contato pelos botões do anúncio)</span></p>
-    <div class="ad-grid" id="pc-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px">
-      <div class="ad-stat"><div class="ad-v" id="pc-total">0</div><div class="ad-k">Total de cliques</div></div>
-      <div class="ad-stat"><div class="ad-v" id="pc-a1">0</div><div class="ad-k" id="pc-a1-k">Atendente 1</div></div>
-      <div class="ad-stat"><div class="ad-v" id="pc-a2">0</div><div class="ad-k" id="pc-a2-k">Atendente 2</div></div>
-      <div class="ad-stat"><div class="ad-v" id="pc-a3">0</div><div class="ad-k" id="pc-a3-k">Atendente 3</div></div>
-      <div class="ad-stat"><div class="ad-v" id="pc-a4">0</div><div class="ad-k" id="pc-a4-k">Atendente 4</div></div>
-    </div>
+    <div id="pc-breakdown" style="margin-bottom:10px"></div>
     <div class="panel">
       <input class="txt" id="pc-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
       <div id="pc-list"></div>
@@ -3488,16 +3442,28 @@ function renderMembers(){
    atendente, número/link de destino e horário). Só o admin consegue ler essa coleção. */
 function renderPartnerClicks(){
   const wrap=document.getElementById("pc-list");
+  const brk=document.getElementById("pc-breakdown");
   if(!wrap) return;
-  const d = partnerData||{};
-  const counts = {1:0,2:0,3:0,4:0};
-  adminPartnerClicks.forEach(c=>{ const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++; });
   const setTxt=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
   setTxt("pc-total", adminPartnerClicks.length);
-  setTxt("pc-a1", counts[1]); setTxt("pc-a2", counts[2]); setTxt("pc-a3", counts[3]); setTxt("pc-a4", counts[4]);
-  // o rótulo do card mostra o nome configurado pra cada atendente agora, se houver
-  const rotuloCard=(n)=> "Atendente "+n+(d["n"+n]?(" ("+d["n"+n]+")"):"");
-  setTxt("pc-a1-k", rotuloCard(1)); setTxt("pc-a2-k", rotuloCard(2)); setTxt("pc-a3-k", rotuloCard(3)); setTxt("pc-a4-k", rotuloCard(4));
+
+  // um grupo de cards por anúncio, cada um com a contagem dos 4 atendentes daquele anúncio
+  if(brk){
+    const ads = [...PARTNER_ADS].sort((a,b)=>(a.ts||0)-(b.ts||0));
+    if(!ads.length){
+      brk.innerHTML = '';
+    } else {
+      brk.innerHTML = ads.map(ad=>{
+        const counts={1:0,2:0,3:0,4:0};
+        adminPartnerClicks.forEach(c=>{ if(c.adId===ad.id){ const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++; } });
+        const cards=[1,2,3,4].map(n=>
+          `<div class="ad-stat"><div class="ad-v">${counts[n]}</div><div class="ad-k">Atendente ${n}${ad["n"+n]?(" ("+esc(ad["n"+n])+")"):""}</div></div>`
+        ).join('');
+        return `<div style="margin-bottom:6px;font-size:12.5px;color:var(--muted);font-weight:600">${esc(ad.title||"Anúncio sem título")}</div>
+          <div class="ad-grid" style="margin-bottom:14px">${cards}</div>`;
+      }).join('');
+    }
+  }
 
   const arr=[...adminPartnerClicks].sort((a,b)=>(b.ts||0)-(a.ts||0));
   const q = pcSearchQuery;
@@ -3512,7 +3478,8 @@ function renderPartnerClicks(){
   const shown = usePaging ? (pcExpanded ? filtered : filtered.slice(0, PC_VISIBLE)) : filtered;
   const restante = usePaging ? filtered.length - shown.length : 0;
   let html = shown.map(c=>{
-    const quem = "Atendente "+(c.atendente||'?')+(c.nome?(" — "+esc(c.nome)):'')+(c.numero?(" · "+esc(c.numero)):'');
+    const anuncio = c.adTitle ? `${esc(c.adTitle)} · ` : '';
+    const quem = anuncio+"Atendente "+(c.atendente||'?')+(c.nome?(" — "+esc(c.nome)):'')+(c.numero?(" · "+esc(c.numero)):'');
     return `<div class="mb-row">
       <div class="mb-info">
         <span class="mb-email">${esc(c.email||'(sem e-mail)')}</span>
@@ -3644,7 +3611,16 @@ async function showApp(user){
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
   if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
-  partnerUnsub = onSnapshot(doc(db,'meta','partner'), s=>{ partnerData = s.exists()?s.data():null; renderPartner(); fillPartnerForm(); maybeShowPartnerPop(); }, e=>console.warn('partner',e));
+  partnerUnsub = onSnapshot(doc(db,'meta','partner'), s=>{ partnerData = s.exists()?s.data():null; tentarMigrarAnuncioAntigo(); }, e=>console.warn('partner',e));
+  if(partnerAdsUnsub){ partnerAdsUnsub(); partnerAdsUnsub=null; }
+  partnerAdsUnsub = onSnapshot(collection(db,'partnerAds'), snap=>{
+    PARTNER_ADS = snap.docs.map(d=>({...d.data(), id:d.id}));
+    partnerAdsLoaded = true;
+    renderPartner();
+    if(IS_ADMIN){ syncAdsEditorDOM(); renderPartnerClicks(); }
+    tentarMigrarAnuncioAntigo();
+    maybeShowPartnerPop();
+  }, e=>console.warn('partner-ads',e));
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
@@ -3696,7 +3672,9 @@ function showAuth(){
   if(banUnsub){ banUnsub(); banUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
-  partnerData=null; renderPartner();
+  if(partnerAdsUnsub){ partnerAdsUnsub(); partnerAdsUnsub=null; }
+  partnerData=null; PARTNER_ADS=[]; partnerAdsLoaded=false; localDraftAds=[]; renderPartner();
+  { const ed=document.getElementById("pt-ads-editor"); if(ed) ed.innerHTML=""; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
   METRICS=[];
@@ -4504,11 +4482,21 @@ document.getElementById("notice-remove").onclick=()=>{
 };
 
 /* =========================================================
-   ANÚNCIO / PARCERIA
-   Doc próprio (meta/partner) em vez de compartilhar meta/notice:
-   assim publicar o anúncio não corre risco de apagar os recados.
+   ANÚNCIOS / PARCERIAS (múltiplos)
+   Cada anúncio é um documento na coleção "partnerAds" — pode haver quantos
+   o admin quiser, cada um com vídeo/imagem, mensagem e até 4 atendentes
+   próprios, sempre empilhados na ordem em que foram criados (o mais novo
+   entra embaixo dos anteriores). O antigo doc único "meta/partner" só é
+   usado uma vez, para migrar automaticamente quem já tinha um anúncio
+   publicado antes desta atualização.
    ========================================================= */
-let partnerUnsub=null, partnerData=null;
+let partnerUnsub=null, partnerData=null;   // doc antigo (meta/partner) — só para a migração
+let partnerAdsUnsub=null;
+let PARTNER_ADS=[];         // anúncios publicados, sincronizados do Firestore
+let partnerAdsLoaded=false; // vira true assim que a 1ª leitura da coleção nova chega
+let localDraftAds=[];       // anúncios novos criados pelo botão "+", ainda não publicados
+let migradoAnuncioAntigo=false;
+let filaPopupsAnuncio=[];   // fila de anúncios elegíveis pra pop-up — um de cada vez
 
 // mensagem padrão de indicação (usada quando o admin não define uma própria)
 const PT_MSG_PADRAO = "Olá! Vim por indicação do app Protocolo Pep e gostaria de mais informações.";
@@ -4543,7 +4531,7 @@ function partnerHref(raw, msg){
   }
   return "";
 }
-// monta o conteúdo do anúncio (usado no banner e no pop-up).
+// monta o conteúdo de UM anúncio (usado no banner, na coluna da evolução e no pop-up).
 // Sem imagem/vídeo/título/texto, cai no espaço de teste "Anuncie aqui".
 function partnerHTML(d, admin){
   const vid = d.vid ? String(d.vid).trim() : "";
@@ -4567,11 +4555,11 @@ function partnerHTML(d, admin){
   }
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
-  let h='<div class="pt-wrap'+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
+  let h='<div class="pt-wrap'+((admin&&d.hidden)?' pt-hidden-preview':'')+'" data-ad-id="'+esc(d.id||'')+'">';
   h+='<div class="pt-card'+(temMidia?'':' pt-nomedia')+'">';
   h+='<span class="pt-tag">Parceria</span>';
   if(admin){
-    h+='<button type="button" class="pt-admin-toggle" title="'+(d.hidden?'Mostrar anúncio para todos':'Ocultar anúncio para todos')+'">'+(d.hidden?'🚫':'👁️')+'</button>';
+    h+='<button type="button" class="pt-admin-toggle" data-ad-id="'+esc(d.id||'')+'" title="'+(d.hidden?'Mostrar anúncio para todos':'Ocultar anúncio para todos')+'">'+(d.hidden?'🚫':'👁️')+'</button>';
   }
   if(vazio){
     h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
@@ -4592,84 +4580,100 @@ function partnerHTML(d, admin){
   // botões de atendente ficam FORA da caixa do anúncio, como bloco separado logo abaixo
   if(btns.length){
     h+='<div class="pt-btns">';
-    btns.forEach(b=>{ h+=`<a class="pt-btn" data-atd="${b.n}" data-nome="${esc(b.nome)}" data-numero="${esc(b.numero)}" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
+    btns.forEach(b=>{ h+=`<a class="pt-btn" data-ad-id="${esc(d.id||'')}" data-ad-title="${esc(d.title||'')}" data-atd="${b.n}" data-nome="${esc(b.nome)}" data-numero="${esc(b.numero)}" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
     h+='</div>';
   }
   h+='</div>'; // fim do .pt-wrap
   return h;
 }
-// admin oculta o anúncio de todos com um clique (fica só visível — esmaecido — pra ele mesmo,
-// pra poder mostrar de novo depois); usuário comum nunca vê nada enquanto d.hidden estiver ativo.
+// admin oculta um anúncio de todos com um clique (fica só visível — esmaecido — pra ele
+// mesmo, pra poder mostrar de novo depois); usuário comum nunca vê enquanto d.hidden ativo.
 function partnerVisibleToMe(d){
   if(!d || !d.active) return false;
   if(d.hidden && !IS_ADMIN) return false;
   return true;
 }
+// anúncios visíveis pro usuário atual, na ordem de criação (mais antigo primeiro) —
+// assim cada novo publicado entra sempre embaixo dos anteriores, como pedido.
+function anunciosVisiveis(){
+  return PARTNER_ADS.filter(partnerVisibleToMe).sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
 function renderPartner(){
   const box=document.getElementById("partner-box");
   const evo=document.getElementById("partner-evo");
   if(!box) return;
-  const d=partnerData||{};
-  if(!partnerVisibleToMe(d)){
+  const ativos = anunciosVisiveis();
+  if(!ativos.length){
     box.style.display="none"; box.innerHTML="";
     if(evo){ evo.style.display="none"; evo.innerHTML=""; }
     return;
   }
-  const h=partnerHTML(d, IS_ADMIN);
+  const h = ativos.map(d=>partnerHTML(d, IS_ADMIN)).join('');
   box.innerHTML=h;
   if(evo) evo.innerHTML=h;
   applyPartnerPlacement();
 }
-// decide onde o anúncio aparece:
-// - desktop (>=1000px) na aba Protocolo -> ao lado da evolução, 50/50
-// - qualquer outro caso -> no topo, largura total
+// decide onde os anúncios aparecem:
+// - desktop (>=1000px), aba Protocolo, com EXATAMENTE 1 anúncio ativo -> ao lado da evolução, 50/50
+// - qualquer outro caso (inclusive 2+ anúncios) -> empilhados no topo, largura total
 function applyPartnerPlacement(){
   const box=document.getElementById("partner-box");
   const evo=document.getElementById("partner-evo");
   if(!box || !evo) return;
-  const ativo = partnerVisibleToMe(partnerData||{});
-  if(!ativo){ box.style.display="none"; evo.style.display="none"; return; }
+  const ativos = anunciosVisiveis();
+  if(!ativos.length){ box.style.display="none"; evo.style.display="none"; return; }
   const desktop = window.matchMedia("(min-width:1000px)").matches;
   const abaProtocolo = (document.getElementById("v-hoje")||{}).classList
                         ? document.getElementById("v-hoje").classList.contains("on") : false;
-  const naEvolucao = desktop && abaProtocolo && !EVO_HIDDEN;
+  const naEvolucao = desktop && abaProtocolo && !EVO_HIDDEN && ativos.length===1;
   evo.style.display = naEvolucao ? "flex"  : "none";
   box.style.display = naEvolucao ? "none"  : "block";
 }
 window.addEventListener("resize", applyPartnerPlacement);
-/* ---- pop-up: mostra 1x e só volta depois do intervalo em dias ---- */
+
+/* ---- pop-up: mostra 1 anúncio por vez (fila); cada um só volta depois do próprio intervalo ---- */
+function anuncioPopVisto(id){ try{ return Number(localStorage.getItem("pt-pop-visto-"+id))||0; }catch(e){ return 0; } }
+function marcarAnuncioPopVisto(id){ try{ localStorage.setItem("pt-pop-visto-"+id, String(Date.now())); }catch(e){} }
 function maybeShowPartnerPop(){
-  const d=partnerData||{};
   const ov=document.getElementById("pt-overlay");
   if(!ov) return;
-  if(!d.active || !d.pop || d.hidden){ ov.style.display="none"; return; }
   // se o pop-up de Novidades estiver aberto, não empilha: o de anúncio espera ele ser fechado
   const nv=document.getElementById("nv-overlay");
   if(nv && nv.style.display!=="none" && nv.style.display!=="") return;
-  const dias=Math.min(365, Math.max(1, Number(d.popDays)||7));
-  let visto=0;
-  try{ visto=Number(localStorage.getItem("pt-pop-visto"))||0; }catch(e){}
-  // republicar o anúncio (ts novo) faz o pop-up aparecer de novo mesmo dentro do intervalo
-  const tsPub=Number(d.ts)||0;
-  const expirou = (Date.now()-visto) >= dias*24*60*60*1000;
-  if(visto && visto>=tsPub && !expirou) return;
-  document.getElementById("pt-pop-content").innerHTML=partnerHTML(d, IS_ADMIN);
+  filaPopupsAnuncio = anunciosVisiveis().filter(d=>{
+    if(!d.pop || d.hidden) return false;
+    const dias=Math.min(365, Math.max(1, Number(d.popDays)||7));
+    const visto=anuncioPopVisto(d.id);
+    const tsPub=Number(d.ts)||0;
+    const expirou=(Date.now()-visto) >= dias*24*60*60*1000;
+    return !(visto && visto>=tsPub && !expirou);
+  });
+  mostrarProximoPopupAnuncio();
+}
+function mostrarProximoPopupAnuncio(){
+  const ov=document.getElementById("pt-overlay");
+  if(!ov) return;
+  if(!filaPopupsAnuncio.length){ ov.style.display="none"; return; }
+  document.getElementById("pt-pop-content").innerHTML=partnerHTML(filaPopupsAnuncio[0], IS_ADMIN);
   ov.style.display="flex";
 }
 function fecharPartnerPop(){
   const ov=document.getElementById("pt-overlay");
-  if(ov) ov.style.display="none";
-  try{ localStorage.setItem("pt-pop-visto", String(Date.now())); }catch(e){}
+  const atual=filaPopupsAnuncio.shift();
+  if(atual) marcarAnuncioPopVisto(atual.id);
+  if(filaPopupsAnuncio.length) mostrarProximoPopupAnuncio();
+  else if(ov) ov.style.display="none";
 }
 document.getElementById("pt-pop-close").onclick=fecharPartnerPop;
 document.getElementById("pt-overlay").onclick=(e)=>{ if(e.target.id==="pt-overlay") fecharPartnerPop(); };
-// tocar no botão do anúncio dentro do pop-up também registra como visto
+// tocar no botão do anúncio dentro do pop-up também registra como visto (e avança a fila)
 document.getElementById("pt-pop-content").addEventListener("click",e=>{
   if(e.target.closest && e.target.closest(".pt-btn")) fecharPartnerPop();
 });
-/* ---- registra quem clicou em qual atendente (banner, coluna da evolução ou pop-up) ----
-   Fica gravado em "partnerClicks": e-mail de quem clicou, qual atendente, número/link de
-   destino e o horário — só o admin consegue ler essa coleção depois (ver painel admin). */
+
+/* ---- registra quem clicou em qual atendente, de qual anúncio (banner, evolução ou pop-up) ----
+   Fica gravado em "partnerClicks": e-mail de quem clicou, o anúncio, o atendente, o número/
+   link de destino e o horário — só o admin consegue ler essa coleção (ver painel admin). */
 document.addEventListener("click", function(e){
   const btn = e.target.closest && e.target.closest(".pt-btn[data-atd]");
   if(!btn) return;
@@ -4677,6 +4681,8 @@ document.addEventListener("click", function(e){
     const ref = doc(collection(db,'partnerClicks'));
     setDoc(ref, {
       email: (currentUser && currentUser.email) || "",
+      adId: btn.dataset.adId || "",
+      adTitle: btn.dataset.adTitle || "",
       atendente: Number(btn.dataset.atd) || 0,
       nome: btn.dataset.nome || "",
       numero: btn.dataset.numero || "",
@@ -4684,41 +4690,152 @@ document.addEventListener("click", function(e){
     }).catch(err=>console.warn('partner-click-log', err));
   }catch(err){ console.warn('partner-click-log', err); }
 });
-// preenche o formulário do admin com o que está publicado
-function fillPartnerForm(){
-  const d=partnerData||{};
-  const set=(id,v)=>{ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||""; };
-  set("pt-title",d.title); set("pt-text",d.text); set("pt-img",d.img);
-  set("pt-vid",d.vid);     set("pt-msg",d.msg);
-  set("pt-w1",d.w1); set("pt-w2",d.w2); set("pt-w3",d.w3); set("pt-w4",d.w4);
-  set("pt-n1",d.n1); set("pt-n2",d.n2); set("pt-n3",d.n3); set("pt-n4",d.n4);
-  const chk=document.getElementById("pt-pop");
-  if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
-  const dd=document.getElementById("pt-pop-days");
-  if(dd && document.activeElement!==dd) dd.value=Number(d.popDays)||7;
-  const st=document.getElementById("pt-status");
-  if(st){
-    if(!d.active) st.textContent="Nenhum anúncio ativo no momento.";
-    else {
-      const tipo = (!d.img && !d.vid && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
-      let txt = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
-      if(d.hidden) txt += " · 🚫 oculto agora (toque no ícone do olho no card pra mostrar de novo)";
-      st.textContent = txt;
-    }
-  }
+
+/* ---- botão rápido de ocultar/mostrar UM anúncio, direto no card (só o admin vê o botão) ---- */
+let ptTogglePending=false;
+document.addEventListener("click", function(e){
+  const btn = e.target.closest && e.target.closest(".pt-admin-toggle");
+  if(!btn || !IS_ADMIN || ptTogglePending) return;
+  e.preventDefault();
+  const id = btn.dataset.adId;
+  const d = PARTNER_ADS.find(x=>x.id===id);
+  if(!d || !d.active) return;
+  const novo = !d.hidden;
+  ptTogglePending = true;
+  setDoc(doc(db,'partnerAds',id), {hidden:novo}, {merge:true})
+    .catch(err=>{ console.warn('partner-hidden', err); alert("Não consegui atualizar. Tente de novo."); })
+    .finally(()=>{ ptTogglePending=false; });
+});
+
+/* =========================================================
+   PAINEL ADMIN: editor de múltiplos anúncios
+   ========================================================= */
+function statusTextoAnuncio(d){
+  if(!d || d._rascunho) return "Novo anúncio — preencha os campos e publique.";
+  if(!d.active) return "Removido (inativo) — publique de novo pra reativar.";
+  const tipo = (!d.img && !d.vid && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
+  let txt = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
+  if(d.hidden) txt += " · 🚫 oculto agora (toque no ícone do olho no card pra mostrar de novo)";
+  return txt;
 }
-/* ---- upload do vídeo direto do PC/celular pro Firebase Storage ----
-   Ao terminar, só preenche o campo "pt-vid" com o link gerado — o admin
-   ainda precisa tocar em "Publicar anúncio" pra colocar no ar, igual
-   ao fluxo normal dos outros campos. */
-document.getElementById("pt-vid-upload-btn").onclick=()=>{
-  document.getElementById("pt-vid-file").click();
-};
-document.getElementById("pt-vid-file").addEventListener("change", function(e){
-  const file = e.target.files && e.target.files[0];
-  e.target.value = ""; // permite escolher o mesmo arquivo de novo depois, se precisar
-  if(!file) return;
-  const st = document.getElementById("pt-vid-upload-status");
+function tituloBlocoAnuncio(d){
+  if(d._rascunho) return "Novo anúncio";
+  return d.title || (d.active ? "Anúncio sem título" : "Anúncio removido");
+}
+function adEditorHTML(d){
+  return `<div class="panel pt-editor" data-id="${esc(d.id)}" style="margin-bottom:14px">
+    <div class="inrow" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong class="pt-editor-titulo" style="font-size:13.5px">${esc(tituloBlocoAnuncio(d))}</strong>
+    </div>
+    <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt f-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
+    <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area f-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
+    <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt f-img" placeholder="https://..." style="margin-top:5px"></div>
+    <div class="fld" style="margin-bottom:6px">
+      <label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label>
+      <div class="inrow" style="margin-top:5px;align-items:center">
+        <input class="txt f-vid" placeholder="Ex.: anuncio.mp4 ou https://..." style="flex:1">
+        <button type="button" class="btn-ghost pt-vid-upload-btn" style="flex:none;white-space:nowrap">📤 Enviar do PC</button>
+      </div>
+      <input type="file" class="pt-vid-file" accept="video/*" style="display:none">
+      <div class="pt-vid-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
+    </div>
+    <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina.</div>
+    <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 atendentes abaixo)</span></label><input class="txt f-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (https://protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
+    <div class="ad-note" style="margin:0 0 12px">💬 Use <b>{nome}</b> em qualquer parte da mensagem — é trocado automaticamente pelo nome do atendente clicado.</div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+      <div class="fld"><label>Atendente 1 — Nome</label><input class="txt f-n1" placeholder="Ex.: Guilherme" style="margin-top:5px"></div>
+      <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt f-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+    </div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+      <div class="fld"><label>Atendente 2 — Nome</label><input class="txt f-n2" placeholder="Ex.: Paulo" style="margin-top:5px"></div>
+      <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt f-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+    </div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+      <div class="fld"><label>Atendente 3 — Nome</label><input class="txt f-n3" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
+      <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt f-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+    </div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
+      <div class="fld"><label>Atendente 4 — Nome</label><input class="txt f-n4" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
+      <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt f-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+    </div>
+    <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
+    <div class="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
+    <label class="check" style="margin:6px 0"><input type="checkbox" class="f-pop"> Mostrar também como pop-up ao abrir o app</label>
+    <div class="inrow" style="align-items:center">
+      <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Repetir a cada</label>
+      <input class="txt f-popdays" type="number" min="1" max="365" step="1" value="7" style="flex:none;width:90px;text-align:center">
+      <span style="color:var(--muted);font-size:13px">dias</span>
+    </div>
+    <div class="inrow" style="margin-top:10px">
+      <button class="btn-primary pt-ad-publish" style="flex:2">Publicar este anúncio</button>
+      <button class="btn-ghost pt-ad-remove" style="flex:1">Remover</button>
+    </div>
+  </div>`;
+}
+// preenche os campos de um bloco já existente no DOM sem mexer no campo em que a pessoa
+// está digitando agora (mesmo padrão usado no resto do app pra não atrapalhar quem escreve)
+function preencherBlocoAnuncio(el, d){
+  const set=(sel,v)=>{ const i=el.querySelector(sel); if(i && document.activeElement!==i) i.value=v||""; };
+  set(".f-title",d.title); set(".f-text",d.text); set(".f-img",d.img); set(".f-vid",d.vid); set(".f-msg",d.msg);
+  set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
+  set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
+  const chk=el.querySelector(".f-pop");
+  if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
+  const dd=el.querySelector(".f-popdays");
+  if(dd && document.activeElement!==dd) dd.value=Number(d.popDays)||7;
+  const st=el.querySelector(".pt-status");
+  if(st) st.textContent = statusTextoAnuncio(d);
+  const tit=el.querySelector(".pt-editor-titulo");
+  if(tit) tit.textContent = tituloBlocoAnuncio(d);
+}
+// reconcilia o DOM do editor com a lista atual (publicados + rascunhos locais) sem recriar
+// blocos já existentes — assim quem está digitando não perde o foco/cursor no meio da edição
+function syncAdsEditorDOM(){
+  const wrap=document.getElementById("pt-ads-editor");
+  if(!wrap) return;
+  const publicados=[...PARTNER_ADS].sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const idsPublicados=new Set(publicados.map(d=>d.id));
+  localDraftAds = localDraftAds.filter(r=>!idsPublicados.has(r.id)); // já publicado: descarta o rascunho
+  const todos=[...publicados, ...localDraftAds];
+  const idsAtuais=new Set(todos.map(d=>d.id));
+  wrap.querySelectorAll(".pt-editor").forEach(el=>{ if(!idsAtuais.has(el.dataset.id)) el.remove(); });
+  todos.forEach(d=>{
+    let el=wrap.querySelector('.pt-editor[data-id="'+d.id+'"]');
+    if(!el){
+      wrap.insertAdjacentHTML("beforeend", adEditorHTML(d));
+      el=wrap.querySelector('.pt-editor[data-id="'+d.id+'"]');
+    }
+    preencherBlocoAnuncio(el, d);
+  });
+}
+function novoRascunhoAnuncio(){
+  const id = doc(collection(db,'partnerAds')).id; // gera o id já de vez (mesmo antes de salvar)
+  localDraftAds.push({id, _rascunho:true});
+  syncAdsEditorDOM();
+  setTimeout(()=>{
+    const el=document.querySelector('.pt-editor[data-id="'+id+'"]');
+    if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+  }, 60);
+}
+document.getElementById("pt-ad-add").onclick = novoRascunhoAnuncio;
+
+/* ---- upload do vídeo direto do PC/celular pro Firebase Storage (delegado: funciona em
+   qualquer bloco de anúncio, inclusive nos criados depois pelo botão "+") ---- */
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const btn=e.target.closest && e.target.closest(".pt-vid-upload-btn");
+  if(!btn) return;
+  const el=btn.closest(".pt-editor");
+  const file=el && el.querySelector(".pt-vid-file");
+  if(file) file.click();
+});
+document.getElementById("pt-ads-editor").addEventListener("change", function(e){
+  const input=e.target.closest && e.target.closest(".pt-vid-file");
+  if(!input) return;
+  const el=input.closest(".pt-editor");
+  const file = input.files && input.files[0];
+  input.value = "";
+  if(!file || !el) return;
+  const st = el.querySelector(".pt-vid-upload-status");
   if(!/^video\//i.test(file.type||"")){
     if(st) st.textContent = "⚠️ Escolha um arquivo de vídeo (mp4, mov, webm...).";
     return;
@@ -4728,11 +4845,12 @@ document.getElementById("pt-vid-file").addEventListener("change", function(e){
     if(st) st.textContent = `⚠️ Vídeo muito grande (${(file.size/1024/1024).toFixed(1)} MB). Limite de ${LIMITE_MB} MB — comprima antes de enviar.`;
     return;
   }
+  const adId = el.dataset.id;
   const ext = (file.name.split(".").pop()||"mp4").toLowerCase().replace(/[^a-z0-9]/g,"") || "mp4";
-  const caminho = "partner/anuncio-"+Date.now()+"."+ext;
+  const caminho = "partner/"+adId+"/anuncio-"+Date.now()+"."+ext;
   const sref = storageRef(storage, caminho);
-  const btn = document.getElementById("pt-vid-upload-btn");
-  btn.disabled = true;
+  const upBtn = el.querySelector(".pt-vid-upload-btn");
+  if(upBtn) upBtn.disabled = true;
   const task = uploadBytesResumable(sref, file, {contentType:file.type||"video/mp4"});
   if(st) st.textContent = "Enviando vídeo... 0%";
   task.on("state_changed",
@@ -4741,7 +4859,7 @@ document.getElementById("pt-vid-file").addEventListener("change", function(e){
       if(st) st.textContent = "Enviando vídeo... "+pct+"%";
     },
     err=>{
-      btn.disabled = false;
+      if(upBtn) upBtn.disabled = false;
       console.warn("upload-video-pt", err);
       const cod = (err && err.code) || "";
       if(st) st.textContent = (cod.indexOf("unauthorized")>=0 || cod.indexOf("permission")>=0)
@@ -4749,10 +4867,11 @@ document.getElementById("pt-vid-file").addEventListener("change", function(e){
         : "⚠️ Não consegui enviar o vídeo. Tente de novo.";
     },
     ()=>{
-      btn.disabled = false;
+      if(upBtn) upBtn.disabled = false;
       getDownloadURL(sref).then(url=>{
-        document.getElementById("pt-vid").value = url;
-        if(st) st.textContent = '✓ Vídeo enviado! Toque em "Publicar anúncio" para colocar no ar.';
+        const vidInput = el.querySelector(".f-vid");
+        if(vidInput) vidInput.value = url;
+        if(st) st.textContent = '✓ Vídeo enviado! Toque em "Publicar este anúncio" para colocar no ar.';
       }).catch(err=>{
         console.warn("geturl-video-pt", err);
         if(st) st.textContent = "⚠️ Vídeo enviado, mas não consegui pegar o link. Tente de novo.";
@@ -4761,67 +4880,80 @@ document.getElementById("pt-vid-file").addEventListener("change", function(e){
   );
 });
 
-document.getElementById("pt-publish").onclick=()=>{
-  const title=document.getElementById("pt-title").value.trim();
-  const text =document.getElementById("pt-text").value.trim();
-  const img  =document.getElementById("pt-img").value.trim();
-  const vid  =document.getElementById("pt-vid").value.trim();
-  const msg  =document.getElementById("pt-msg").value.trim();
-  const w1=document.getElementById("pt-w1").value.trim();
-  const w2=document.getElementById("pt-w2").value.trim();
-  const w3=document.getElementById("pt-w3").value.trim();
-  const w4=document.getElementById("pt-w4").value.trim();
-  const n1=document.getElementById("pt-n1").value.trim();
-  const n2=document.getElementById("pt-n2").value.trim();
-  const n3=document.getElementById("pt-n3").value.trim();
-  const n4=document.getElementById("pt-n4").value.trim();
-  const pop  =document.getElementById("pt-pop").checked;
-  const popDays=Math.min(365, Math.max(1, parseInt(document.getElementById("pt-pop-days").value)||7));
-  for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
-    if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+/* ---- publicar / remover um anúncio específico (delegado) ---- */
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const pubBtn=e.target.closest && e.target.closest(".pt-ad-publish");
+  const remBtn=e.target.closest && e.target.closest(".pt-ad-remove");
+  if(!pubBtn && !remBtn) return;
+  const el=(pubBtn||remBtn).closest(".pt-editor");
+  if(!el) return;
+  const id=el.dataset.id;
+  const g=(sel)=>{ const i=el.querySelector(sel); return i ? i.value.trim() : ""; };
+
+  if(pubBtn){
+    const title=g(".f-title"), text=g(".f-text"), img=g(".f-img"), vid=g(".f-vid"), msg=g(".f-msg");
+    const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4");
+    const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4");
+    const popChk=el.querySelector(".f-pop");
+    const pop = !!(popChk && popChk.checked);
+    const popDaysInput=el.querySelector(".f-popdays");
+    const popDays=Math.min(365, Math.max(1, parseInt(popDaysInput && popDaysInput.value)||7));
+    for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
+      if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+    }
+    const jaExistente = PARTNER_ADS.find(x=>x.id===id);
+    if(!title && !text && !img && !vid && !jaExistente){
+      if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
+    }
+    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()})
+      .then(()=>{
+        try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
+        alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
+      })
+      .catch(err=>{
+        const cod=(err && err.code) || "";
+        if(cod.indexOf("permission")>=0 || cod.indexOf("denied")>=0){
+          alert('Bloqueado pelas regras do Firestore.\n\nA coleção "partnerAds" não tem permissão de escrita. Libere no console do Firebase (Firestore → Regras) e publique de novo.');
+        } else {
+          alert("Não consegui publicar.\n\nErro: "+(cod || (err && err.message) || "desconhecido"));
+        }
+        console.warn("partner-ad-publish", err);
+      });
   }
-  if(!title && !text && !img && !vid){
-    if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
+
+  if(remBtn){
+    const jaExistente = PARTNER_ADS.find(x=>x.id===id);
+    if(!jaExistente){
+      // rascunho nunca publicado: só remove da tela, sem tocar no Firestore
+      localDraftAds = localDraftAds.filter(r=>r.id!==id);
+      syncAdsEditorDOM();
+      return;
+    }
+    if(!confirm("Remover este anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
+    const d=jaExistente;
+    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()})
+      .then(()=>alert("Anúncio removido."))
+      .catch(err=>console.warn(err));
   }
-  setDoc(doc(db,'meta','partner'), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, pop, popDays, active:true, ts:Date.now()})
-    .then(()=>{
-      try{ localStorage.removeItem("pt-pop-visto"); }catch(e){}   // para você mesmo ver o pop-up de novo ao testar
-      alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
-    })
-    .catch(e=>{
-      const cod=(e && e.code) || "";
-      if(cod.indexOf("permission")>=0 || cod.indexOf("denied")>=0){
-        alert('Bloqueado pelas regras do Firestore.\n\nO documento "meta/partner" não tem permissão de escrita. Libere-o no console do Firebase (Firestore → Regras) e publique de novo.');
-      } else {
-        alert("Não consegui publicar.\n\nErro: "+(cod || (e && e.message) || "desconhecido"));
-      }
-      console.warn("partner-publish", e);
-    });
-};
-document.getElementById("pt-remove").onclick=()=>{
-  if(!confirm("Remover o anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
-  const d=partnerData||{};
-  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
-    .then(()=>alert("Anúncio removido."))
-    .catch(e=>console.warn(e));
-};
-/* ---- botão rápido de ocultar/mostrar o anúncio, direto no card (só o admin vê o botão) ----
-   Ao clicar, esconde/mostra para TODOS os usuários na hora (via campo "hidden" no doc),
-   sem apagar o conteúdo publicado — funciona igual em desktop e celular, pois o card
-   é o mesmo elemento renderizado nos dois layouts. */
-let ptTogglePending=false;
-document.addEventListener("click", function(e){
-  const btn = e.target.closest && e.target.closest(".pt-admin-toggle");
-  if(!btn || !IS_ADMIN || ptTogglePending) return;
-  e.preventDefault();
-  const d = partnerData||{};
-  if(!d.active) return;
-  const novo = !d.hidden;
-  ptTogglePending = true;
-  setDoc(doc(db,'meta','partner'), {hidden:novo}, {merge:true})
-    .catch(err=>{ console.warn('partner-hidden', err); alert("Não consegui atualizar. Tente de novo."); })
-    .finally(()=>{ ptTogglePending=false; });
 });
+
+/* ---- migração automática: quem já tinha 1 anúncio publicado no sistema antigo
+   (meta/partner) ganha ele de volta como o primeiro item da nova lista, sem precisar
+   redigitar nada. Roda 1x, só pro admin, só se a lista nova ainda estiver vazia. ---- */
+function tentarMigrarAnuncioAntigo(){
+  if(migradoAnuncioAntigo || !IS_ADMIN) return;
+  if(!partnerData || !partnerData.active) return;   // nada pra migrar
+  if(!partnerAdsLoaded) return;                     // espera confirmar a leitura da coleção nova
+  if(PARTNER_ADS.length>0) return;                  // já tem anúncio(s) no sistema novo
+  migradoAnuncioAntigo = true;
+  const d=partnerData;
+  const novoId = doc(collection(db,'partnerAds')).id;
+  setDoc(doc(db,'partnerAds',novoId), {
+    title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"",
+    w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"",
+    pop:!!d.pop, popDays:Number(d.popDays)||7, active:true, hidden:!!d.hidden, ts:Number(d.ts)||Date.now()
+  }).catch(err=>console.warn('migracao-anuncio', err));
+}
 </script>
 <!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->
 <style>
