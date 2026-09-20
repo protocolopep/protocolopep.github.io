@@ -622,6 +622,10 @@
     text-decoration:none;box-sizing:border-box;
   }
   body.light .pt-btn{color:#053b39;}
+  .pt-vid{background:#000;}
+  .pt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+  .pt-btns .pt-btn{margin-top:0;}
+  @media (max-width:360px){ .pt-btns{grid-template-columns:1fr;} }
   /* botão do admin para ocultar/mostrar o anúncio para todo mundo, direto no card */
   .pt-admin-toggle{
     position:absolute;top:8px;right:10px;z-index:3;
@@ -1366,11 +1370,18 @@
       <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt" id="pt-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
       <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area" id="pt-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
       <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt" id="pt-img" placeholder="https://..." style="margin-top:5px"></div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
-        <div class="fld"><label>Texto do botão</label><input class="txt" id="pt-btn" placeholder="Ex.: Falar agora" style="margin-top:5px"></div>
-        <div class="fld"><label>Link ou WhatsApp</label><input class="txt" id="pt-link" placeholder="https://... ou 84999937819" style="margin-top:5px"></div>
+      <div class="fld" style="margin-bottom:6px"><label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label><input class="txt" id="pt-vid" placeholder="Ex.: anuncio.mp4 ou https://..." style="margin-top:5px"></div>
+      <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina. Coloque o arquivo .mp4 na mesma pasta do site e digite só o nome (ex.: anuncio.mp4), ou cole uma URL completa de onde ele estiver hospedado.</div>
+      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 botões de atendimento abaixo)</span></label><input class="txt" id="pt-msg" placeholder="Deixe em branco para usar a mensagem padrão de indicação" style="margin-top:5px"></div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+        <div class="fld"><label>Atendimento 1 — WhatsApp</label><input class="txt" id="pt-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendimento 2 — WhatsApp</label><input class="txt" id="pt-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
       </div>
-      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(opcional — só vale para link de WhatsApp)</span></label><input class="txt" id="pt-msg" placeholder="Deixe em branco para usar a mensagem padrão de indicação" style="margin-top:5px"></div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="fld"><label>Atendimento 3 — WhatsApp</label><input class="txt" id="pt-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendimento 4 — WhatsApp</label><input class="txt" id="pt-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+      </div>
+      <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendimentos que não forem usar — só aparecem os botões preenchidos. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
       <div id="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
       <label class="check" style="margin:6px 0"><input type="checkbox" id="pt-pop"> Mostrar também como pop-up ao abrir o app</label>
       <div class="inrow" style="align-items:center">
@@ -4398,12 +4409,18 @@ function partnerHref(raw, msg){
   return "";
 }
 // monta o conteúdo do anúncio (usado no banner e no pop-up).
-// Sem imagem/título/texto, cai no espaço de teste "Anuncie aqui".
+// Sem imagem/vídeo/título/texto, cai no espaço de teste "Anuncie aqui".
 function partnerHTML(d, admin){
-  const href=partnerHref(d.link, d.msg);
+  const vid = d.vid ? String(d.vid).trim() : "";
   const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
-  const vazio = !img && !d.title && !d.text;
-  const temMidia = img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
+  // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria),
+  // todos usando a mesma mensagem pronta configurada acima.
+  let btns=[1,2,3,4].map(n=>({label:"Atendimento "+n, href:partnerHref(d["w"+n], d.msg)})).filter(b=>b.href);
+  // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
+  // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendimento 1.
+  if(!btns.length){ const legacy=partnerHref(d.link, d.msg); if(legacy) btns=[{label:"Atendimento 1", href:legacy}]; }
+  const vazio = !vid && !img && !d.title && !d.text;
+  const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
   let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
   h+='<span class="pt-tag">Parceria</span>';
   if(admin){
@@ -4411,14 +4428,21 @@ function partnerHTML(d, admin){
   }
   if(vazio){
     h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
+  } else if(vid){
+    // motion flyer: toca sozinho, sem som (exigido pelos navegadores pra autoplay) e em loop infinito
+    h+=`<video class="pt-img pt-vid" src="${esc(vid)}" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" onerror="this.style.display='none'"></video>`;
   } else if(img){
     h+=`<img class="pt-img" src="${esc(img)}" alt="${esc(d.title||'Parceria')}" loading="lazy" onerror="this.style.display='none'">`;
   }
-  if(d.title || d.text || href){
+  if(d.title || d.text || btns.length){
     h+='<div class="pt-body">';
     if(d.title) h+=`<div class="pt-title">${esc(d.title)}</div>`;
     if(d.text)  h+=`<div class="pt-text">${esc(d.text)}</div>`;
-    if(href)    h+=`<a class="pt-btn" href="${esc(href)}" target="_blank" rel="noopener nofollow sponsored">${esc(d.btn||"Saber mais")} →</a>`;
+    if(btns.length){
+      h+='<div class="pt-btns">';
+      btns.forEach(b=>{ h+=`<a class="pt-btn" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
+      h+='</div>';
+    }
     h+='</div>';
   }
   h+='</div>';
@@ -4498,8 +4522,8 @@ function fillPartnerForm(){
   const d=partnerData||{};
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||""; };
   set("pt-title",d.title); set("pt-text",d.text); set("pt-img",d.img);
-  set("pt-btn",d.btn);     set("pt-link",d.link);
-  set("pt-msg",d.msg);
+  set("pt-vid",d.vid);     set("pt-msg",d.msg);
+  set("pt-w1",d.w1); set("pt-w2",d.w2); set("pt-w3",d.w3); set("pt-w4",d.w4);
   const chk=document.getElementById("pt-pop");
   if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
   const dd=document.getElementById("pt-pop-days");
@@ -4508,7 +4532,7 @@ function fillPartnerForm(){
   if(st){
     if(!d.active) st.textContent="Nenhum anúncio ativo no momento.";
     else {
-      const tipo = (!d.img && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
+      const tipo = (!d.img && !d.vid && !d.title && !d.text) ? 'espaço de teste "Anuncie aqui"' : "anúncio";
       let txt = `✓ ${tipo} publicado`+(d.pop?` · pop-up a cada ${Number(d.popDays)||7} dia(s)`:" · só banner");
       if(d.hidden) txt += " · 🚫 oculto agora (toque no ícone do olho no card pra mostrar de novo)";
       st.textContent = txt;
@@ -4519,16 +4543,21 @@ document.getElementById("pt-publish").onclick=()=>{
   const title=document.getElementById("pt-title").value.trim();
   const text =document.getElementById("pt-text").value.trim();
   const img  =document.getElementById("pt-img").value.trim();
-  const btn  =document.getElementById("pt-btn").value.trim();
-  const link =document.getElementById("pt-link").value.trim();
+  const vid  =document.getElementById("pt-vid").value.trim();
   const msg  =document.getElementById("pt-msg").value.trim();
+  const w1=document.getElementById("pt-w1").value.trim();
+  const w2=document.getElementById("pt-w2").value.trim();
+  const w3=document.getElementById("pt-w3").value.trim();
+  const w4=document.getElementById("pt-w4").value.trim();
   const pop  =document.getElementById("pt-pop").checked;
   const popDays=Math.min(365, Math.max(1, parseInt(document.getElementById("pt-pop-days").value)||7));
-  if(link && !partnerHref(link, msg)){ alert("O link não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
-  if(!title && !text && !img){
+  for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
+    if(num && !partnerHref(num, msg)){ alert("O Atendimento "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+  }
+  if(!title && !text && !img && !vid){
     if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
   }
-  setDoc(doc(db,'meta','partner'), {title, text, img, btn, link, msg, pop, popDays, active:true, ts:Date.now()})
+  setDoc(doc(db,'meta','partner'), {title, text, img, vid, msg, w1, w2, w3, w4, pop, popDays, active:true, ts:Date.now()})
     .then(()=>{
       try{ localStorage.removeItem("pt-pop-visto"); }catch(e){}   // para você mesmo ver o pop-up de novo ao testar
       alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
@@ -4546,7 +4575,7 @@ document.getElementById("pt-publish").onclick=()=>{
 document.getElementById("pt-remove").onclick=()=>{
   if(!confirm("Remover o anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
   const d=partnerData||{};
-  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", btn:d.btn||"", link:d.link||"", msg:d.msg||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
+  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
     .then(()=>alert("Anúncio removido."))
     .catch(e=>console.warn(e));
 };
@@ -4755,6 +4784,125 @@ if(actRow){
 }
 
 setMode("calc");
+})();
+</script>
+<!-- ============ FIM DO BLOCO ============ -->
+
+<!-- ============ BLOCO: puxar pra atualizar + correção da virada do dia ============ -->
+<style>
+  #ptr-indicator{
+    position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:50%;
+    width:36px;height:36px;border-radius:50%;
+    background:var(--surface); border:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    z-index:500; pointer-events:none;
+    box-shadow:0 6px 16px rgba(0,0,0,.22);
+    opacity:0; transform:translate(-50%,-16px) scale(.7);
+    transition:opacity .18s ease, transform .18s ease, border-color .18s ease;
+  }
+  #ptr-indicator.ptr-ready{border-color:var(--primary);}
+  #ptr-indicator svg{width:17px;height:17px;stroke:var(--primary);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+  #ptr-indicator.ptr-spin svg{animation:ptrSpin .7s linear infinite;}
+  @keyframes ptrSpin{to{transform:rotate(360deg);}}
+</style>
+<script>
+/* =========================================================
+   Corrige o bug da virada do dia (ex.: 00:02 com o app aberto
+   ainda mostrando as doses do dia anterior marcadas) e adiciona
+   o gesto de "puxar a tela pra baixo" para forçar a atualização
+   manualmente a qualquer momento.
+
+   Duas camadas:
+   1) automática — sempre que o app volta a ficar visível/em foco,
+      ou a cada 30s enquanto fica aberto, comparamos a data atual
+      com a data que foi carregada; se mudou, atualiza sozinho e
+      já entra no ciclo do novo dia.
+   2) manual — puxar a tela pra baixo no topo força a mesma
+      atualização a qualquer momento (útil pra sincronizar na hora).
+   ========================================================= */
+(function(){
+  "use strict";
+
+  function diaMudou(){
+    try{ return dateKey(new Date()) !== todayKey; }catch(e){ return false; }
+  }
+  function atualizarSistema(){
+    window.location.reload();
+  }
+
+  // ---- 1) checagem automática da virada do dia ----
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState==="visible" && diaMudou()) atualizarSistema();
+  });
+  window.addEventListener("focus", function(){ if(diaMudou()) atualizarSistema(); });
+  setInterval(function(){ if(diaMudou()) atualizarSistema(); }, 30000);
+
+  // ---- 2) puxar a tela pra baixo (pull-to-refresh manual) ----
+  var ptr = document.createElement("div");
+  ptr.id = "ptr-indicator";
+  ptr.setAttribute("aria-hidden","true");
+  ptr.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>';
+  document.body.appendChild(ptr);
+
+  var THRESHOLD = 72, MAX = 120;
+  var startY = 0, dist = 0, pulling = false, releasing = false;
+
+  function bloqueadoPorOverlay(alvo){
+    return !!(alvo && alvo.closest && alvo.closest(".modal, .auth-screen, .share-view, .nv-overlay, .pt-overlay"));
+  }
+  function resetIndicador(){
+    ptr.style.transition = "transform .2s ease, opacity .2s ease";
+    ptr.classList.remove("ptr-ready");
+    ptr.style.opacity = 0;
+    ptr.style.transform = "translate(-50%,-16px) scale(.7)";
+  }
+
+  document.addEventListener("touchstart", function(e){
+    if(releasing) return;
+    if(window.scrollY > 0){ pulling=false; return; }
+    if(e.touches.length!==1){ pulling=false; return; }
+    if(bloqueadoPorOverlay(e.target)){ pulling=false; return; }
+    startY = e.touches[0].clientY;
+    dist = 0;
+    pulling = true;
+  }, {passive:true});
+
+  document.addEventListener("touchmove", function(e){
+    if(!pulling || releasing) return;
+    if(window.scrollY > 0){ pulling=false; resetIndicador(); return; }
+    var y = e.touches[0].clientY;
+    dist = y - startY;
+    if(dist <= 0){ resetIndicador(); return; }
+    var damped = Math.min(dist*0.5, MAX);
+    var t = Math.min(damped/THRESHOLD, 1);
+    ptr.style.transition = "none";
+    ptr.style.opacity = t;
+    ptr.style.transform = "translate(-50%,"+damped+"px) scale("+(0.7+0.3*t)+")";
+    ptr.classList.toggle("ptr-ready", damped>=THRESHOLD);
+    e.preventDefault(); // evita o "bounce" nativo da página ao puxar do topo
+  }, {passive:false});
+
+  document.addEventListener("touchend", function(){
+    if(!pulling || releasing) return;
+    pulling = false;
+    var damped = Math.min(Math.max(dist,0)*0.5, MAX);
+    if(damped >= THRESHOLD){
+      releasing = true;
+      ptr.style.transition = "transform .2s ease, opacity .2s ease";
+      ptr.classList.add("ptr-spin");
+      ptr.style.opacity = 1;
+      ptr.style.transform = "translate(-50%,"+THRESHOLD+"px) scale(1)";
+      setTimeout(atualizarSistema, 350);
+    } else {
+      resetIndicador();
+    }
+  }, {passive:true});
+
+  document.addEventListener("touchcancel", function(){
+    if(releasing) return;
+    pulling = false;
+    resetIndicador();
+  }, {passive:true});
 })();
 </script>
 <!-- ============ FIM DO BLOCO ============ -->
