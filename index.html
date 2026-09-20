@@ -4648,15 +4648,10 @@ function partnerHTML(d, admin){
   } else if(img){
     h+=`<img class="pt-img" src="${esc(img)}" alt="${esc(d.title||'Parceria')}" loading="lazy" onerror="this.style.display='none'">`;
   }
-  if(d.title || d.text || clicavel){
+  if(d.title || d.text){
     h+='<div class="pt-body">';
     if(d.title) h+=`<div class="pt-title">${esc(d.title)}</div>`;
     if(d.text)  h+=`<div class="pt-text">${esc(d.text)}</div>`;
-    if(clicavel){
-      const totalOpcoes = ats.length + (grupo?1:0);
-      const texto = totalOpcoes>1 ? 'Toque para ver as opções de contato' : ('Toque para falar com '+esc((ats[0]||grupo).nome));
-      h+='<div class="pt-tap-hint">💬 '+texto+'</div>';
-    }
     h+='</div>';
   }
   h+='</div>'; // fim do .pt-card (clicável — abre o seletor de atendente/grupo)
@@ -4936,15 +4931,16 @@ function adEditorHTML(d){
       <span style="color:var(--muted);font-size:13px">dias</span>
     </div>
     <div class="inrow" style="margin-top:10px">
-      <button class="btn-primary pt-ad-publish" style="flex:2">Publicar este anúncio</button>
-      <button class="btn-ghost pt-ad-remove" style="flex:1">Remover</button>
+      <button class="btn-primary pt-ad-publish" style="flex:2">Publicar anúncio</button>
+      <button class="btn-ghost pt-ad-undo" style="flex:1">↺ Desfazer</button>
     </div>
+    <button class="btn-ghost pt-ad-remove" style="width:100%;margin-top:8px">Remover anúncio</button>
   </div>`;
 }
 // preenche os campos de um bloco já existente no DOM sem mexer no campo em que a pessoa
 // está digitando agora (mesmo padrão usado no resto do app pra não atrapalhar quem escreve)
-function preencherBlocoAnuncio(el, d){
-  const set=(sel,v)=>{ const i=el.querySelector(sel); if(i && document.activeElement!==i) i.value=v||""; };
+function preencherBlocoAnuncio(el, d, forcar){
+  const set=(sel,v)=>{ const i=el.querySelector(sel); if(i && (forcar || document.activeElement!==i)) i.value=v||""; };
   set(".f-title",d.title); set(".f-text",d.text); set(".f-img",d.img); set(".f-vid",d.vid); set(".f-msg",d.msg);
   set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
   set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
@@ -4952,13 +4948,17 @@ function preencherBlocoAnuncio(el, d){
   set(".f-email1",d.email1); set(".f-email2",d.email2); set(".f-email3",d.email3); set(".f-email4",d.email4);
   set(".f-gnome",d.gnome); set(".f-glink",d.glink); set(".f-gfoto",d.gfoto);
   const chk=el.querySelector(".f-pop");
-  if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
+  if(chk && (forcar || document.activeElement!==chk)) chk.checked=!!d.pop;
   const dd=el.querySelector(".f-popdays");
-  if(dd && document.activeElement!==dd) dd.value=Number(d.popDays)||7;
+  if(dd && (forcar || document.activeElement!==dd)) dd.value=Number(d.popDays)||7;
   const st=el.querySelector(".pt-status");
   if(st) st.textContent = statusTextoAnuncio(d);
   const tit=el.querySelector(".pt-editor-titulo");
   if(tit) tit.textContent = tituloBlocoAnuncio(d);
+  const pubBtn=el.querySelector(".pt-ad-publish");
+  if(pubBtn) pubBtn.textContent = d._rascunho ? "Publicar anúncio" : "Salvar alterações";
+  const undoBtn=el.querySelector(".pt-ad-undo");
+  if(undoBtn) undoBtn.style.display = d._rascunho ? "none" : "";
 }
 // reconcilia o DOM do editor com a lista atual (publicados + rascunhos locais) sem recriar
 // blocos já existentes — assim quem está digitando não perde o foco/cursor no meio da edição
@@ -5120,15 +5120,24 @@ document.getElementById("pt-ads-editor").addEventListener("change", function(e){
   uploadImagemAoCampo(file, campo, el.dataset.id, campo.dataset.slot || "img");
 });
 
-/* ---- publicar / remover um anúncio específico (delegado) ---- */
+/* ---- publicar/salvar, desfazer ou remover um anúncio específico (delegado) ---- */
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const pubBtn=e.target.closest && e.target.closest(".pt-ad-publish");
+  const undoBtn=e.target.closest && e.target.closest(".pt-ad-undo");
   const remBtn=e.target.closest && e.target.closest(".pt-ad-remove");
-  if(!pubBtn && !remBtn) return;
-  const el=(pubBtn||remBtn).closest(".pt-editor");
+  if(!pubBtn && !undoBtn && !remBtn) return;
+  const el=(pubBtn||undoBtn||remBtn).closest(".pt-editor");
   if(!el) return;
   const id=el.dataset.id;
   const g=(sel)=>{ const i=el.querySelector(sel); return i ? i.value.trim() : ""; };
+
+  if(undoBtn){
+    const jaExistente = PARTNER_ADS.find(x=>x.id===id);
+    if(!jaExistente) return; // rascunho novo: não tem nada salvo ainda pra desfazer
+    if(!confirm("Desfazer as alterações não salvas deste anúncio? Ele volta a mostrar o que está publicado agora.")) return;
+    preencherBlocoAnuncio(el, jaExistente, true); // true = força, mesmo em campo focado
+    return;
+  }
 
   if(pubBtn){
     const title=g(".f-title"), text=g(".f-text"), img=g(".f-img"), vid=g(".f-vid"), msg=g(".f-msg");
@@ -5153,7 +5162,7 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, f1, f2, f3, f4, email1, email2, email3, email4, gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()}, {merge:true})
       .then(()=>{
         try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
-        alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
+        alert(jaExistente ? "Alterações salvas!" : ("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":".")));
       })
       .catch(err=>{
         const cod=(err && err.code) || "";
