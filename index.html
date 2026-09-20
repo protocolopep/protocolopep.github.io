@@ -1380,16 +1380,25 @@
         <div id="pt-vid-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
       </div>
       <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina. Use o botão "Enviar do PC" para escolher o arquivo direto do seu computador/celular, ou cole uma URL própria.</div>
-      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 botões de atendimento abaixo)</span></label><input class="txt" id="pt-msg" placeholder="Deixe em branco para usar a mensagem padrão de indicação" style="margin-top:5px"></div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+      <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 atendentes abaixo)</span></label><input class="txt" id="pt-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
+      <div class="ad-note" style="margin:0 0 12px">💬 Use <b>{nome}</b> em qualquer parte da mensagem — na hora de abrir o WhatsApp, ele é trocado automaticamente pelo nome do atendente que a pessoa clicou. Atendente sem nome preenchido usa a mensagem sem essa parte.</div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+        <div class="fld"><label>Atendente 1 — Nome</label><input class="txt" id="pt-n1" placeholder="Ex.: Guilherme" style="margin-top:5px"></div>
         <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt" id="pt-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+      </div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+        <div class="fld"><label>Atendente 2 — Nome</label><input class="txt" id="pt-n2" placeholder="Ex.: Paulo" style="margin-top:5px"></div>
         <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt" id="pt-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
       </div>
-      <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+        <div class="fld"><label>Atendente 3 — Nome</label><input class="txt" id="pt-n3" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
         <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt" id="pt-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+      </div>
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
+        <div class="fld"><label>Atendente 4 — Nome</label><input class="txt" id="pt-n4" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
         <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt" id="pt-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
       </div>
-      <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendimentos que não forem usar — só aparecem os botões preenchidos. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
+      <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar — só aparecem os botões preenchidos. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
       <div id="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
       <label class="check" style="margin:6px 0"><input type="checkbox" id="pt-pop"> Mostrar também como pop-up ao abrir o app</label>
       <div class="inrow" style="align-items:center">
@@ -4397,6 +4406,15 @@ let partnerUnsub=null, partnerData=null;
 // mensagem padrão de indicação (usada quando o admin não define uma própria)
 const PT_MSG_PADRAO = "Olá! Vim por indicação do app Protocolo Pep e gostaria de mais informações.";
 
+// troca {nome} pelo nome do atendente na mensagem. Sem nome preenchido, o {nome}
+// simplesmente some (e o espaço duplo que sobraria é limpo).
+function personalizarMsg(base, nome){
+  const b = String(base||"");
+  if(!/\{nome\}/i.test(b)) return b;
+  const n = String(nome||"").trim();
+  return b.replace(/\{nome\}/ig, n).replace(/[ \t]{2,}/g," ").trim();
+}
+
 // aceita URL completa ou um número de telefone (vira link do WhatsApp).
 // Em link de WhatsApp, já embute a mensagem pronta via ?text=
 function partnerHref(raw, msg){
@@ -4423,12 +4441,14 @@ function partnerHref(raw, msg){
 function partnerHTML(d, admin){
   const vid = d.vid ? String(d.vid).trim() : "";
   const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
-  // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria),
-  // todos usando a mesma mensagem pronta configurada acima.
-  let btns=[1,2,3,4].map(n=>({label:"Atendente "+n, href:partnerHref(d["w"+n], d.msg)})).filter(b=>b.href);
+  // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria).
+  // A mensagem é a mesma pra todos, mas com {nome} trocado pelo nome de cada atendente.
+  let btns=[1,2,3,4]
+    .map(n=>({label:"Atendente "+n, href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n]))}))
+    .filter(b=>b.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
   // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
-  if(!btns.length){ const legacy=partnerHref(d.link, d.msg); if(legacy) btns=[{label:"Atendente 1", href:legacy}]; }
+  if(!btns.length){ const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1)); if(legacy) btns=[{label:"Atendente 1", href:legacy}]; }
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
   let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
@@ -4534,6 +4554,7 @@ function fillPartnerForm(){
   set("pt-title",d.title); set("pt-text",d.text); set("pt-img",d.img);
   set("pt-vid",d.vid);     set("pt-msg",d.msg);
   set("pt-w1",d.w1); set("pt-w2",d.w2); set("pt-w3",d.w3); set("pt-w4",d.w4);
+  set("pt-n1",d.n1); set("pt-n2",d.n2); set("pt-n3",d.n3); set("pt-n4",d.n4);
   const chk=document.getElementById("pt-pop");
   if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
   const dd=document.getElementById("pt-pop-days");
@@ -4613,6 +4634,10 @@ document.getElementById("pt-publish").onclick=()=>{
   const w2=document.getElementById("pt-w2").value.trim();
   const w3=document.getElementById("pt-w3").value.trim();
   const w4=document.getElementById("pt-w4").value.trim();
+  const n1=document.getElementById("pt-n1").value.trim();
+  const n2=document.getElementById("pt-n2").value.trim();
+  const n3=document.getElementById("pt-n3").value.trim();
+  const n4=document.getElementById("pt-n4").value.trim();
   const pop  =document.getElementById("pt-pop").checked;
   const popDays=Math.min(365, Math.max(1, parseInt(document.getElementById("pt-pop-days").value)||7));
   for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
@@ -4621,7 +4646,7 @@ document.getElementById("pt-publish").onclick=()=>{
   if(!title && !text && !img && !vid){
     if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
   }
-  setDoc(doc(db,'meta','partner'), {title, text, img, vid, msg, w1, w2, w3, w4, pop, popDays, active:true, ts:Date.now()})
+  setDoc(doc(db,'meta','partner'), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, pop, popDays, active:true, ts:Date.now()})
     .then(()=>{
       try{ localStorage.removeItem("pt-pop-visto"); }catch(e){}   // para você mesmo ver o pop-up de novo ao testar
       alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
@@ -4639,7 +4664,7 @@ document.getElementById("pt-publish").onclick=()=>{
 document.getElementById("pt-remove").onclick=()=>{
   if(!confirm("Remover o anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
   const d=partnerData||{};
-  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
+  setDoc(doc(db,'meta','partner'), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:Date.now()})
     .then(()=>alert("Anúncio removido."))
     .catch(e=>console.warn(e));
 };
