@@ -628,6 +628,22 @@
   }
   body.light .pt-btn{color:#053b39;}
   .pt-vid{background:#000;height:auto;max-height:420px;object-fit:contain;}
+  /* card do anúncio inteiro fica clicável quando tem atendente configurado */
+  .pt-card.pt-clickable{cursor:pointer;}
+  .pt-tap-hint{margin-top:9px;font-size:12px;font-weight:700;color:var(--primary);}
+  /* pop-up do seletor de atendente */
+  .pt-atd-modal{padding:22px 18px 10px;}
+  .pt-atd-title{font-family:var(--display);font-weight:700;font-size:17px;margin-bottom:3px;}
+  .pt-atd-sub{color:var(--muted);font-size:13px;margin-bottom:8px;}
+  .pt-atd-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;text-align:left;font-family:var(--font);color:var(--text);}
+  .pt-atd-row:first-child{border-top:none;}
+  .pt-atd-row:hover{background:var(--surface2);}
+  .pt-atd-row:active{background:var(--surface3);}
+  .pt-atd-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface3);}
+  .pt-atd-avatar-fallback{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:18px;color:var(--primary);background:var(--primary-dim);}
+  .pt-atd-avatar-grupo{font-size:20px;color:var(--tesa);background:color-mix(in srgb, var(--tesa) 16%, transparent);}
+  .pt-atd-nome{flex:1;font-weight:600;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pt-atd-chevron{flex:none;color:var(--muted2);}
   /* fora do card: fica claramente separado da caixa do anúncio */
   .pt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
   .pt-btns .pt-btn{margin-top:0;}
@@ -1071,6 +1087,16 @@
     <div class="nv-modal pt-modal">
       <button class="nv-close" id="pt-pop-close" aria-label="Fechar">✕</button>
       <div id="pt-pop-content"></div>
+    </div>
+  </div>
+
+  <!-- seletor de atendente: aparece ao tocar num anúncio com mais de 1 atendente configurado -->
+  <div class="nv-overlay" id="pt-atd-overlay" style="display:none">
+    <div class="nv-modal pt-atd-modal">
+      <button class="nv-close" id="pt-atd-close" aria-label="Fechar">✕</button>
+      <div class="pt-atd-title" id="pt-atd-title">Escolha um atendente</div>
+      <div class="pt-atd-sub">Toque em quem você quer chamar no WhatsApp</div>
+      <div id="pt-atd-list"></div>
     </div>
   </div>
 
@@ -3447,7 +3473,7 @@ function renderPartnerClicks(){
   const setTxt=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
   setTxt("pc-total", adminPartnerClicks.length);
 
-  // um grupo de cards por anúncio, cada um com a contagem dos 4 atendentes daquele anúncio
+  // um grupo de cards por anúncio: contagem dos atendentes preenchidos + grupo (se houver)
   if(brk){
     const ads = [...PARTNER_ADS].sort((a,b)=>(a.ts||0)-(b.ts||0));
     if(!ads.length){
@@ -3455,12 +3481,21 @@ function renderPartnerClicks(){
     } else {
       brk.innerHTML = ads.map(ad=>{
         const counts={1:0,2:0,3:0,4:0};
-        adminPartnerClicks.forEach(c=>{ if(c.adId===ad.id){ const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++; } });
-        const cards=[1,2,3,4].map(n=>
-          `<div class="ad-stat"><div class="ad-v">${counts[n]}</div><div class="ad-k">Atendente ${n}${ad["n"+n]?(" ("+esc(ad["n"+n])+")"):""}</div></div>`
-        ).join('');
+        let grupoCount=0;
+        adminPartnerClicks.forEach(c=>{
+          if(c.adId!==ad.id) return;
+          if(c.tipo==='grupo'){ grupoCount++; return; }
+          const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++;
+        });
+        const cards=[1,2,3,4]
+          .filter(n=>(ad["w"+n]||"").trim()) // só mostra card dos atendentes que existem nesse anúncio
+          .map(n=>`<div class="ad-stat"><div class="ad-v">${counts[n]}</div><div class="ad-k">Atendente ${n}${ad["n"+n]?(" ("+esc(ad["n"+n])+")"):""}</div></div>`)
+          .join('');
+        const cardGrupo = (ad.glink||"").trim()
+          ? `<div class="ad-stat"><div class="ad-v">${grupoCount}</div><div class="ad-k">👥 ${esc(ad.gnome||"Grupo")}</div></div>`
+          : '';
         return `<div style="margin-bottom:6px;font-size:12.5px;color:var(--muted);font-weight:600">${esc(ad.title||"Anúncio sem título")}</div>
-          <div class="ad-grid" style="margin-bottom:14px">${cards}</div>`;
+          <div class="ad-grid" style="margin-bottom:14px">${cards}${cardGrupo}</div>`;
       }).join('');
     }
   }
@@ -3479,7 +3514,8 @@ function renderPartnerClicks(){
   const restante = usePaging ? filtered.length - shown.length : 0;
   let html = shown.map(c=>{
     const anuncio = c.adTitle ? `${esc(c.adTitle)} · ` : '';
-    const quem = anuncio+"Atendente "+(c.atendente||'?')+(c.nome?(" — "+esc(c.nome)):'')+(c.numero?(" · "+esc(c.numero)):'');
+    const rotulo = c.tipo==='grupo' ? ("👥 "+(c.nome?esc(c.nome):"Grupo")) : ("Atendente "+(c.atendente||'?')+(c.nome?(" — "+esc(c.nome)):''));
+    const quem = anuncio+rotulo+(c.numero?(" · "+esc(c.numero)):'');
     return `<div class="mb-row">
       <div class="mb-info">
         <span class="mb-email">${esc(c.email||'(sem e-mail)')}</span>
@@ -4533,30 +4569,44 @@ function partnerHref(raw, msg){
 }
 // monta o conteúdo de UM anúncio (usado no banner, na coluna da evolução e no pop-up).
 // Sem imagem/vídeo/título/texto, cai no espaço de teste "Anuncie aqui".
-function partnerHTML(d, admin){
-  const vid = d.vid ? String(d.vid).trim() : "";
-  const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
-  // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria).
-  // A mensagem é a mesma pra todos, mas com {nome} trocado pelo nome de cada atendente.
-  let btns=[1,2,3,4]
+// monta a lista de atendentes de um anúncio (nome, foto, número/link, mensagem já pronta).
+// Cada um pode ser um n° de WhatsApp ou uma URL própria; a mensagem é a mesma pra todos,
+// mas com {nome} trocado pelo nome de cada atendente.
+function atendentesDoAnuncio(d){
+  let ats=[1,2,3,4]
     .map(n=>({
       n,
-      label:"Atendente "+n,
-      nome:(d["n"+n]||"").trim(),
+      nome:(d["n"+n]||"").trim() || ("Atendente "+n),
+      foto:(d["f"+n]||"").trim(),
       numero:(d["w"+n]||"").trim(),
       href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n]))
     }))
-    .filter(b=>b.href);
+    .filter(a=>a.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
   // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
-  if(!btns.length){
+  if(!ats.length){
     const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1));
-    if(legacy) btns=[{n:1, label:"Atendente 1", nome:(d.n1||"").trim(), numero:(d.link||"").trim(), href:legacy}];
+    if(legacy) ats=[{n:1, nome:(d.n1||"").trim()||"Atendente 1", foto:(d.f1||"").trim(), numero:(d.link||"").trim(), href:legacy}];
   }
+  return ats;
+}
+// grupo (WhatsApp/Telegram/etc.) opcional de um anúncio — aparece como mais uma opção
+// na mesma caixinha dos atendentes. É só um link direto, sem mensagem embutida.
+function grupoDoAnuncio(d){
+  const link=(d.glink||"").trim();
+  if(!link || !/^https?:\/\//i.test(link)) return null;
+  return { nome:(d.gnome||"").trim()||"Entrar no grupo", foto:(d.gfoto||"").trim(), href:link };
+}
+function partnerHTML(d, admin){
+  const vid = d.vid ? String(d.vid).trim() : "";
+  const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
+  const ats = atendentesDoAnuncio(d);
+  const grupo = grupoDoAnuncio(d);
+  const clicavel = ats.length>0 || !!grupo;
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
   let h='<div class="pt-wrap'+((admin&&d.hidden)?' pt-hidden-preview':'')+'" data-ad-id="'+esc(d.id||'')+'">';
-  h+='<div class="pt-card'+(temMidia?'':' pt-nomedia')+'">';
+  h+='<div class="pt-card'+(temMidia?'':' pt-nomedia')+(clicavel?' pt-clickable':'')+'" data-ad-id="'+esc(d.id||'')+'">';
   h+='<span class="pt-tag">Parceria</span>';
   if(admin){
     h+='<button type="button" class="pt-admin-toggle" data-ad-id="'+esc(d.id||'')+'" title="'+(d.hidden?'Mostrar anúncio para todos':'Ocultar anúncio para todos')+'">'+(d.hidden?'🚫':'👁️')+'</button>';
@@ -4570,19 +4620,18 @@ function partnerHTML(d, admin){
   } else if(img){
     h+=`<img class="pt-img" src="${esc(img)}" alt="${esc(d.title||'Parceria')}" loading="lazy" onerror="this.style.display='none'">`;
   }
-  if(d.title || d.text){
+  if(d.title || d.text || clicavel){
     h+='<div class="pt-body">';
     if(d.title) h+=`<div class="pt-title">${esc(d.title)}</div>`;
     if(d.text)  h+=`<div class="pt-text">${esc(d.text)}</div>`;
+    if(clicavel){
+      const totalOpcoes = ats.length + (grupo?1:0);
+      const texto = totalOpcoes>1 ? 'Toque para ver as opções de contato' : ('Toque para falar com '+esc((ats[0]||grupo).nome));
+      h+='<div class="pt-tap-hint">💬 '+texto+'</div>';
+    }
     h+='</div>';
   }
-  h+='</div>'; // fim do .pt-card
-  // botões de atendente ficam FORA da caixa do anúncio, como bloco separado logo abaixo
-  if(btns.length){
-    h+='<div class="pt-btns">';
-    btns.forEach(b=>{ h+=`<a class="pt-btn" data-ad-id="${esc(d.id||'')}" data-ad-title="${esc(d.title||'')}" data-atd="${b.n}" data-nome="${esc(b.nome)}" data-numero="${esc(b.numero)}" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
-    h+='</div>';
-  }
+  h+='</div>'; // fim do .pt-card (clicável — abre o seletor de atendente/grupo)
   h+='</div>'; // fim do .pt-wrap
   return h;
 }
@@ -4657,6 +4706,10 @@ function mostrarProximoPopupAnuncio(){
   document.getElementById("pt-pop-content").innerHTML=partnerHTML(filaPopupsAnuncio[0], IS_ADMIN);
   ov.style.display="flex";
 }
+function popupAnuncioAberto(){
+  const ov=document.getElementById("pt-overlay");
+  return !!(ov && ov.style.display && ov.style.display!=="none");
+}
 function fecharPartnerPop(){
   const ov=document.getElementById("pt-overlay");
   const atual=filaPopupsAnuncio.shift();
@@ -4666,29 +4719,84 @@ function fecharPartnerPop(){
 }
 document.getElementById("pt-pop-close").onclick=fecharPartnerPop;
 document.getElementById("pt-overlay").onclick=(e)=>{ if(e.target.id==="pt-overlay") fecharPartnerPop(); };
-// tocar no botão do anúncio dentro do pop-up também registra como visto (e avança a fila)
-document.getElementById("pt-pop-content").addEventListener("click",e=>{
-  if(e.target.closest && e.target.closest(".pt-btn")) fecharPartnerPop();
-});
 
-/* ---- registra quem clicou em qual atendente, de qual anúncio (banner, evolução ou pop-up) ----
-   Fica gravado em "partnerClicks": e-mail de quem clicou, o anúncio, o atendente, o número/
-   link de destino e o horário — só o admin consegue ler essa coleção (ver painel admin). */
-document.addEventListener("click", function(e){
-  const btn = e.target.closest && e.target.closest(".pt-btn[data-atd]");
-  if(!btn) return;
+/* ---- registra 1 clique em "partnerClicks": e-mail de quem clicou, o anúncio, o atendente
+   escolhido, o número/link de destino e o horário — só o admin consegue ler essa coleção. */
+function registrarCliqueAtendente(ad, opcao){
   try{
     const ref = doc(collection(db,'partnerClicks'));
     setDoc(ref, {
       email: (currentUser && currentUser.email) || "",
-      adId: btn.dataset.adId || "",
-      adTitle: btn.dataset.adTitle || "",
-      atendente: Number(btn.dataset.atd) || 0,
-      nome: btn.dataset.nome || "",
-      numero: btn.dataset.numero || "",
+      adId: (ad && ad.id) || "",
+      adTitle: (ad && ad.title) || "",
+      tipo: (opcao && opcao.tipo) || "atendente",
+      atendente: Number(opcao && opcao.n) || 0,
+      nome: (opcao && opcao.nome) || "",
+      numero: (opcao && opcao.numero) || "",
       ts: Date.now()
     }).catch(err=>console.warn('partner-click-log', err));
   }catch(err){ console.warn('partner-click-log', err); }
+}
+function linhaOpcaoHTML(o){
+  const inicial = esc((o.nome.trim()[0]||(o.tipo==='grupo'?'👥':'?')).toUpperCase());
+  const avatar = o.foto
+    ? `<img class="pt-atd-avatar" src="${esc(o.foto)}" alt="${esc(o.nome)}" onerror="this.outerHTML='<span class=&quot;pt-atd-avatar pt-atd-avatar-fallback${o.tipo==='grupo'?' pt-atd-avatar-grupo':''}&quot;>${o.tipo==='grupo'?'👥':inicial}</span>'">`
+    : `<span class="pt-atd-avatar pt-atd-avatar-fallback${o.tipo==='grupo'?' pt-atd-avatar-grupo':''}">${o.tipo==='grupo'?'👥':inicial}</span>`;
+  return `<button type="button" class="pt-atd-row" data-ad-id="${esc(o.adId)}" data-ad-title="${esc(o.adTitle||'')}" data-tipo="${o.tipo}" data-atd="${o.n||0}" data-nome="${esc(o.nome)}" data-numero="${esc(o.numero||'')}" data-href="${esc(o.href)}">
+    ${avatar}
+    <span class="pt-atd-nome">${esc(o.nome)}</span>
+    <svg class="pt-atd-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </button>`;
+}
+/* ---- seletor de atendente/grupo: toca no anúncio (card) -> escolhe a opção ----
+   Com só 1 atendente e nenhum grupo, vai direto pro WhatsApp dele, sem precisar escolher. */
+function abrirSeletorAtendente(adId){
+  const d = PARTNER_ADS.find(x=>x.id===adId);
+  if(!d) return;
+  const ats = atendentesDoAnuncio(d);
+  const grupo = grupoDoAnuncio(d);
+  const opcoes = [
+    ...ats.map(a=>({tipo:'atendente', n:a.n, nome:a.nome, foto:a.foto, numero:a.numero, href:a.href, adId:d.id, adTitle:d.title||''})),
+    ...(grupo ? [{tipo:'grupo', n:0, nome:grupo.nome, foto:grupo.foto, numero:grupo.href, href:grupo.href, adId:d.id, adTitle:d.title||''}] : [])
+  ];
+  if(!opcoes.length) return; // anúncio sem atendente nem grupo configurado: não faz nada ao tocar
+  if(opcoes.length===1){
+    registrarCliqueAtendente(d, opcoes[0]);
+    window.open(opcoes[0].href, "_blank", "noopener");
+    if(popupAnuncioAberto()) fecharPartnerPop();
+    return;
+  }
+  const ov=document.getElementById("pt-atd-overlay");
+  const list=document.getElementById("pt-atd-list");
+  const title=document.getElementById("pt-atd-title");
+  if(!ov || !list) return;
+  if(title) title.textContent = d.title ? ("Falar sobre "+d.title) : "Escolha uma opção";
+  list.innerHTML = opcoes.map(linhaOpcaoHTML).join('');
+  ov.style.display="flex";
+}
+function fecharSeletorAtendente(){
+  const ov=document.getElementById("pt-atd-overlay");
+  if(ov) ov.style.display="none";
+}
+document.getElementById("pt-atd-close").onclick=fecharSeletorAtendente;
+document.getElementById("pt-atd-overlay").onclick=(e)=>{ if(e.target.id==="pt-atd-overlay") fecharSeletorAtendente(); };
+document.getElementById("pt-atd-list").addEventListener("click", function(e){
+  const row=e.target.closest(".pt-atd-row");
+  if(!row) return;
+  registrarCliqueAtendente(
+    {id:row.dataset.adId, title:row.dataset.adTitle},
+    {tipo:row.dataset.tipo, n:row.dataset.atd, nome:row.dataset.nome, numero:row.dataset.numero}
+  );
+  window.open(row.dataset.href, "_blank", "noopener");
+  fecharSeletorAtendente();
+  if(popupAnuncioAberto()) fecharPartnerPop(); // se o anúncio tocado estava dentro do pop-up, fecha ele também
+});
+// tocar em qualquer parte de um anúncio (fora do ícone de admin) abre o seletor de atendente
+document.addEventListener("click", function(e){
+  if(e.target.closest && e.target.closest(".pt-admin-toggle")) return;
+  const card = e.target.closest && e.target.closest(".pt-card.pt-clickable[data-ad-id]");
+  if(!card) return;
+  abrirSeletorAtendente(card.dataset.adId);
 });
 
 /* ---- botão rápido de ocultar/mostrar UM anúncio, direto no card (só o admin vê o botão) ---- */
@@ -4746,19 +4854,29 @@ function adEditorHTML(d){
       <div class="fld"><label>Atendente 1 — Nome</label><input class="txt f-n1" placeholder="Ex.: Guilherme" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt f-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
+    <div class="fld" style="margin-bottom:10px"><label>Atendente 1 — Foto <span class="desc">(URL — opcional, sem foto usa a inicial do nome)</span></label><input class="txt f-f1" placeholder="https://..." style="margin-top:5px"></div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 2 — Nome</label><input class="txt f-n2" placeholder="Ex.: Paulo" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt f-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
+    <div class="fld" style="margin-bottom:10px"><label>Atendente 2 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f2" placeholder="https://..." style="margin-top:5px"></div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 3 — Nome</label><input class="txt f-n3" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt f-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:10px">
+    <div class="fld" style="margin-bottom:10px"><label>Atendente 3 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f3" placeholder="https://..." style="margin-top:5px"></div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 4 — Nome</label><input class="txt f-n4" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt f-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
+    <div class="fld" style="margin-bottom:10px"><label>Atendente 4 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f4" placeholder="https://..." style="margin-top:5px"></div>
+    <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
+    <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+      <div class="fld"><label>Nome do grupo</label><input class="txt f-gnome" placeholder="Ex.: Grupo de ofertas" style="margin-top:5px"></div>
+      <div class="fld"><label>Link do grupo</label><input class="txt f-glink" placeholder="https://chat.whatsapp.com/..." style="margin-top:5px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:10px"><label>Foto/ícone do grupo <span class="desc">(URL — opcional, sem foto usa um ícone padrão)</span></label><input class="txt f-gfoto" placeholder="https://..." style="margin-top:5px"></div>
     <div class="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
     <label class="check" style="margin:6px 0"><input type="checkbox" class="f-pop"> Mostrar também como pop-up ao abrir o app</label>
     <div class="inrow" style="align-items:center">
@@ -4779,6 +4897,8 @@ function preencherBlocoAnuncio(el, d){
   set(".f-title",d.title); set(".f-text",d.text); set(".f-img",d.img); set(".f-vid",d.vid); set(".f-msg",d.msg);
   set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
   set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
+  set(".f-f1",d.f1); set(".f-f2",d.f2); set(".f-f3",d.f3); set(".f-f4",d.f4);
+  set(".f-gnome",d.gnome); set(".f-glink",d.glink); set(".f-gfoto",d.gfoto);
   const chk=el.querySelector(".f-pop");
   if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
   const dd=el.querySelector(".f-popdays");
@@ -4894,6 +5014,8 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     const title=g(".f-title"), text=g(".f-text"), img=g(".f-img"), vid=g(".f-vid"), msg=g(".f-msg");
     const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4");
     const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4");
+    const f1=g(".f-f1"), f2=g(".f-f2"), f3=g(".f-f3"), f4=g(".f-f4");
+    const gnome=g(".f-gnome"), glink=g(".f-glink"), gfoto=g(".f-gfoto");
     const popChk=el.querySelector(".f-pop");
     const pop = !!(popChk && popChk.checked);
     const popDaysInput=el.querySelector(".f-popdays");
@@ -4901,11 +5023,12 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
       if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
     }
+    if(glink && !/^https?:\/\//i.test(glink)){ alert("O link do grupo precisa começar com http:// ou https://"); return; }
     const jaExistente = PARTNER_ADS.find(x=>x.id===id);
     if(!title && !text && !img && !vid && !jaExistente){
       if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
     }
-    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()})
+    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, f1, f2, f3, f4, gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()})
       .then(()=>{
         try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
         alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
@@ -4931,7 +5054,7 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     }
     if(!confirm("Remover este anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
     const d=jaExistente;
-    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()})
+    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", f1:d.f1||"", f2:d.f2||"", f3:d.f3||"", f4:d.f4||"", gnome:d.gnome||"", glink:d.glink||"", gfoto:d.gfoto||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()})
       .then(()=>alert("Anúncio removido."))
       .catch(err=>console.warn(err));
   }
