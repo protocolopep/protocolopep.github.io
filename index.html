@@ -644,6 +644,21 @@
   .pt-atd-avatar-grupo{font-size:20px;color:var(--tesa);background:color-mix(in srgb, var(--tesa) 16%, transparent);}
   .pt-atd-nome{flex:1;font-weight:600;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pt-atd-chevron{flex:none;color:var(--muted2);}
+  .pt-atd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .pt-atd-info .pt-atd-nome{flex:none;}
+  .pt-atd-status{align-self:flex-start;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;}
+  .pt-atd-status.on{color:#2FD8AC;background:color-mix(in srgb, #2FD8AC 16%, transparent);}
+  .pt-atd-status.off{color:var(--muted2);background:var(--surface3);}
+  .pt-atd-row.pt-atd-offline{opacity:.65;}
+  /* painel "meu status de atendimento" — só quem tem e-mail vinculado a um atendente vê isso */
+  #my-attendant-status{margin:10px 16px 0;}
+  .mas-row{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .mas-info{display:flex;align-items:center;gap:9px;min-width:0;}
+  .mas-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted2);}
+  .mas-dot.on{background:#2FD8AC;box-shadow:0 0 0 3px color-mix(in srgb, #2FD8AC 22%, transparent);}
+  .mas-title{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mas-toggle{flex:none;font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;}
+  .mas-toggle.on{border-color:#2FD8AC;color:#2FD8AC;background:color-mix(in srgb, #2FD8AC 12%, transparent);}
   /* fora do card: fica claramente separado da caixa do anúncio */
   .pt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
   .pt-btns .pt-btn{margin-top:0;}
@@ -1129,6 +1144,11 @@
     <span class="notice-ic">📢</span>
     <span class="notice-text" id="notice-text"></span>
   </div>
+
+  <!-- só aparece pra quem estiver vinculado como atendente de algum anúncio (e-mail
+       cadastrado pelo admin num dos 4 slots) — deixa a pessoa ligar/desligar o próprio
+       "online" sem ter acesso a mais nada do painel admin -->
+  <div id="my-attendant-status" style="display:none"></div>
 
   <!-- anúncio/parceria: fora das views, então acompanha todas as abas -->
   <!-- wrapper de layout: no desktop vira 2 colunas (conteúdo | anúncio) -->
@@ -3653,6 +3673,7 @@ async function showApp(user){
     PARTNER_ADS = snap.docs.map(d=>({...d.data(), id:d.id}));
     partnerAdsLoaded = true;
     renderPartner();
+    renderMeuStatusAtendente();
     if(IS_ADMIN){ syncAdsEditorDOM(); renderPartnerClicks(); }
     tentarMigrarAnuncioAntigo();
     maybeShowPartnerPop();
@@ -3709,7 +3730,7 @@ function showAuth(){
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
   if(partnerAdsUnsub){ partnerAdsUnsub(); partnerAdsUnsub=null; }
-  partnerData=null; PARTNER_ADS=[]; partnerAdsLoaded=false; localDraftAds=[]; renderPartner();
+  partnerData=null; PARTNER_ADS=[]; partnerAdsLoaded=false; localDraftAds=[]; renderPartner(); renderMeuStatusAtendente();
   { const ed=document.getElementById("pt-ads-editor"); if(ed) ed.innerHTML=""; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
@@ -4582,14 +4603,18 @@ function atendentesDoAnuncio(d){
       nome:(d["n"+n]||"").trim() || ("Atendente "+n),
       foto:(d["f"+n]||"").trim(),
       numero:(d["w"+n]||"").trim(),
-      href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n]))
+      href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n])),
+      // "temStatus": só mostra selo online/offline pra quem tem e-mail vinculado — sem
+      // e-mail, o atendente sempre aparece disponível (comportamento de antes, sem mudança)
+      temStatus: !!(d["email"+n]||"").trim(),
+      online: (d["email"+n]||"").trim() ? (d["online"+n]!==false) : true
     }))
     .filter(a=>a.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
   // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
   if(!ats.length){
     const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1));
-    if(legacy) ats=[{n:1, nome:(d.n1||"").trim()||"Atendente 1", foto:(d.f1||"").trim(), numero:(d.link||"").trim(), href:legacy}];
+    if(legacy) ats=[{n:1, nome:(d.n1||"").trim()||"Atendente 1", foto:(d.f1||"").trim(), numero:(d.link||"").trim(), href:legacy, temStatus:false, online:true}];
   }
   return ats;
 }
@@ -4745,27 +4770,38 @@ function linhaOpcaoHTML(o){
   const avatar = o.foto
     ? `<img class="pt-atd-avatar" src="${esc(o.foto)}" alt="${esc(o.nome)}" onerror="this.outerHTML='<span class=&quot;pt-atd-avatar pt-atd-avatar-fallback${o.tipo==='grupo'?' pt-atd-avatar-grupo':''}&quot;>${o.tipo==='grupo'?'👥':inicial}</span>'">`
     : `<span class="pt-atd-avatar pt-atd-avatar-fallback${o.tipo==='grupo'?' pt-atd-avatar-grupo':''}">${o.tipo==='grupo'?'👥':inicial}</span>`;
-  return `<button type="button" class="pt-atd-row" data-ad-id="${esc(o.adId)}" data-ad-title="${esc(o.adTitle||'')}" data-tipo="${o.tipo}" data-atd="${o.n||0}" data-nome="${esc(o.nome)}" data-numero="${esc(o.numero||'')}" data-href="${esc(o.href)}">
+  const offline = !!(o.temStatus && o.online===false);
+  const selo = o.temStatus ? `<span class="pt-atd-status ${offline?'off':'on'}">${offline?'⚫ Offline':'🟢 Online'}</span>` : '';
+  return `<button type="button" class="pt-atd-row${offline?' pt-atd-offline':''}" data-offline="${offline?'1':'0'}" data-ad-id="${esc(o.adId)}" data-ad-title="${esc(o.adTitle||'')}" data-tipo="${o.tipo}" data-atd="${o.n||0}" data-nome="${esc(o.nome)}" data-numero="${esc(o.numero||'')}" data-href="${esc(o.href)}">
     ${avatar}
-    <span class="pt-atd-nome">${esc(o.nome)}</span>
+    <span class="pt-atd-info">
+      <span class="pt-atd-nome">${esc(o.nome)}</span>
+      ${selo}
+    </span>
     <svg class="pt-atd-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
   </button>`;
 }
 /* ---- seletor de atendente/grupo: toca no anúncio (card) -> escolhe a opção ----
-   Com só 1 atendente e nenhum grupo, vai direto pro WhatsApp dele, sem precisar escolher. */
+   Com só 1 atendente e nenhum grupo, vai direto pro WhatsApp dele, sem precisar escolher —
+   a menos que esse único atendente esteja offline, aí sempre mostra o aviso. */
 function abrirSeletorAtendente(adId){
   const d = PARTNER_ADS.find(x=>x.id===adId);
   if(!d) return;
   const ats = atendentesDoAnuncio(d);
   const grupo = grupoDoAnuncio(d);
   const opcoes = [
-    ...ats.map(a=>({tipo:'atendente', n:a.n, nome:a.nome, foto:a.foto, numero:a.numero, href:a.href, adId:d.id, adTitle:d.title||''})),
-    ...(grupo ? [{tipo:'grupo', n:0, nome:grupo.nome, foto:grupo.foto, numero:grupo.href, href:grupo.href, adId:d.id, adTitle:d.title||''}] : [])
+    ...ats.map(a=>({tipo:'atendente', n:a.n, nome:a.nome, foto:a.foto, numero:a.numero, href:a.href, adId:d.id, adTitle:d.title||'', temStatus:a.temStatus, online:a.online})),
+    ...(grupo ? [{tipo:'grupo', n:0, nome:grupo.nome, foto:grupo.foto, numero:grupo.href, href:grupo.href, adId:d.id, adTitle:d.title||'', temStatus:false, online:true}] : [])
   ];
   if(!opcoes.length) return; // anúncio sem atendente nem grupo configurado: não faz nada ao tocar
   if(opcoes.length===1){
-    registrarCliqueAtendente(d, opcoes[0]);
-    window.open(opcoes[0].href, "_blank", "noopener");
+    const unica = opcoes[0];
+    if(unica.temStatus && unica.online===false){
+      alert((unica.nome||"Este atendente")+" está offline no momento. Tente novamente mais tarde.");
+      return;
+    }
+    registrarCliqueAtendente(d, unica);
+    window.open(unica.href, "_blank", "noopener");
     if(popupAnuncioAberto()) fecharPartnerPop();
     return;
   }
@@ -4786,6 +4822,10 @@ document.getElementById("pt-atd-overlay").onclick=(e)=>{ if(e.target.id==="pt-at
 document.getElementById("pt-atd-list").addEventListener("click", function(e){
   const row=e.target.closest(".pt-atd-row");
   if(!row) return;
+  if(row.dataset.offline==="1"){
+    alert((row.dataset.nome||"Este atendente")+" está offline no momento. Tente novamente mais tarde ou escolha outra opção.");
+    return;
+  }
   registrarCliqueAtendente(
     {id:row.dataset.adId, title:row.dataset.adTitle},
     {tipo:row.dataset.tipo, n:row.dataset.atd, nome:row.dataset.nome, numero:row.dataset.numero}
@@ -4847,13 +4887,14 @@ function campoImagemHTML(label, desc, campoClasse, placeholder, slot){
     <div class="pt-img-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
   </div>`;
 }
-// monta o bloco completo de 1 atendente: nome + whatsapp + foto
+// monta o bloco completo de 1 atendente: nome + whatsapp + foto + e-mail de login (opcional)
 function blocoAtendenteHTML(n, exemploNome){
   return `<div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente ${n} — Nome</label><input class="txt f-n${n}" placeholder="Ex.: ${exemploNome}" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente ${n} — WhatsApp</label><input class="txt f-w${n}" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    ${campoImagemHTML("Atendente "+n+" — Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}`;
+    ${campoImagemHTML("Atendente "+n+" — Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
+    <div class="fld" style="margin-bottom:10px"><label>Atendente ${n} — E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>`;
 }
 function adEditorHTML(d){
   return `<div class="panel pt-editor" data-id="${esc(d.id)}" style="margin-bottom:14px">
@@ -4880,6 +4921,7 @@ function adEditorHTML(d){
     ${blocoAtendenteHTML(3,"(opcional)")}
     ${blocoAtendenteHTML(4,"(opcional)")}
     <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
+    <div class="ad-note" style="margin:0 0 10px">🟢 Se preencher o <b>e-mail de login</b> de um atendente, ele mesmo passa a controlar se está online/offline (aparece um painelzinho pra ele quando entra no app com esse e-mail) — sem ter acesso a mais nada do painel admin. Enquanto offline, quem tentar falar com ele na caixinha vê um aviso e não consegue enviar mensagem. Sem e-mail preenchido, o atendente fica sempre disponível, como já era antes.</div>
     <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Nome do grupo</label><input class="txt f-gnome" placeholder="Ex.: Grupo de ofertas" style="margin-top:5px"></div>
@@ -4907,6 +4949,7 @@ function preencherBlocoAnuncio(el, d){
   set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
   set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
   set(".f-f1",d.f1); set(".f-f2",d.f2); set(".f-f3",d.f3); set(".f-f4",d.f4);
+  set(".f-email1",d.email1); set(".f-email2",d.email2); set(".f-email3",d.email3); set(".f-email4",d.email4);
   set(".f-gnome",d.gnome); set(".f-glink",d.glink); set(".f-gfoto",d.gfoto);
   const chk=el.querySelector(".f-pop");
   if(chk && document.activeElement!==chk) chk.checked=!!d.pop;
@@ -5092,6 +5135,7 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4");
     const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4");
     const f1=g(".f-f1"), f2=g(".f-f2"), f3=g(".f-f3"), f4=g(".f-f4");
+    const email1=g(".f-email1").toLowerCase(), email2=g(".f-email2").toLowerCase(), email3=g(".f-email3").toLowerCase(), email4=g(".f-email4").toLowerCase();
     const gnome=g(".f-gnome"), glink=g(".f-glink"), gfoto=g(".f-gfoto");
     const popChk=el.querySelector(".f-pop");
     const pop = !!(popChk && popChk.checked);
@@ -5105,7 +5149,8 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     if(!title && !text && !img && !vid && !jaExistente){
       if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
     }
-    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, f1, f2, f3, f4, gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()})
+    // merge:true — nunca sobrescreve o online1..online4 que o próprio atendente controla
+    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, f1, f2, f3, f4, email1, email2, email3, email4, gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()}, {merge:true})
       .then(()=>{
         try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
         alert("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":"."));
@@ -5131,7 +5176,7 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     }
     if(!confirm("Remover este anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
     const d=jaExistente;
-    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", f1:d.f1||"", f2:d.f2||"", f3:d.f3||"", f4:d.f4||"", gnome:d.gnome||"", glink:d.glink||"", gfoto:d.gfoto||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()})
+    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", f1:d.f1||"", f2:d.f2||"", f3:d.f3||"", f4:d.f4||"", email1:d.email1||"", email2:d.email2||"", email3:d.email3||"", email4:d.email4||"", gnome:d.gnome||"", glink:d.glink||"", gfoto:d.gfoto||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()}, {merge:true})
       .then(()=>alert("Anúncio removido."))
       .catch(err=>console.warn(err));
   }
@@ -5154,6 +5199,57 @@ function tentarMigrarAnuncioAntigo(){
     pop:!!d.pop, popDays:Number(d.popDays)||7, active:true, hidden:!!d.hidden, ts:Number(d.ts)||Date.now()
   }).catch(err=>console.warn('migracao-anuncio', err));
 }
+
+/* =========================================================
+   "MEU STATUS DE ATENDIMENTO" — pra quem foi vinculado como atendente
+   (e-mail cadastrado pelo admin num dos 4 slots de algum anúncio). Essa pessoa NÃO é
+   admin, mas ganha esse painelzinho pra ligar/desligar o próprio online — nada além disso.
+   A permissão de escrita real (só esse campo, só desse slot) fica garantida nas regras
+   do Firestore, então mesmo que alguém tente burlar pelo console, não consegue mexer em
+   mais nada do anúncio.
+   ========================================================= */
+function meusSlotsDeAtendente(){
+  const email = ((currentUser && currentUser.email) || "").trim().toLowerCase();
+  if(!email) return [];
+  const out=[];
+  PARTNER_ADS.forEach(ad=>{
+    for(let n=1;n<=4;n++){
+      const slotEmail = (ad["email"+n]||"").trim().toLowerCase();
+      if(slotEmail && slotEmail===email){
+        out.push({ adId:ad.id, adTitle:ad.title||"Anúncio sem título", n, online: ad["online"+n]!==false });
+      }
+    }
+  });
+  return out;
+}
+function renderMeuStatusAtendente(){
+  const box=document.getElementById("my-attendant-status");
+  if(!box) return;
+  const slots=meusSlotsDeAtendente();
+  if(!slots.length){ box.style.display="none"; box.innerHTML=""; return; }
+  box.style.display="block";
+  box.innerHTML = slots.map(s=>`<div class="mas-row" data-ad-id="${esc(s.adId)}" data-n="${s.n}">
+      <div class="mas-info">
+        <span class="mas-dot ${s.online?'on':''}"></span>
+        <span class="mas-title">${esc(s.adTitle)} · Atendente ${s.n}</span>
+      </div>
+      <button type="button" class="mas-toggle ${s.online?'on':''}">${s.online?'🟢 Online':'⚫ Offline'}</button>
+    </div>`).join('');
+}
+document.getElementById("my-attendant-status").addEventListener("click", function(e){
+  const btn=e.target.closest && e.target.closest(".mas-toggle");
+  if(!btn) return;
+  const row=btn.closest(".mas-row");
+  const adId=row.dataset.adId, n=row.dataset.n;
+  const ad=PARTNER_ADS.find(x=>x.id===adId);
+  if(!ad) return;
+  const estavaOnline = ad["online"+n]!==false;
+  const campo={}; campo["online"+n]=!estavaOnline;
+  btn.disabled=true;
+  setDoc(doc(db,'partnerAds',adId), campo, {merge:true})
+    .catch(err=>{ console.warn('toggle-online', err); alert("Não consegui atualizar seu status. Tente de novo."); })
+    .finally(()=>{ btn.disabled=false; });
+});
 </script>
 <!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->
 <style>
