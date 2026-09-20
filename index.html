@@ -1419,6 +1419,18 @@
         <button class="btn-ghost" id="pt-remove" style="flex:1">Remover</button>
       </div>
     </div>
+    <p class="eyebrow" style="margin-top:22px">Cliques em Atendentes <span style="font-weight:400;text-transform:none;letter-spacing:0">(quem entrou em contato pelos botões do anúncio)</span></p>
+    <div class="ad-grid" id="pc-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px">
+      <div class="ad-stat"><div class="ad-v" id="pc-total">0</div><div class="ad-k">Total de cliques</div></div>
+      <div class="ad-stat"><div class="ad-v" id="pc-a1">0</div><div class="ad-k" id="pc-a1-k">Atendente 1</div></div>
+      <div class="ad-stat"><div class="ad-v" id="pc-a2">0</div><div class="ad-k" id="pc-a2-k">Atendente 2</div></div>
+      <div class="ad-stat"><div class="ad-v" id="pc-a3">0</div><div class="ad-k" id="pc-a3-k">Atendente 3</div></div>
+      <div class="ad-stat"><div class="ad-v" id="pc-a4">0</div><div class="ad-k" id="pc-a4-k">Atendente 4</div></div>
+    </div>
+    <div class="panel">
+      <input class="txt" id="pc-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
+      <div id="pc-list"></div>
+    </div>
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
     <div class="panel">
       <input class="txt" id="mb-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
@@ -3319,6 +3331,11 @@ calc();
 let unsub = null;
 let statsUnsub = null;
 let membersUnsub = null;
+let partnerClicksUnsub = null;  // "assinatura" ao vivo dos cliques nos botões de atendente
+let adminPartnerClicks = [];    // cliques carregados (só o admin lê essa coleção)
+let pcSearchQuery = "";         // termo digitado na busca por e-mail dos cliques
+let pcExpanded = false;
+const PC_VISIBLE = 8;
 let banUnsub = null;           // observa em tempo real se a própria conta foi suspensa
 let pendingBanMsg = null;      // mensagem a exibir na tela de login após ser deslogado por suspensão
 let adminMembers = [];
@@ -3466,6 +3483,54 @@ function renderMembers(){
   });
 }
 
+/* ---- cliques nos botões de Atendente do anúncio: contagem + quem entrou em contato ----
+   Cada clique vira um registro na coleção "partnerClicks" (e-mail de quem clicou, qual
+   atendente, número/link de destino e horário). Só o admin consegue ler essa coleção. */
+function renderPartnerClicks(){
+  const wrap=document.getElementById("pc-list");
+  if(!wrap) return;
+  const d = partnerData||{};
+  const counts = {1:0,2:0,3:0,4:0};
+  adminPartnerClicks.forEach(c=>{ const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++; });
+  const setTxt=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  setTxt("pc-total", adminPartnerClicks.length);
+  setTxt("pc-a1", counts[1]); setTxt("pc-a2", counts[2]); setTxt("pc-a3", counts[3]); setTxt("pc-a4", counts[4]);
+  // o rótulo do card mostra o nome configurado pra cada atendente agora, se houver
+  const rotuloCard=(n)=> "Atendente "+n+(d["n"+n]?(" ("+d["n"+n]+")"):"");
+  setTxt("pc-a1-k", rotuloCard(1)); setTxt("pc-a2-k", rotuloCard(2)); setTxt("pc-a3-k", rotuloCard(3)); setTxt("pc-a4-k", rotuloCard(4));
+
+  const arr=[...adminPartnerClicks].sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const q = pcSearchQuery;
+  const filtered = q ? arr.filter(c=>(c.email||'').toLowerCase().includes(q)) : arr;
+  if(filtered.length===0){
+    wrap.innerHTML = q
+      ? `<div class="empty-note">Nenhum clique com e-mail contendo "${esc(q)}".</div>`
+      : '<div class="empty-note">Ninguém clicou em nenhum atendente ainda.</div>';
+    return;
+  }
+  const usePaging = !q;
+  const shown = usePaging ? (pcExpanded ? filtered : filtered.slice(0, PC_VISIBLE)) : filtered;
+  const restante = usePaging ? filtered.length - shown.length : 0;
+  let html = shown.map(c=>{
+    const quem = "Atendente "+(c.atendente||'?')+(c.nome?(" — "+esc(c.nome)):'')+(c.numero?(" · "+esc(c.numero)):'');
+    return `<div class="mb-row">
+      <div class="mb-info">
+        <span class="mb-email">${esc(c.email||'(sem e-mail)')}</span>
+        <span class="mb-date">${quem}</span>
+        <span class="mb-date mb-lastlogin">${fmtDataHora(c.ts)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  if(usePaging && (restante>0 || (pcExpanded && filtered.length>PC_VISIBLE))){
+    html += `<button type="button" class="mb-toggle${pcExpanded?' open':''}" id="pc-toggle">
+      <span class="arrow">▾</span> ${pcExpanded ? 'Mostrar menos' : `Mostrar mais (${restante})`}
+    </button>`;
+  }
+  wrap.innerHTML = html;
+  const tgl=document.getElementById("pc-toggle");
+  if(tgl) tgl.onclick=()=>{ pcExpanded=!pcExpanded; renderPartnerClicks(); };
+}
+
 function renderAdmin(d){
   d=d||{};
   document.getElementById("ad-doses").textContent = d.doses||0;
@@ -3491,6 +3556,16 @@ document.getElementById("admin-btn").onclick=()=>{
     mbSearchEl.addEventListener("input", ()=>{
       memberSearchQuery = mbSearchEl.value.trim().toLowerCase();
       renderMembers();
+    });
+  }
+}
+{
+  const pcSearchEl = document.getElementById("pc-search");
+  if(pcSearchEl){
+    pcSearchEl.addEventListener("input", ()=>{
+      pcSearchQuery = pcSearchEl.value.trim().toLowerCase();
+      pcExpanded = false;
+      renderPartnerClicks();
     });
   }
 }
@@ -3558,10 +3633,12 @@ async function showApp(user){
   }, e=>console.warn('ban-watch',e));
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
+  if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
   if(isAdmin){
     renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
     membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({...d.data(), uid:d.id})); renderMembers(); }, e=>console.warn('members',e));
+    partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
   }
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
@@ -3615,6 +3692,7 @@ function showAuth(){
   if(unsub){ unsub(); unsub=null; }
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
+  if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
   if(banUnsub){ banUnsub(); banUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
@@ -3629,6 +3707,9 @@ function showAuth(){
   openSuspendUid=null;
   memberSearchQuery="";
   { const s=document.getElementById("mb-search"); if(s) s.value=""; }
+  adminPartnerClicks=[];
+  pcSearchQuery=""; pcExpanded=false;
+  { const s=document.getElementById("pc-search"); if(s) s.value=""; }
   NICKNAME="";
   authScreen.classList.add("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="hidden";
@@ -4470,11 +4551,20 @@ function partnerHTML(d, admin){
   // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria).
   // A mensagem é a mesma pra todos, mas com {nome} trocado pelo nome de cada atendente.
   let btns=[1,2,3,4]
-    .map(n=>({label:"Atendente "+n, href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n]))}))
+    .map(n=>({
+      n,
+      label:"Atendente "+n,
+      nome:(d["n"+n]||"").trim(),
+      numero:(d["w"+n]||"").trim(),
+      href:partnerHref(d["w"+n], personalizarMsg(d.msg, d["n"+n]))
+    }))
     .filter(b=>b.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
   // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
-  if(!btns.length){ const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1)); if(legacy) btns=[{label:"Atendente 1", href:legacy}]; }
+  if(!btns.length){
+    const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1));
+    if(legacy) btns=[{n:1, label:"Atendente 1", nome:(d.n1||"").trim(), numero:(d.link||"").trim(), href:legacy}];
+  }
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
   let h='<div class="pt-wrap'+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
@@ -4502,7 +4592,7 @@ function partnerHTML(d, admin){
   // botões de atendente ficam FORA da caixa do anúncio, como bloco separado logo abaixo
   if(btns.length){
     h+='<div class="pt-btns">';
-    btns.forEach(b=>{ h+=`<a class="pt-btn" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
+    btns.forEach(b=>{ h+=`<a class="pt-btn" data-atd="${b.n}" data-nome="${esc(b.nome)}" data-numero="${esc(b.numero)}" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
     h+='</div>';
   }
   h+='</div>'; // fim do .pt-wrap
@@ -4576,6 +4666,23 @@ document.getElementById("pt-overlay").onclick=(e)=>{ if(e.target.id==="pt-overla
 // tocar no botão do anúncio dentro do pop-up também registra como visto
 document.getElementById("pt-pop-content").addEventListener("click",e=>{
   if(e.target.closest && e.target.closest(".pt-btn")) fecharPartnerPop();
+});
+/* ---- registra quem clicou em qual atendente (banner, coluna da evolução ou pop-up) ----
+   Fica gravado em "partnerClicks": e-mail de quem clicou, qual atendente, número/link de
+   destino e o horário — só o admin consegue ler essa coleção depois (ver painel admin). */
+document.addEventListener("click", function(e){
+  const btn = e.target.closest && e.target.closest(".pt-btn[data-atd]");
+  if(!btn) return;
+  try{
+    const ref = doc(collection(db,'partnerClicks'));
+    setDoc(ref, {
+      email: (currentUser && currentUser.email) || "",
+      atendente: Number(btn.dataset.atd) || 0,
+      nome: btn.dataset.nome || "",
+      numero: btn.dataset.numero || "",
+      ts: Date.now()
+    }).catch(err=>console.warn('partner-click-log', err));
+  }catch(err){ console.warn('partner-click-log', err); }
 });
 // preenche o formulário do admin com o que está publicado
 function fillPartnerForm(){
