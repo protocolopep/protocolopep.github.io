@@ -486,6 +486,7 @@
   .mb-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
   .mb-email{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mb-date{flex:none;font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;}
+  .mb-lastlogin{opacity:.75;}
   .mb-banned-tag{color:var(--danger);font-weight:700;}
   .mb-actions{flex:none;display:flex;gap:6px;}
   .mb-susp-btn,.mb-unban-btn{border:1px solid var(--border2);background:var(--surface2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 10px;border-radius:9px;cursor:pointer;white-space:nowrap;}
@@ -585,10 +586,13 @@
       align-items:stretch;    /* as duas colunas com a mesma altura */
     }
     .evo-row > .ev-panel{margin:0;min-width:0;}
-    .evo-row > #partner-evo{margin:0;min-width:0;display:flex;}
-    /* o card preenche toda a altura da coluna, igualando o painel de evolução */
-    .evo-row > #partner-evo .pt-card{flex:1;display:flex;flex-direction:column;}
+    .evo-row > #partner-evo{margin:0;min-width:0;display:flex;flex-direction:column;}
+    /* o wrap preenche toda a altura da coluna; dentro dele, o card estica e os
+       botões de atendente (fora do card) ficam com altura fixa, colados embaixo */
+    .evo-row > #partner-evo .pt-wrap{flex:1;display:flex;flex-direction:column;min-height:0;}
+    .evo-row > #partner-evo .pt-card{flex:1;display:flex;flex-direction:column;min-height:0;}
     .evo-row > #partner-evo .pt-img{max-height:none;flex:1;min-height:0;}
+    .evo-row > #partner-evo .pt-vid{object-fit:contain;}
     .evo-row > #partner-evo .pt-ph{flex:1;gap:5px;}
     .evo-row > #partner-evo .pt-ph-ico{font-size:24px;}
     .evo-row > #partner-evo .pt-ph-t{font-size:19px;}
@@ -596,6 +600,7 @@
     .evo-row > #partner-evo .pt-body{flex:none;padding:10px 13px 12px;}
     .evo-row > #partner-evo .pt-title{font-size:15.5px;}
     .evo-row > #partner-evo .pt-text{font-size:13px;}
+    .evo-row > #partner-evo .pt-btns{flex:none;}
     .evo-row > #partner-evo .pt-btn{font-size:13.5px;padding:10px;}
   }
 
@@ -622,7 +627,8 @@
     text-decoration:none;box-sizing:border-box;
   }
   body.light .pt-btn{color:#053b39;}
-  .pt-vid{background:#000;}
+  .pt-vid{background:#000;height:auto;max-height:420px;object-fit:contain;}
+  /* fora do card: fica claramente separado da caixa do anúncio */
   .pt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
   .pt-btns .pt-btn{margin-top:0;}
   @media (max-width:360px){ .pt-btns{grid-template-columns:1fr;} }
@@ -656,6 +662,7 @@
   .pt-modal .pt-card{border:none;background:none;}
   .pt-modal .pt-tag{position:static;display:inline-block;margin-bottom:10px;background:var(--surface3);}
   .pt-modal .pt-img{border-radius:12px;max-height:220px;}
+  .pt-modal .pt-vid{max-height:60vh;}
   .pt-modal .pt-body{padding:12px 0 0;}
   .pt-modal .pt-title{font-size:17px;}
   .pt-modal .pt-text{font-size:13.5px;}
@@ -3324,6 +3331,7 @@ const authErr = document.getElementById("auth-err");
 
 /* timestamp aproximado para ordenar por data de criação (mais recentes primeiro) */
 function memberTs(m){
+  if(m.createdAt) return m.createdAt;
   if(m.ts) return m.ts;
   if(m.d){
     const partes=String(m.d).split('/');
@@ -3334,6 +3342,11 @@ function memberTs(m){
 }
 function fmtBanDate(ts){
   return new Date(ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+// data + hora completas, no fuso local do navegador (ex.: "20/09/2026 16:01")
+function fmtDataHora(ts){
+  if(!ts) return '';
+  return new Date(ts).toLocaleString("pt-BR",{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function isBanned(m){ return !!(m && m.banned && m.bannedUntil && m.bannedUntil > Date.now()); }
 
@@ -3346,9 +3359,13 @@ function memberRowHtml(m){
       ? `<button type="button" class="mb-unban-btn" data-uid="${m.uid}">Reativar</button>`
       : `<button type="button" class="mb-susp-btn" data-uid="${m.uid}">Suspender</button>`;
   }
-  const dateLabel = banned
-    ? `${m.d||''} · <span class="mb-banned-tag">Suspenso até ${fmtBanDate(m.bannedUntil)}</span>`
-    : (m.d||'');
+  // linha 1: data/hora de criação da conta (com o selo de suspensão, se houver)
+  const criadoTxt = m.createdAt ? `Criado: ${fmtDataHora(m.createdAt)}` : (m.d || '');
+  const linha1 = banned
+    ? `${criadoTxt} · <span class="mb-banned-tag">Suspenso até ${fmtBanDate(m.bannedUntil)}</span>`
+    : criadoTxt;
+  // linha 2: data/hora do último login (só aparece quando o dado existe)
+  const linha2 = m.lastLogin ? `<span class="mb-date mb-lastlogin">Último login: ${fmtDataHora(m.lastLogin)}</span>` : '';
   const panelHtml = (canManage && openSuspendUid===m.uid) ? `
     <div class="mb-susp-panel">
       <span>Suspender por</span>
@@ -3367,7 +3384,8 @@ function memberRowHtml(m){
   return `<div class="mb-row${banned?' mb-row-banned':''}">
       <div class="mb-info">
         <span class="mb-email">${esc(m.email)}</span>
-        <span class="mb-date">${dateLabel}</span>
+        <span class="mb-date">${linha1}</span>
+        ${linha2}
       </div>
       <div class="mb-actions">${actionHtml}</div>
     </div>${panelHtml}`;
@@ -3381,11 +3399,16 @@ function renderMembers(){
   adminMembers.forEach(m=>{
     const e=(m.email||'').toLowerCase(); if(!e) return;
     const prev = map.get(e) || {};
-    const d = m.ts ? new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}) : prev.d;
+    // prioriza a data real de criação da conta; sem ela (contas antigas que ainda não
+    // logaram de novo desde esta atualização), cai de volta no último login como aproximação
+    const tsCriacao = m.createdAt || m.ts;
+    const d = tsCriacao ? new Date(tsCriacao).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}) : prev.d;
     map.set(e, {
       email: m.email || prev.email,
       d: d || '',
-      ts: m.ts || prev.ts || 0,
+      ts: tsCriacao || prev.ts || 0,
+      createdAt: m.createdAt || prev.createdAt || 0,
+      lastLogin: m.ts || prev.lastLogin || 0,
       uid: m.uid,
       banned: !!m.banned,
       bannedUntil: m.bannedUntil || null
@@ -3520,7 +3543,10 @@ async function showApp(user){
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   IS_ADMIN = isAdmin;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
-  try{ setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now()}, {merge:true}); }catch(e){}
+  try{
+    const criadoEm = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : Date.now();
+    setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now(), createdAt:criadoEm}, {merge:true});
+  }catch(e){}
   // ---- observa em tempo real: se o admin suspender a conta enquanto ela está em uso, desloga na hora ----
   if(banUnsub){ banUnsub(); banUnsub=null; }
   banUnsub = onSnapshot(doc(db,'members',user.uid), s=>{
@@ -4451,7 +4477,8 @@ function partnerHTML(d, admin){
   if(!btns.length){ const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1)); if(legacy) btns=[{label:"Atendente 1", href:legacy}]; }
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
-  let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
+  let h='<div class="pt-wrap'+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
+  h+='<div class="pt-card'+(temMidia?'':' pt-nomedia')+'">';
   h+='<span class="pt-tag">Parceria</span>';
   if(admin){
     h+='<button type="button" class="pt-admin-toggle" title="'+(d.hidden?'Mostrar anúncio para todos':'Ocultar anúncio para todos')+'">'+(d.hidden?'🚫':'👁️')+'</button>';
@@ -4459,23 +4486,26 @@ function partnerHTML(d, admin){
   if(vazio){
     h+='<div class="pt-ph"><span class="pt-ph-ico">📣</span><span class="pt-ph-t">Anuncie aqui</span><span class="pt-ph-s">Espaço reservado para parceiros</span></div>';
   } else if(vid){
-    // motion flyer: toca sozinho, sem som (exigido pelos navegadores pra autoplay) e em loop infinito
+    // motion flyer: toca sozinho, sem som (exigido pelos navegadores pra autoplay) e em loop infinito.
+    // sem max-height fixo: a altura acompanha a proporção real do vídeo, então nada fica cortado.
     h+=`<video class="pt-img pt-vid" src="${esc(vid)}" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" onerror="this.style.display='none'"></video>`;
   } else if(img){
     h+=`<img class="pt-img" src="${esc(img)}" alt="${esc(d.title||'Parceria')}" loading="lazy" onerror="this.style.display='none'">`;
   }
-  if(d.title || d.text || btns.length){
+  if(d.title || d.text){
     h+='<div class="pt-body">';
     if(d.title) h+=`<div class="pt-title">${esc(d.title)}</div>`;
     if(d.text)  h+=`<div class="pt-text">${esc(d.text)}</div>`;
-    if(btns.length){
-      h+='<div class="pt-btns">';
-      btns.forEach(b=>{ h+=`<a class="pt-btn" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
-      h+='</div>';
-    }
     h+='</div>';
   }
-  h+='</div>';
+  h+='</div>'; // fim do .pt-card
+  // botões de atendente ficam FORA da caixa do anúncio, como bloco separado logo abaixo
+  if(btns.length){
+    h+='<div class="pt-btns">';
+    btns.forEach(b=>{ h+=`<a class="pt-btn" href="${esc(b.href)}" target="_blank" rel="noopener nofollow sponsored">${esc(b.label)}</a>`; });
+    h+='</div>';
+  }
+  h+='</div>'; // fim do .pt-wrap
   return h;
 }
 // admin oculta o anúncio de todos com um clique (fica só visível — esmaecido — pra ele mesmo,
