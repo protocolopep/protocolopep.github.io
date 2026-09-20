@@ -1370,16 +1370,24 @@
       <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt" id="pt-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
       <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area" id="pt-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
       <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt" id="pt-img" placeholder="https://..." style="margin-top:5px"></div>
-      <div class="fld" style="margin-bottom:6px"><label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label><input class="txt" id="pt-vid" placeholder="Ex.: anuncio.mp4 ou https://..." style="margin-top:5px"></div>
-      <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina. Coloque o arquivo .mp4 na mesma pasta do site e digite só o nome (ex.: anuncio.mp4), ou cole uma URL completa de onde ele estiver hospedado.</div>
+      <div class="fld" style="margin-bottom:6px">
+        <label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label>
+        <div class="inrow" style="margin-top:5px;align-items:center">
+          <input class="txt" id="pt-vid" placeholder="Ex.: anuncio.mp4 ou https://..." style="flex:1">
+          <button type="button" class="btn-ghost" id="pt-vid-upload-btn" style="flex:none;white-space:nowrap">📤 Enviar do PC</button>
+        </div>
+        <input type="file" id="pt-vid-file" accept="video/*" style="display:none">
+        <div id="pt-vid-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
+      </div>
+      <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina. Use o botão "Enviar do PC" para escolher o arquivo direto do seu computador/celular, ou cole uma URL própria.</div>
       <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 botões de atendimento abaixo)</span></label><input class="txt" id="pt-msg" placeholder="Deixe em branco para usar a mensagem padrão de indicação" style="margin-top:5px"></div>
       <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
-        <div class="fld"><label>Atendimento 1 — WhatsApp</label><input class="txt" id="pt-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendimento 2 — WhatsApp</label><input class="txt" id="pt-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt" id="pt-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt" id="pt-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
       </div>
       <div class="fld2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div class="fld"><label>Atendimento 3 — WhatsApp</label><input class="txt" id="pt-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
-        <div class="fld"><label>Atendimento 4 — WhatsApp</label><input class="txt" id="pt-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt" id="pt-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+        <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt" id="pt-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
       </div>
       <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendimentos que não forem usar — só aparecem os botões preenchidos. Cada um pode ser um número de WhatsApp ou uma URL própria.</div>
       <div id="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
@@ -1675,6 +1683,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -1688,6 +1697,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
+const storage = getStorage(fbApp);
 
 /* ---------- push notification (FCM) ----------
    Chave gerada em: Firebase Console > Configurações do projeto > Cloud Messaging >
@@ -4415,10 +4425,10 @@ function partnerHTML(d, admin){
   const img = d.img && /^https?:\/\//i.test(String(d.img).trim()) ? String(d.img).trim() : "";
   // 4 botões de atendimento (cada um pode ser um n° de WhatsApp ou uma URL própria),
   // todos usando a mesma mensagem pronta configurada acima.
-  let btns=[1,2,3,4].map(n=>({label:"Atendimento "+n, href:partnerHref(d["w"+n], d.msg)})).filter(b=>b.href);
+  let btns=[1,2,3,4].map(n=>({label:"Atendente "+n, href:partnerHref(d["w"+n], d.msg)})).filter(b=>b.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
-  // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendimento 1.
-  if(!btns.length){ const legacy=partnerHref(d.link, d.msg); if(legacy) btns=[{label:"Atendimento 1", href:legacy}]; }
+  // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
+  if(!btns.length){ const legacy=partnerHref(d.link, d.msg); if(legacy) btns=[{label:"Atendente 1", href:legacy}]; }
   const vazio = !vid && !img && !d.title && !d.text;
   const temMidia = vid || img || vazio;   // sem mídia, a etiqueta não pode ficar sobreposta
   let h='<div class="pt-card'+(temMidia?'':' pt-nomedia')+((admin&&d.hidden)?' pt-hidden-preview':'')+'">';
@@ -4539,6 +4549,60 @@ function fillPartnerForm(){
     }
   }
 }
+/* ---- upload do vídeo direto do PC/celular pro Firebase Storage ----
+   Ao terminar, só preenche o campo "pt-vid" com o link gerado — o admin
+   ainda precisa tocar em "Publicar anúncio" pra colocar no ar, igual
+   ao fluxo normal dos outros campos. */
+document.getElementById("pt-vid-upload-btn").onclick=()=>{
+  document.getElementById("pt-vid-file").click();
+};
+document.getElementById("pt-vid-file").addEventListener("change", function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ""; // permite escolher o mesmo arquivo de novo depois, se precisar
+  if(!file) return;
+  const st = document.getElementById("pt-vid-upload-status");
+  if(!/^video\//i.test(file.type||"")){
+    if(st) st.textContent = "⚠️ Escolha um arquivo de vídeo (mp4, mov, webm...).";
+    return;
+  }
+  const LIMITE_MB = 60;
+  if(file.size > LIMITE_MB*1024*1024){
+    if(st) st.textContent = `⚠️ Vídeo muito grande (${(file.size/1024/1024).toFixed(1)} MB). Limite de ${LIMITE_MB} MB — comprima antes de enviar.`;
+    return;
+  }
+  const ext = (file.name.split(".").pop()||"mp4").toLowerCase().replace(/[^a-z0-9]/g,"") || "mp4";
+  const caminho = "partner/anuncio-"+Date.now()+"."+ext;
+  const sref = storageRef(storage, caminho);
+  const btn = document.getElementById("pt-vid-upload-btn");
+  btn.disabled = true;
+  const task = uploadBytesResumable(sref, file, {contentType:file.type||"video/mp4"});
+  if(st) st.textContent = "Enviando vídeo... 0%";
+  task.on("state_changed",
+    snap=>{
+      const pct = snap.totalBytes ? Math.round((snap.bytesTransferred/snap.totalBytes)*100) : 0;
+      if(st) st.textContent = "Enviando vídeo... "+pct+"%";
+    },
+    err=>{
+      btn.disabled = false;
+      console.warn("upload-video-pt", err);
+      const cod = (err && err.code) || "";
+      if(st) st.textContent = (cod.indexOf("unauthorized")>=0 || cod.indexOf("permission")>=0)
+        ? '⚠️ Bloqueado pelas regras do Firebase Storage. Libere escrita na pasta "partner/" no console (Storage → Regras) e tente de novo.'
+        : "⚠️ Não consegui enviar o vídeo. Tente de novo.";
+    },
+    ()=>{
+      btn.disabled = false;
+      getDownloadURL(sref).then(url=>{
+        document.getElementById("pt-vid").value = url;
+        if(st) st.textContent = '✓ Vídeo enviado! Toque em "Publicar anúncio" para colocar no ar.';
+      }).catch(err=>{
+        console.warn("geturl-video-pt", err);
+        if(st) st.textContent = "⚠️ Vídeo enviado, mas não consegui pegar o link. Tente de novo.";
+      });
+    }
+  );
+});
+
 document.getElementById("pt-publish").onclick=()=>{
   const title=document.getElementById("pt-title").value.trim();
   const text =document.getElementById("pt-text").value.trim();
@@ -4552,7 +4616,7 @@ document.getElementById("pt-publish").onclick=()=>{
   const pop  =document.getElementById("pt-pop").checked;
   const popDays=Math.min(365, Math.max(1, parseInt(document.getElementById("pt-pop-days").value)||7));
   for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
-    if(num && !partnerHref(num, msg)){ alert("O Atendimento "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+    if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
   }
   if(!title && !text && !img && !vid){
     if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
@@ -4823,8 +4887,15 @@ setMode("calc");
 (function(){
   "use strict";
 
+  // normalização de data (mesmo formato AAAA-MM-DD em fuso local usado no resto do app),
+  // reimplementada aqui porque este bloco roda separado do script principal.
+  function chaveDoDia(d){
+    var x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10);
+  }
+  var diaCarregado = chaveDoDia(new Date());
+
   function diaMudou(){
-    try{ return dateKey(new Date()) !== todayKey; }catch(e){ return false; }
+    try{ return chaveDoDia(new Date()) !== diaCarregado; }catch(e){ return false; }
   }
   function atualizarSistema(){
     window.location.reload();
