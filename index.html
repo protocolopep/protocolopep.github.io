@@ -4221,15 +4221,18 @@ function renderNotice(){
   var frases = raw.split(/\n|\r\n|\r/).map(function(s){ return s.trim(); }).filter(Boolean);
   if(frases.length <= 1){
     var unica = frases[0] || raw.trim();
-    // protege links markdown [texto](url) da separação por pontuação (evita cortar no meio de "Fale comigo!(link)")
+    // protege links markdown [texto](url) da separação por pontuação (evita cortar no meio de "Fale comigo!(link)").
+    // usa um marcador com caractere de controle (não é espaço nem pontuação) pra nunca ser
+    // "engolido" pela quebra de frase, mesmo quando o link vem logo depois de . ! ou ?
     var linksGuardados = [];
+    var MARCA = "\u0001";
     var semLinks = unica.replace(/\[[^\]]*\]\([^)]*\)/g, function(m){
       linksGuardados.push(m);
-      return " L" + (linksGuardados.length-1) + " ";
+      return MARCA + (linksGuardados.length-1) + MARCA;
     });
     var porPont = semLinks.split(/[.!?]+\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
     porPont = porPont.map(function(s){
-      return s.replace(/ L(\d+) /g, function(_, i){ return linksGuardados[+i]; });
+      return s.replace(new RegExp(MARCA+"(\\d+)"+MARCA,"g"), function(_, i){ return linksGuardados[+i]; });
     });
     frases = porPont.length > 1 ? porPont : [unica];
   }
@@ -4830,6 +4833,20 @@ function tituloBlocoAnuncio(d){
   if(d._rascunho) return "Novo anúncio";
   return d.title || (d.active ? "Anúncio sem título" : "Anúncio removido");
 }
+// monta um campo de imagem com botão "Enviar do PC" embutido (URL manual continua funcionando).
+// slot identifica esse campo específico dentro do anúncio (banner/f1..f4/grupo), usado só
+// pra nomear o arquivo no Storage — cada campo dispara upload/preview de forma independente.
+function campoImagemHTML(label, desc, campoClasse, placeholder, slot){
+  return `<div class="fld pt-img-field" data-slot="${slot}" style="margin-bottom:10px">
+    <label>${label}${desc?` <span class="desc">${desc}</span>`:''}</label>
+    <div class="inrow" style="margin-top:5px;align-items:center">
+      <input class="txt pt-img-field-input ${campoClasse}" placeholder="${placeholder}" style="flex:1">
+      <button type="button" class="btn-ghost pt-img-upload-btn" style="flex:none;white-space:nowrap">📤 Enviar do PC</button>
+    </div>
+    <input type="file" class="pt-img-file" accept="image/*" style="display:none">
+    <div class="pt-img-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
+  </div>`;
+}
 function adEditorHTML(d){
   return `<div class="panel pt-editor" data-id="${esc(d.id)}" style="margin-bottom:14px">
     <div class="inrow" style="justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -4837,7 +4854,7 @@ function adEditorHTML(d){
     </div>
     <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt f-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area f-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
-    <div class="fld" style="margin-bottom:10px"><label>Imagem do banner <span class="desc">(URL — opcional)</span></label><input class="txt f-img" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Imagem do banner","(opcional — ignorado se preencher o vídeo)","f-img","https://...","banner")}
     <div class="fld" style="margin-bottom:6px">
       <label>Vídeo do banner / motion flyer <span class="desc">(opcional — substitui a imagem)</span></label>
       <div class="inrow" style="margin-top:5px;align-items:center">
@@ -4854,29 +4871,29 @@ function adEditorHTML(d){
       <div class="fld"><label>Atendente 1 — Nome</label><input class="txt f-n1" placeholder="Ex.: Guilherme" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 1 — WhatsApp</label><input class="txt f-w1" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>Atendente 1 — Foto <span class="desc">(URL — opcional, sem foto usa a inicial do nome)</span></label><input class="txt f-f1" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Atendente 1 — Foto","(opcional, sem foto usa a inicial do nome)","f-f1","https://...","atendente1")}
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 2 — Nome</label><input class="txt f-n2" placeholder="Ex.: Paulo" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 2 — WhatsApp</label><input class="txt f-w2" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>Atendente 2 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f2" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Atendente 2 — Foto","(opcional)","f-f2","https://...","atendente2")}
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 3 — Nome</label><input class="txt f-n3" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 3 — WhatsApp</label><input class="txt f-w3" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>Atendente 3 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f3" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Atendente 3 — Foto","(opcional)","f-f3","https://...","atendente3")}
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Atendente 4 — Nome</label><input class="txt f-n4" placeholder="Ex.: (opcional)" style="margin-top:5px"></div>
       <div class="fld"><label>Atendente 4 — WhatsApp</label><input class="txt f-w4" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>Atendente 4 — Foto <span class="desc">(URL — opcional)</span></label><input class="txt f-f4" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Atendente 4 — Foto","(opcional)","f-f4","https://...","atendente4")}
     <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
     <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Nome do grupo</label><input class="txt f-gnome" placeholder="Ex.: Grupo de ofertas" style="margin-top:5px"></div>
       <div class="fld"><label>Link do grupo</label><input class="txt f-glink" placeholder="https://chat.whatsapp.com/..." style="margin-top:5px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>Foto/ícone do grupo <span class="desc">(URL — opcional, sem foto usa um ícone padrão)</span></label><input class="txt f-gfoto" placeholder="https://..." style="margin-top:5px"></div>
+    ${campoImagemHTML("Foto/ícone do grupo","(opcional, sem foto usa um ícone padrão)","f-gfoto","https://...","grupo")}
     <div class="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
     <label class="check" style="margin:6px 0"><input type="checkbox" class="f-pop"> Mostrar também como pop-up ao abrir o app</label>
     <div class="inrow" style="align-items:center">
@@ -4995,6 +5012,70 @@ document.getElementById("pt-ads-editor").addEventListener("change", function(e){
       }).catch(err=>{
         console.warn("geturl-video-pt", err);
         if(st) st.textContent = "⚠️ Vídeo enviado, mas não consegui pegar o link. Tente de novo.";
+      });
+    }
+  );
+});
+
+/* ---- upload de FOTOS direto do PC/celular (banner, atendentes, grupo) — mesmo esquema do
+   vídeo, só que genérico: funciona em qualquer campo marcado com .pt-img-field, então não
+   precisa duplicar o código pra cada uma das 6 fotos possíveis do anúncio. ---- */
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const btn=e.target.closest && e.target.closest(".pt-img-upload-btn");
+  if(!btn) return;
+  const campo=btn.closest(".pt-img-field");
+  const file=campo && campo.querySelector(".pt-img-file");
+  if(file) file.click();
+});
+document.getElementById("pt-ads-editor").addEventListener("change", function(e){
+  const input=e.target.closest && e.target.closest(".pt-img-file");
+  if(!input) return;
+  const campo=input.closest(".pt-img-field");
+  const el=input.closest(".pt-editor");
+  const file = input.files && input.files[0];
+  input.value = "";
+  if(!file || !campo || !el) return;
+  const st = campo.querySelector(".pt-img-upload-status");
+  if(!/^image\//i.test(file.type||"")){
+    if(st) st.textContent = "⚠️ Escolha um arquivo de imagem (jpg, png, webp...).";
+    return;
+  }
+  const LIMITE_MB = 8;
+  if(file.size > LIMITE_MB*1024*1024){
+    if(st) st.textContent = `⚠️ Imagem muito grande (${(file.size/1024/1024).toFixed(1)} MB). Limite de ${LIMITE_MB} MB.`;
+    return;
+  }
+  const adId = el.dataset.id;
+  const slot = campo.dataset.slot || "img";
+  const ext = (file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"") || "jpg";
+  const caminho = "partner/"+adId+"/"+slot+"-"+Date.now()+"."+ext;
+  const sref = storageRef(storage, caminho);
+  const upBtn = campo.querySelector(".pt-img-upload-btn");
+  if(upBtn) upBtn.disabled = true;
+  const task = uploadBytesResumable(sref, file, {contentType:file.type||"image/jpeg"});
+  if(st) st.textContent = "Enviando imagem... 0%";
+  task.on("state_changed",
+    snap=>{
+      const pct = snap.totalBytes ? Math.round((snap.bytesTransferred/snap.totalBytes)*100) : 0;
+      if(st) st.textContent = "Enviando imagem... "+pct+"%";
+    },
+    err=>{
+      if(upBtn) upBtn.disabled = false;
+      console.warn("upload-img-pt", err);
+      const cod = (err && err.code) || "";
+      if(st) st.textContent = (cod.indexOf("unauthorized")>=0 || cod.indexOf("permission")>=0)
+        ? '⚠️ Bloqueado pelas regras do Firebase Storage. Libere escrita na pasta "partner/" no console (Storage → Regras) e tente de novo.'
+        : "⚠️ Não consegui enviar a imagem. Tente de novo.";
+    },
+    ()=>{
+      if(upBtn) upBtn.disabled = false;
+      getDownloadURL(sref).then(url=>{
+        const txtInput = campo.querySelector(".pt-img-field-input");
+        if(txtInput) txtInput.value = url;
+        if(st) st.textContent = '✓ Imagem enviada! Toque em "Publicar este anúncio" para colocar no ar.';
+      }).catch(err=>{
+        console.warn("geturl-img-pt", err);
+        if(st) st.textContent = "⚠️ Imagem enviada, mas não consegui pegar o link. Tente de novo.";
       });
     }
   );
