@@ -381,6 +381,12 @@
   .acct-email svg{width:12px;height:12px;flex:none;opacity:.55;}
   .acct-avatar{width:20px;height:20px;border-radius:50%;flex:none;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:10px;overflow:hidden;}
   .profile-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:32px;overflow:hidden;}
+  /* menu de conta: dropdown pequeno ancorado (posição exata definida via JS, perto do botão) */
+  .acct-dropdown{position:fixed;display:none;width:300px;max-width:calc(100vw - 24px);max-height:min(560px,calc(100vh - 76px));overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:140;}
+  .acct-dropdown.on{display:block;animation:fade .15s ease;}
+  .acct-dd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);font-family:var(--display);font-weight:700;font-size:15px;position:sticky;top:0;background:var(--surface);border-radius:16px 16px 0 0;}
+  .acct-dd-body{padding:14px 16px 16px;}
+  .profile-avatar#profile-avatar-big{width:56px;height:56px;font-size:20px;flex:none;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .theme-b, .icon-b{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
@@ -1589,34 +1595,32 @@
   </div>
 </div>
 
-<!-- modal: minha conta (foto, nome, e-mail, backup se for admin, sair) -->
-<div class="modal" id="profile-modal">
-  <div class="sheet">
-    <div class="sheet-head"><div class="sheet-title">Minha conta</div><button class="sheet-x" id="profile-close">✕</button></div>
-    <div class="sheet-body">
-      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px">
-        <div class="profile-avatar" id="profile-avatar-big"></div>
-        <div class="inrow" style="margin-top:10px">
-          <button type="button" class="btn-ghost" id="profile-photo-upload-btn">📤 Enviar foto do PC</button>
-        </div>
+<!-- menu de conta: dropdown pequeno, ancorado embaixo do nome no topo (não é um modal de tela cheia) -->
+<div class="acct-dropdown" id="profile-modal">
+  <div class="acct-dd-head"><span>Minha conta</span><button class="sheet-x" id="profile-close">✕</button></div>
+  <div class="acct-dd-body">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div class="profile-avatar" id="profile-avatar-big"></div>
+      <div style="min-width:0">
+        <button type="button" class="btn-ghost" id="profile-photo-upload-btn" style="font-size:11.5px;padding:6px 10px">📤 Trocar foto</button>
         <input type="file" id="profile-photo-file" accept="image/*" style="display:none">
-        <div class="ad-note" id="profile-photo-status" style="margin-top:8px;text-align:center;min-height:1em"></div>
+        <div class="ad-note" id="profile-photo-status" style="margin-top:5px;min-height:1em"></div>
       </div>
-      <div class="fld" style="margin-bottom:12px"><label>E-mail</label><input class="txt" id="profile-email" disabled style="margin-top:5px;opacity:.65"></div>
-      <div class="fld" style="margin-bottom:12px"><label>Nome de exibição</label><input class="txt" id="profile-name-input" placeholder="Como você quer ser chamado" style="margin-top:5px"></div>
-      <button class="btn-primary" id="profile-save-name-btn" style="width:100%;margin-bottom:8px">Salvar nome</button>
-      <div id="profile-name-status" class="ad-note" style="min-height:1em;margin-bottom:6px"></div>
-
-      <button class="btn-ghost" id="profile-change-pass-btn" style="width:100%;margin-top:6px">🔒 Alterar senha</button>
-      <div id="profile-pass-status" class="ad-note" style="min-height:1em;margin:6px 0 0"></div>
-
-      <div id="profile-admin-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <div class="ad-note" style="margin-bottom:10px">💾 Baixa anúncios, cliques, contas e os protocolos individuais de todo mundo.</div>
-        <button class="btn-ghost" id="profile-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
-      </div>
-
-      <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:18px">Sair</button>
     </div>
+    <div class="fld" style="margin-bottom:10px"><label>E-mail</label><input class="txt" id="profile-email" disabled style="margin-top:5px;opacity:.65"></div>
+    <div class="fld" style="margin-bottom:8px"><label>Nome de exibição</label><input class="txt" id="profile-name-input" placeholder="Como você quer ser chamado" style="margin-top:5px"></div>
+    <button class="btn-primary" id="profile-save-name-btn" style="width:100%;margin-bottom:6px">Salvar nome</button>
+    <div id="profile-name-status" class="ad-note" style="min-height:1em;margin-bottom:8px"></div>
+
+    <button class="btn-ghost" id="profile-change-pass-btn" style="width:100%">🔒 Alterar senha</button>
+    <div id="profile-pass-status" class="ad-note" style="min-height:1em;margin:6px 0 0"></div>
+
+    <div id="profile-admin-section" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div class="ad-note" style="margin-bottom:8px">💾 Backup de anúncios, cliques, contas e protocolos de todo mundo.</div>
+      <button class="btn-ghost" id="profile-backup-btn" style="width:100%">💾 Baixar backup (JSON)</button>
+    </div>
+
+    <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:14px">Sair</button>
   </div>
 </div>
 
@@ -3734,6 +3738,7 @@ async function showApp(user){
     partnerAdsLoaded = true;
     renderPartner();
     renderMeuStatusAtendente();
+    atualizarSeletorAoVivoSeAberto();
     if(IS_ADMIN){ syncAdsEditorDOM(); renderPartnerClicks(); }
     tentarMigrarAnuncioAntigo();
     maybeShowPartnerPop();
@@ -3891,9 +3896,13 @@ document.getElementById("auth-eye").onclick=()=>{
 };
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
 
-/* ---- modal "Minha conta": foto, nome, e-mail, backup (se admin) e sair ---- */
-document.getElementById("acct-email").onclick=()=>{
+/* ---- menu "Minha conta": dropdown pequeno ancorado embaixo do nome/foto no topo ---- */
+document.getElementById("acct-email").onclick=(e)=>{
   if(!currentUser) return;
+  e.stopPropagation();
+  const dd = document.getElementById("profile-modal");
+  const jaAberto = dd.classList.contains("on");
+  if(jaAberto){ dd.classList.remove("on"); return; }
   document.getElementById("profile-email").value = currentUser.email || "";
   document.getElementById("profile-name-input").value = displayNameFor(currentUser);
   document.getElementById("profile-name-status").textContent = "";
@@ -3901,10 +3910,29 @@ document.getElementById("acct-email").onclick=()=>{
   document.getElementById("profile-photo-status").textContent = "";
   aplicarAvatar(document.getElementById("profile-avatar-big"), PHOTO_URL, displayNameFor(currentUser));
   document.getElementById("profile-admin-section").style.display = IS_ADMIN ? "block" : "none";
-  document.getElementById("profile-modal").classList.add("on");
+  // ancora o dropdown logo abaixo do botão da conta, alinhado pela direita
+  const rect = document.getElementById("acct-email").getBoundingClientRect();
+  dd.style.top = Math.round(rect.bottom + 8) + "px";
+  dd.style.right = Math.round(window.innerWidth - rect.right) + "px";
+  dd.style.left = "auto";
+  dd.classList.add("on");
 };
 document.getElementById("profile-close").onclick=()=>document.getElementById("profile-modal").classList.remove("on");
-document.getElementById("profile-modal").onclick=e=>{ if(e.target.id==="profile-modal") document.getElementById("profile-modal").classList.remove("on"); };
+// clicar fora do menu (e fora do botão que o abre) fecha
+document.addEventListener("click", (e)=>{
+  const dd = document.getElementById("profile-modal");
+  if(!dd.classList.contains("on")) return;
+  if(dd.contains(e.target) || e.target.closest("#acct-email")) return;
+  dd.classList.remove("on");
+});
+// reposiciona se a tela girar/redimensionar enquanto está aberto
+window.addEventListener("resize", ()=>{
+  const dd = document.getElementById("profile-modal");
+  if(!dd.classList.contains("on")) return;
+  const rect = document.getElementById("acct-email").getBoundingClientRect();
+  dd.style.top = Math.round(rect.bottom + 8) + "px";
+  dd.style.right = Math.round(window.innerWidth - rect.right) + "px";
+});
 
 document.getElementById("profile-save-name-btn").onclick=()=>{
   if(!currentUser) return;
@@ -4977,15 +5005,21 @@ function linhaOpcaoHTML(o){
 /* ---- seletor de atendente/grupo: toca no anúncio (card) -> escolhe a opção ----
    Com só 1 atendente e nenhum grupo, vai direto pro WhatsApp dele, sem precisar escolher —
    a menos que esse único atendente esteja offline, aí sempre mostra o aviso. */
-function abrirSeletorAtendente(adId){
-  const d = PARTNER_ADS.find(x=>x.id===adId);
-  if(!d) return;
+// monta a lista de opções (atendentes + grupo) de UM anúncio — separado do "abrir",
+// pra poder ser chamado de novo quando o status mudar com a caixinha já aberta na tela
+function opcoesDoAnuncio(d){
   const ats = atendentesDoAnuncio(d);
   const grupo = grupoDoAnuncio(d);
-  const opcoes = [
+  return [
     ...ats.map(a=>({tipo:'atendente', n:a.n, nome:a.nome, foto:a.foto, numero:a.numero, href:a.href, adId:d.id, adTitle:d.title||'', temStatus:a.temStatus, online:a.online})),
     ...(grupo ? [{tipo:'grupo', n:0, nome:grupo.nome, foto:grupo.foto, numero:grupo.href, href:grupo.href, adId:d.id, adTitle:d.title||'', temStatus:false, online:true}] : [])
   ];
+}
+let seletorAtendenteAbertoAdId = null; // qual anúncio está com a caixinha (de várias opções) aberta agora
+function abrirSeletorAtendente(adId){
+  const d = PARTNER_ADS.find(x=>x.id===adId);
+  if(!d) return;
+  const opcoes = opcoesDoAnuncio(d);
   if(!opcoes.length) return; // anúncio sem atendente nem grupo configurado: não faz nada ao tocar
   if(opcoes.length===1){
     const unica = opcoes[0];
@@ -5005,10 +5039,25 @@ function abrirSeletorAtendente(adId){
   if(title) title.textContent = d.title ? ("Falar sobre "+d.title) : "Escolha uma opção";
   list.innerHTML = opcoes.map(linhaOpcaoHTML).join('');
   ov.style.display="flex";
+  seletorAtendenteAbertoAdId = adId;
 }
 function fecharSeletorAtendente(){
   const ov=document.getElementById("pt-atd-overlay");
   if(ov) ov.style.display="none";
+  seletorAtendenteAbertoAdId = null;
+}
+// chamado toda vez que os anúncios são atualizados (onSnapshot) — se a caixinha estiver
+// aberta bem nesse momento, atualiza o selo online/offline na hora, sem precisar fechar
+// e abrir de novo (nem recarregar a página)
+function atualizarSeletorAoVivoSeAberto(){
+  if(!seletorAtendenteAbertoAdId) return;
+  const ov=document.getElementById("pt-atd-overlay");
+  if(!ov || ov.style.display==="none") { seletorAtendenteAbertoAdId=null; return; }
+  const d = PARTNER_ADS.find(x=>x.id===seletorAtendenteAbertoAdId);
+  const list=document.getElementById("pt-atd-list");
+  if(!d || !list) return;
+  const opcoes = opcoesDoAnuncio(d);
+  list.innerHTML = opcoes.map(linhaOpcaoHTML).join('');
 }
 document.getElementById("pt-atd-close").onclick=fecharSeletorAtendente;
 document.getElementById("pt-atd-overlay").onclick=(e)=>{ if(e.target.id==="pt-atd-overlay") fecharSeletorAtendente(); };
