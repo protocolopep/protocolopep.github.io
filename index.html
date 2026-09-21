@@ -1331,7 +1331,7 @@
       <div class="ia-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c-1.3.7-2 2-2 3.5 0 1 .4 2 1 2.6-.3.6-.5 1.2-.5 1.9a3.5 3.5 0 0 0 5 3.2A3.5 3.5 0 0 0 17 18c1.9 0 3.5-1.6 3.5-3.5 0-.7-.2-1.3-.5-1.9.6-.6 1-1.6 1-2.6 0-1.5-.7-2.8-2-3.5a4 4 0 0 0-4-4Z"/></svg>
       </div>
-      <div class="ia-title">Mac te ajuda · Peps</div>
+      <div class="ia-title">Cérebro Peps</div>
       <div class="ia-desc">Uma IA que responde suas dúvidas sobre peptídeos com base em fontes confiáveis selecionadas — não sai pesquisando qualquer coisa na internet. Pergunte em linguagem natural, como se conversasse com alguém.</div>
       <a class="ia-btn" id="ia-open" href="https://notebooklm.google.com/notebook/a80401b9-fcbc-4e1b-bf78-0017c81e0f8f?utm_source=nlmm_share" target="_blank" rel="noopener">
         <svg class="ia-btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1439,6 +1439,13 @@
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
     <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados, os números de uso, e pode suspender uma conta por um número de dias — enquanto suspensa, a pessoa não consegue entrar no aplicativo e verá uma mensagem para contatar o suporte. A lista de contas mostra quem entrou a partir desta versão.</div>
+
+    <p class="eyebrow" style="margin-top:22px">Backup do sistema</p>
+    <div class="panel">
+      <div class="ad-note" style="margin-bottom:12px">💾 Baixa um arquivo com tudo que está configurado hoje: anúncios (com atendentes, mensagens e status), histórico de cliques, contas registradas, o recado do letreiro — e agora também os protocolos individuais de todas as contas. Guarde esse arquivo num lugar seguro (Google Drive, e-mail pra você mesmo, etc.) — se algo der errado no Firebase um dia, dá pra usar esse arquivo pra recriar tudo na mão.</div>
+      <button class="btn-primary" id="admin-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
+      <div class="ad-note" style="margin:10px 0 0">⚠️ Esse arquivo passa a conter dados sensíveis de todas as contas — guarde com cuidado e não compartilhe à toa. Não inclui os arquivos de vídeo/foto em si, só os links deles.</div>
+    </div>
   </section>
 
   <div class="disclaimer">
@@ -1710,7 +1717,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
@@ -4171,6 +4178,52 @@ document.getElementById("export-btn").onclick=()=>{
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 };
+/* ---- backup do sistema (só admin): anúncios, cliques, contas e recado — tudo que o
+   admin já tem permissão de ler mesmo, só que reunido num arquivo baixável de uma vez.
+   Não inclui os protocolos individuais de cada pessoa (ficam privados por design). ---- */
+{
+  const backupBtn = document.getElementById("admin-backup-btn");
+  if(backupBtn){
+    backupBtn.onclick = async ()=>{
+      if(!confirm("Isso baixa os protocolos individuais de TODAS as contas registradas, além dos anúncios e cliques. Continuar?")) return;
+      backupBtn.disabled = true;
+      const textoOriginal = backupBtn.textContent;
+      backupBtn.textContent = "Preparando backup...";
+      try{
+        const [noticeSnap, statsSnap, usersSnap] = await Promise.all([
+          getDoc(doc(db,'meta','notice')).catch(()=>null),
+          getDoc(doc(db,'meta','stats')).catch(()=>null),
+          getDocs(collection(db,'users')).catch(()=>null)
+        ]);
+        // cruza cada protocolo com o e-mail da conta (members guarda o e-mail; users só tem o uid)
+        const emailPorUid = {};
+        adminMembers.forEach(m=>{ if(m.uid) emailPorUid[m.uid] = m.email || ""; });
+        const userProtocols = usersSnap ? usersSnap.docs.map(d=>({ uid:d.id, email:emailPorUid[d.id]||"", ...d.data() })) : [];
+        const data = {
+          exportedAt: new Date().toISOString(),
+          exportedBy: currentUser?.email || "",
+          partnerAds: PARTNER_ADS,
+          partnerClicks: adminPartnerClicks,
+          members: adminMembers,
+          userProtocols,
+          notice: noticeSnap && noticeSnap.exists() ? noticeSnap.data() : null,
+          stats: statsSnap && statsSnap.exists() ? statsSnap.data() : null
+        };
+        const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "protocolo-backup-sistema-"+new Date().toISOString().slice(0,10)+".json";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      }catch(err){
+        console.warn("admin-backup", err);
+        alert("Não consegui gerar o backup agora. Tente de novo.");
+      }
+      backupBtn.disabled = false;
+      backupBtn.textContent = textoOriginal;
+    };
+  }
+}
 document.getElementById("import-btn").onclick=()=>document.getElementById("import-file").click();
 document.getElementById("import-file").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
