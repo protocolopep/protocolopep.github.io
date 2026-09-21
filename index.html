@@ -503,6 +503,7 @@
   .mb-unban-btn:hover{background:color-mix(in srgb, var(--primary) 12%, transparent);}
   .mb-susp-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 6px 14px;border-top:1px dashed var(--border2);font-size:12.5px;color:var(--muted);}
   .mb-susp-panel select{font-family:var(--font);font-size:12.5px;padding:7px 8px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);}
+  .mb-susp-date{font-family:var(--font);font-size:12.5px;padding:6px 8px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);}
   .mb-susp-confirm{background:var(--danger);border:none;color:#fff;font-family:var(--font);font-weight:700;font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;}
   .mb-susp-cancel{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;}
   .mb-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;text-align:center;background:none;border:none;border-top:1px solid var(--border);color:var(--primary);font-family:var(--font);font-weight:700;font-size:12.5px;padding:14px 4px 4px;cursor:pointer;margin-top:6px;}
@@ -652,6 +653,8 @@
   .pt-atd-avatar-grupo{font-size:20px;color:var(--tesa);background:color-mix(in srgb, var(--tesa) 16%, transparent);}
   .pt-atd-nome{flex:1;font-weight:600;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pt-atd-chevron{flex:none;color:var(--muted2);}
+  .atd-bloco{border:1px solid var(--border2);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--surface2);}
+  .atd-bloco-titulo{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;}
   .pt-atd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .pt-atd-info .pt-atd-nome{flex:none;}
   .pt-atd-status{align-self:flex-start;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;}
@@ -1366,6 +1369,7 @@
 
   <!-- ADMIN -->
   <section class="view" id="v-admin">
+    <div id="admin-only-block">
     <p class="eyebrow">Painel do administrador</p>
     <div class="ad-grid">
       <div class="ad-stat"><div class="ad-v" id="ad-users">0</div><div class="ad-k">Contas</div></div>
@@ -1379,6 +1383,26 @@
       <button class="btn-primary" id="admin-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
       <div class="ad-note" style="margin:10px 0 0">⚠️ Esse arquivo passa a conter dados sensíveis de todas as contas — guarde com cuidado e não compartilhe à toa. Não inclui os arquivos de vídeo/foto em si, só os links deles.</div>
     </div>
+
+    <div id="perms-only-block" style="display:none">
+      <p class="eyebrow" style="margin-top:22px">Permissões de administrador</p>
+      <div class="ad-note" style="margin-bottom:12px">🔑 Conceda a outra pessoa acesso <b>total de admin</b> (vê tudo, igual você), ou só permissão pra <b>gerenciar anúncios</b> (mexe em Anúncios/Parcerias e Cliques em Atendentes, sem ver contas, backup ou recados).</div>
+      <div class="panel">
+        <div class="fld2" style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fld"><label>E-mail</label><input class="txt" id="perm-email-input" placeholder="pessoa@gmail.com" style="margin-top:5px"></div>
+          <div class="fld"><label>Permissão</label>
+            <select id="perm-role-select" style="margin-top:5px;width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);color:var(--text)">
+              <option value="admin">Admin total</option>
+              <option value="ads_manager">Gerente de anúncios</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" id="perm-grant-btn" style="width:100%">Conceder permissão</button>
+        <div id="perm-status" class="ad-note" style="min-height:1em;margin-top:8px"></div>
+        <div id="perm-list" style="margin-top:14px"></div>
+      </div>
+    </div>
+
     <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(cada caixa é uma notícia — passam em sequência)</span></p>
     <div class="panel">
       <div class="ad-note" style="margin-bottom:12px">💡 Preencha as caixas que quiser usar (pode deixar as outras em branco). Para um botão clicável sem expor o número/link: <b>[Fale comigo no WhatsApp](84999937819)</b>.</div>
@@ -1435,6 +1459,8 @@
         <button class="btn-ghost" id="nv-remove" style="flex:1">Remover</button>
       </div>
     </div>
+    </div><!-- /admin-only-block -->
+
     <p class="eyebrow" style="margin-top:22px">Anúncios / Parcerias <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparecem na aba Protocolo, um abaixo do outro)</span></p>
     <div class="ad-note" style="margin-bottom:12px">💡 Cada anúncio aparece identificado como <b>Parceria</b> para os usuários. Você pode publicar quantos quiser — cada novo entra abaixo dos anteriores, com seu próprio vídeo/imagem, mensagem e até 4 atendentes.</div>
     <div id="pt-ads-editor"></div>
@@ -1449,6 +1475,8 @@
       <input class="txt" id="pc-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
       <div id="pc-list"></div>
     </div>
+
+    <div id="admin-only-block2">
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
     <div class="panel">
       <input class="txt" id="mb-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
@@ -1457,6 +1485,7 @@
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
     <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados, os números de uso, e pode suspender uma conta por um número de dias — enquanto suspensa, a pessoa não consegue entrar no aplicativo e verá uma mensagem para contatar o suporte. A lista de contas mostra quem entrou a partir desta versão.</div>
+    </div><!-- /admin-only-block2 -->
   </section>
 
   <div class="disclaimer">
@@ -1761,7 +1790,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
@@ -1849,6 +1878,52 @@ let dataLoaded = false;
 let contouNovaConta = false;   // evita contar a mesma conta nova mais de uma vez
 let currentUser = null;
 let IS_ADMIN = false;
+let IS_ADS_MANAGER = false;   // admin total já conta como true aqui também
+let IS_SUPER_ADMIN = false;   // só o dono original (e-mail fixo) — só ele concede permissões
+let ROLE_GRANTED = "";        // 'admin' | 'ads_manager' | "" — o que foi concedido ao e-mail atual
+let rolesUnsub = null;        // observa o PRÓPRIO papel concedido (todo mundo pode ler o seu)
+let rolesListUnsub = null;    // observa a LISTA de todos os papéis concedidos (só o dono original)
+let PAPEIS_CONCEDIDOS = [];   // cache local da lista acima, pra renderizar
+// abre/fecha as assinaturas que dependem do nível de acesso, sempre que ele mudar
+// (login inicial, ou o dono original conceder/revogar uma permissão em tempo real)
+function atualizarInscricoesPorPermissao(){
+  if(IS_ADMIN && !membersUnsub){
+    renderMembers();
+    statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
+    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({...d.data(), uid:d.id})); renderMembers(); }, e=>console.warn('members',e));
+  } else if(!IS_ADMIN && membersUnsub){
+    if(statsUnsub){ statsUnsub(); statsUnsub=null; }
+    membersUnsub(); membersUnsub=null;
+  }
+  if(IS_ADS_MANAGER && !partnerClicksUnsub){
+    partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
+  } else if(!IS_ADS_MANAGER && partnerClicksUnsub){
+    partnerClicksUnsub(); partnerClicksUnsub=null;
+  }
+  if(IS_SUPER_ADMIN && !rolesListUnsub){
+    rolesListUnsub = onSnapshot(collection(db,'roles'), snap=>{ PAPEIS_CONCEDIDOS = snap.docs.map(d=>({email:d.id, ...d.data()})); renderListaPermissoes(); }, e=>console.warn('roles-list',e));
+  } else if(!IS_SUPER_ADMIN && rolesListUnsub){
+    rolesListUnsub(); rolesListUnsub=null;
+  }
+}
+// recalcula os dois níveis de acesso sempre que IS_SUPER_ADMIN ou ROLE_GRANTED mudarem,
+// e ajusta o que aparece na aba Admin de acordo
+function recalcularPermissoes(){
+  IS_ADMIN = IS_SUPER_ADMIN || ROLE_GRANTED === 'admin';
+  IS_ADS_MANAGER = IS_ADMIN || ROLE_GRANTED === 'ads_manager';
+  const btn = document.getElementById("admin-btn");
+  if(btn) btn.style.display = (IS_ADMIN || IS_ADS_MANAGER) ? "inline-flex" : "none";
+  document.querySelectorAll("#admin-only-block, #admin-only-block2").forEach(el=>{
+    el.style.display = IS_ADMIN ? "" : "none";
+  });
+  const permsBlock = document.getElementById("perms-only-block");
+  if(permsBlock) permsBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
+  atualizarInscricoesPorPermissao();
+  // se os anúncios já tiverem carregado, refaz o que depende do nível de acesso
+  if(typeof partnerAdsLoaded !== "undefined" && partnerAdsLoaded){
+    if(IS_ADS_MANAGER){ syncAdsEditorDOM(); renderPartnerClicks(); }
+  }
+}
 let NICKNAME = "";
 let PHOTO_URL = "";
 // aplica foto (com fallback pra inicial do nome, caso não tenha foto ou a imagem falhe)
@@ -3453,7 +3528,7 @@ function memberRowHtml(m){
   const panelHtml = (canManage && openSuspendUid===m.uid) ? `
     <div class="mb-susp-panel">
       <span>Suspender por</span>
-      <select id="mb-days-${m.uid}">
+      <select id="mb-days-${m.uid}" class="mb-susp-select">
         <option value="1">1 dia</option>
         <option value="3">3 dias</option>
         <option value="7" selected>7 dias</option>
@@ -3461,7 +3536,9 @@ function memberRowHtml(m){
         <option value="30">30 dias</option>
         <option value="90">90 dias</option>
         <option value="36500">Permanente</option>
+        <option value="custom">Escolher data específica...</option>
       </select>
+      <input type="date" id="mb-date-${m.uid}" class="mb-susp-date" style="display:none">
       <button type="button" class="mb-susp-confirm" data-uid="${m.uid}">Confirmar suspensão</button>
       <button type="button" class="mb-susp-cancel">Cancelar</button>
     </div>` : '';
@@ -3474,6 +3551,55 @@ function memberRowHtml(m){
       <div class="mb-actions">${actionHtml}</div>
     </div>${panelHtml}`;
 }
+
+/* ---- permissões: só o dono original (IS_SUPER_ADMIN) vê e mexe nisso ---- */
+function renderListaPermissoes(){
+  const wrap = document.getElementById("perm-list");
+  if(!wrap) return;
+  if(!PAPEIS_CONCEDIDOS.length){
+    wrap.innerHTML = '<div class="empty-note">Nenhuma permissão concedida ainda.</div>';
+    return;
+  }
+  const rotulo = r => r==='admin' ? 'Admin total' : (r==='ads_manager' ? 'Gerente de anúncios' : (r||'—'));
+  wrap.innerHTML = [...PAPEIS_CONCEDIDOS].sort((a,b)=>a.email.localeCompare(b.email)).map(p=>`
+    <div class="mb-row">
+      <div class="mb-info">
+        <span class="mb-email">${esc(p.email)}</span>
+        <span class="mb-date">${esc(rotulo(p.role))}</span>
+      </div>
+      <div class="mb-actions"><button type="button" class="mb-susp-btn perm-revoke-btn" data-email="${esc(p.email)}">Revogar</button></div>
+    </div>`).join('');
+}
+document.getElementById("perm-grant-btn").onclick=()=>{
+  const emailInput = document.getElementById("perm-email-input");
+  const email = emailInput.value.trim().toLowerCase();
+  const role = document.getElementById("perm-role-select").value;
+  const st = document.getElementById("perm-status");
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    if(st){ st.textContent = "⚠️ Digite um e-mail válido."; st.style.color = "var(--danger)"; }
+    return;
+  }
+  if(email === ADMIN_EMAIL){
+    if(st){ st.textContent = "Esse já é o dono original — não precisa conceder nada a ele."; st.style.color = ""; }
+    return;
+  }
+  setDoc(doc(db,'roles',email), {role, grantedAt:Date.now(), grantedBy:currentUser?.email||""})
+    .then(()=>{
+      if(st){ st.textContent = "✓ Permissão concedida a "+email; st.style.color = "var(--primary)"; }
+      emailInput.value = "";
+    })
+    .catch(err=>{
+      console.warn('grant-role', err);
+      if(st){ st.textContent = "⚠️ Não consegui conceder. Tente de novo."; st.style.color = "var(--danger)"; }
+    });
+};
+document.getElementById("perm-list").addEventListener("click", (e)=>{
+  const btn = e.target.closest(".perm-revoke-btn");
+  if(!btn) return;
+  const email = btn.dataset.email;
+  if(!confirm("Revogar a permissão de "+email+"? Ela perde o acesso na hora.")) return;
+  deleteDoc(doc(db,'roles',email)).catch(err=>{ console.warn('revoke-role',err); alert("Não consegui revogar. Tente de novo."); });
+});
 
 function renderMembers(){
   const list=document.getElementById("ad-members");
@@ -3528,16 +3654,47 @@ function renderMembers(){
   list.querySelectorAll(".mb-susp-cancel").forEach(b=>{
     b.onclick=()=>{ openSuspendUid=null; renderMembers(); };
   });
+  // alterna pro campo de data quando escolhe "Escolher data específica..." no lugar dos dias prontos
+  list.querySelectorAll(".mb-susp-select").forEach(sel=>{
+    const uid = sel.id.replace("mb-days-","");
+    const dateInput = document.getElementById("mb-date-"+uid);
+    if(!dateInput) return;
+    if(sel.value==="custom" && !dateInput.value){
+      const d=new Date(); d.setDate(d.getDate()+7);
+      dateInput.value = d.toISOString().slice(0,10);
+    }
+    dateInput.style.display = sel.value==="custom" ? "" : "none";
+    sel.addEventListener("change", ()=>{
+      dateInput.style.display = sel.value==="custom" ? "" : "none";
+      if(sel.value==="custom" && !dateInput.value){
+        const d=new Date(); d.setDate(d.getDate()+7);
+        dateInput.value = d.toISOString().slice(0,10);
+      }
+    });
+  });
   list.querySelectorAll(".mb-susp-confirm").forEach(b=>{
     b.onclick=()=>{
       const uid=b.dataset.uid;
       const sel=document.getElementById("mb-days-"+uid);
-      const dias=+((sel&&sel.value)||7);
-      const permanente = dias>=36500;
-      if(!confirm(permanente
-        ? "Suspender esta conta permanentemente? A pessoa não conseguirá mais entrar até você reativar."
-        : `Suspender esta conta por ${dias} dia${dias>1?'s':''}? A pessoa não conseguirá entrar até essa data.`)) return;
-      const bannedUntil = Date.now() + dias*24*60*60*1000;
+      const valor=(sel&&sel.value)||"7";
+      let bannedUntil, mensagemConfirm;
+      if(valor==="custom"){
+        const dateInput=document.getElementById("mb-date-"+uid);
+        const dataEscolhida = dateInput && dateInput.value;
+        if(!dataEscolhida){ alert("Escolha uma data."); return; }
+        // fim do dia escolhido (23:59), no fuso local, pra suspensão valer o dia inteiro
+        bannedUntil = new Date(dataEscolhida+"T23:59:59").getTime();
+        if(bannedUntil <= Date.now()){ alert("Escolha uma data no futuro."); return; }
+        mensagemConfirm = `Suspender esta conta até ${fmtBanDate(bannedUntil)}? A pessoa não conseguirá entrar até essa data.`;
+      } else {
+        const dias=+valor;
+        const permanente = dias>=36500;
+        bannedUntil = Date.now() + dias*24*60*60*1000;
+        mensagemConfirm = permanente
+          ? "Suspender esta conta permanentemente? A pessoa não conseguirá mais entrar até você reativar."
+          : `Suspender esta conta por ${dias} dia${dias>1?'s':''}? A pessoa não conseguirá entrar até essa data.`;
+      }
+      if(!confirm(mensagemConfirm)) return;
       setDoc(doc(db,'members',uid), {banned:true, bannedUntil}, {merge:true}).catch(e=>{ console.warn('ban',e); alert('Não foi possível suspender a conta.'); });
       openSuspendUid=null;
     };
@@ -3706,9 +3863,16 @@ async function showApp(user){
   // se a pessoa já tinha permitido notificação antes, garante que o token do aparelho
   // atual está salvo (o token pode mudar entre sessões/reinstalações)
   if(notifCfg.enabled && ("Notification" in window) && Notification.permission==="granted") registerPushToken();
-  const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
-  IS_ADMIN = isAdmin;
-  document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
+  IS_SUPER_ADMIN = (user.email||"").toLowerCase() === ADMIN_EMAIL;
+  ROLE_GRANTED = "";
+  recalcularPermissoes(); // já libera na hora pro dono original, sem esperar a leitura do papel
+  if(rolesUnsub){ rolesUnsub(); rolesUnsub=null; }
+  // observa em tempo real o papel concedido a este e-mail — se o dono original conceder
+  // ou revogar uma permissão enquanto a pessoa está com o app aberto, atualiza na hora
+  rolesUnsub = onSnapshot(doc(db,'roles',(user.email||"").toLowerCase()), s=>{
+    ROLE_GRANTED = s.exists() ? (s.data().role||"") : "";
+    recalcularPermissoes();
+  }, e=>console.warn('roles-watch', e));
   try{
     const criadoEm = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : Date.now();
     setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now(), createdAt:criadoEm}, {merge:true});
@@ -3725,12 +3889,8 @@ async function showApp(user){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
-  if(isAdmin){
-    renderMembers();
-    statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
-    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({...d.data(), uid:d.id})); renderMembers(); }, e=>console.warn('members',e));
-    partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
-  }
+  if(rolesListUnsub){ rolesListUnsub(); rolesListUnsub=null; }
+  atualizarInscricoesPorPermissao(); // já abre as que já podem ser abertas com o que se sabe agora (dono original)
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
@@ -3743,7 +3903,7 @@ async function showApp(user){
     renderPartner();
     renderMeuStatusAtendente();
     atualizarSeletorAoVivoSeAberto();
-    if(IS_ADMIN){ syncAdsEditorDOM(); renderPartnerClicks(); }
+    if(IS_ADS_MANAGER){ syncAdsEditorDOM(); renderPartnerClicks(); }
     tentarMigrarAnuncioAntigo();
     maybeShowPartnerPop();
   }, e=>console.warn('partner-ads',e));
@@ -3793,12 +3953,18 @@ function showAuth(){
   if(SHARE_MODE) return;
   currentUser = null;
   IS_ADMIN = false;
+  IS_ADS_MANAGER = false;
+  IS_SUPER_ADMIN = false;
+  ROLE_GRANTED = "";
+  PAPEIS_CONCEDIDOS = [];
   dataLoaded = false;
   contouNovaConta = false;
   if(unsub){ unsub(); unsub=null; }
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
+  if(rolesUnsub){ rolesUnsub(); rolesUnsub=null; }
+  if(rolesListUnsub){ rolesListUnsub(); rolesListUnsub=null; }
   if(banUnsub){ banUnsub(); banUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   if(partnerUnsub){ partnerUnsub(); partnerUnsub=null; }
@@ -5143,12 +5309,15 @@ function campoImagemHTML(label, desc, campoClasse, placeholder, slot){
 }
 // monta o bloco completo de 1 atendente: nome + whatsapp + foto + e-mail de login (opcional)
 function blocoAtendenteHTML(n, exemploNome){
-  return `<div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
-      <div class="fld"><label>Atendente ${n} — Nome</label><input class="txt f-n${n}" placeholder="Ex.: ${exemploNome}" style="margin-top:5px"></div>
-      <div class="fld"><label>Atendente ${n} — WhatsApp</label><input class="txt f-w${n}" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+  return `<div class="atd-bloco">
+    <div class="atd-bloco-titulo">Atendente ${n}</div>
+    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+      <div class="fld"><label>Nome</label><input class="txt f-n${n}" placeholder="Ex.: ${exemploNome}" style="margin-top:5px"></div>
+      <div class="fld"><label>WhatsApp</label><input class="txt f-w${n}" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
     </div>
-    ${campoImagemHTML("Atendente "+n+" — Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
-    <div class="fld" style="margin-bottom:10px"><label>Atendente ${n} — E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>`;
+    ${campoImagemHTML("Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
+    <div class="fld" style="margin-bottom:0"><label>E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>
+  </div>`;
 }
 function adEditorHTML(d){
   return `<div class="panel pt-editor" data-id="${esc(d.id)}" style="margin-bottom:14px">
