@@ -790,6 +790,17 @@
     display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom));
     max-width:640px;margin:0 auto;
   }
+  #back-to-top{
+    position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));
+    width:46px;height:46px;border-radius:50%;border:none;
+    background:var(--primary);color:var(--bg);
+    display:none;align-items:center;justify-content:center;
+    box-shadow:0 8px 22px rgba(0,0,0,.4);
+    z-index:29;cursor:pointer;
+  }
+  #back-to-top.show{display:flex;animation:fade .2s ease;}
+  #back-to-top svg{width:22px;height:22px;}
+  #back-to-top:active{transform:scale(.92);}
   /* indicador deslizante atrás do item ativo */
   .nav-ind{
     position:absolute;top:8px;z-index:0;pointer-events:none;
@@ -1761,6 +1772,11 @@
     </div>
   </div>
 </div>
+
+<!-- botão flutuante "voltar ao topo" — aparece depois de rolar um pouco a tela -->
+<button type="button" id="back-to-top" aria-label="Voltar ao topo">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</button>
 
 <!-- bottom nav -->
 <nav class="nav">
@@ -5106,6 +5122,18 @@ function applyPartnerPlacement(){
   box.style.display = naEvolucao ? "none"  : "block";
 }
 window.addEventListener("resize", applyPartnerPlacement);
+
+/* ---- botão flutuante "voltar ao topo" ---- */
+{
+  const btnTopo = document.getElementById("back-to-top");
+  if(btnTopo){
+    window.addEventListener("scroll", ()=>{
+      if(window.scrollY > 400) btnTopo.classList.add("show");
+      else btnTopo.classList.remove("show");
+    }, {passive:true});
+    btnTopo.onclick = ()=> window.scrollTo({top:0, behavior:"smooth"});
+  }
+}
 
 /* ---- pop-up: mostra 1 anúncio por vez (fila); cada um só volta depois do próprio intervalo ---- */
 function anuncioPopVisto(id){ try{ return Number(localStorage.getItem("pt-pop-visto-"+id))||0; }catch(e){ return 0; } }
