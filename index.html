@@ -382,11 +382,11 @@
   .acct-avatar{width:20px;height:20px;border-radius:50%;flex:none;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:10px;overflow:hidden;}
   .profile-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:32px;overflow:hidden;}
   /* menu de conta: dropdown pequeno ancorado (posição exata definida via JS, perto do botão) */
-  .acct-dropdown{position:fixed;display:none;width:300px;max-width:calc(100vw - 24px);max-height:min(560px,calc(100vh - 76px));overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:140;}
+  .acct-dropdown{position:fixed;display:none;width:272px;max-width:calc(100vw - 20px);max-height:min(70vh,480px);overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:140;}
   .acct-dropdown.on{display:block;animation:fade .15s ease;}
-  .acct-dd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);font-family:var(--display);font-weight:700;font-size:15px;position:sticky;top:0;background:var(--surface);border-radius:16px 16px 0 0;}
-  .acct-dd-body{padding:14px 16px 16px;}
-  .profile-avatar#profile-avatar-big{width:56px;height:56px;font-size:20px;flex:none;}
+  .acct-dd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 12px 10px;border-bottom:1px solid var(--border);}
+  .acct-dd-body{padding:12px;}
+  .profile-avatar#profile-avatar-big{width:34px;height:34px;font-size:14px;flex:none;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .theme-b, .icon-b{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
@@ -1597,30 +1597,34 @@
 
 <!-- menu de conta: dropdown pequeno, ancorado embaixo do nome no topo (não é um modal de tela cheia) -->
 <div class="acct-dropdown" id="profile-modal">
-  <div class="acct-dd-head"><span>Minha conta</span><button class="sheet-x" id="profile-close">✕</button></div>
-  <div class="acct-dd-body">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+  <div class="acct-dd-head">
+    <div style="display:flex;align-items:center;gap:9px;min-width:0">
       <div class="profile-avatar" id="profile-avatar-big"></div>
       <div style="min-width:0">
-        <button type="button" class="btn-ghost" id="profile-photo-upload-btn" style="font-size:11.5px;padding:6px 10px">📤 Trocar foto</button>
-        <input type="file" id="profile-photo-file" accept="image/*" style="display:none">
-        <div class="ad-note" id="profile-photo-status" style="margin-top:5px;min-height:1em"></div>
+        <div id="profile-header-name" style="font-weight:700;font-size:13.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="profile-header-email" style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
       </div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>E-mail</label><input class="txt" id="profile-email" disabled style="margin-top:5px;opacity:.65"></div>
-    <div class="fld" style="margin-bottom:8px"><label>Nome de exibição</label><input class="txt" id="profile-name-input" placeholder="Como você quer ser chamado" style="margin-top:5px"></div>
-    <button class="btn-primary" id="profile-save-name-btn" style="width:100%;margin-bottom:6px">Salvar nome</button>
-    <div id="profile-name-status" class="ad-note" style="min-height:1em;margin-bottom:8px"></div>
+    <button class="sheet-x" id="profile-close">✕</button>
+  </div>
+  <div class="acct-dd-body">
+    <button type="button" class="btn-ghost" id="profile-photo-upload-btn" style="width:100%;font-size:12px;padding:7px 10px;margin-bottom:10px">📤 Trocar foto</button>
+    <input type="file" id="profile-photo-file" accept="image/*" style="display:none">
+    <div class="ad-note" id="profile-photo-status" style="margin:-5px 0 8px;min-height:1em"></div>
 
-    <button class="btn-ghost" id="profile-change-pass-btn" style="width:100%">🔒 Alterar senha</button>
-    <div id="profile-pass-status" class="ad-note" style="min-height:1em;margin:6px 0 0"></div>
+    <div class="fld" style="margin-bottom:8px"><label>Nome de exibição</label><input class="txt" id="profile-name-input" placeholder="Como você quer ser chamado" style="margin-top:4px"></div>
+    <button class="btn-primary" id="profile-save-name-btn" style="width:100%;padding:9px 0;margin-bottom:4px">Salvar nome</button>
+    <div id="profile-name-status" class="ad-note" style="min-height:1em;margin-bottom:6px"></div>
 
-    <div id="profile-admin-section" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      <div class="ad-note" style="margin-bottom:8px">💾 Backup de anúncios, cliques, contas e protocolos de todo mundo.</div>
-      <button class="btn-ghost" id="profile-backup-btn" style="width:100%">💾 Baixar backup (JSON)</button>
+    <button class="btn-ghost" id="profile-change-pass-btn" style="width:100%;padding:9px 0">🔒 Alterar senha</button>
+    <div id="profile-pass-status" class="ad-note" style="min-height:1em;margin:4px 0 0"></div>
+
+    <div id="profile-admin-section" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <div class="ad-note" style="margin-bottom:6px">💾 Backup de anúncios, cliques, contas e protocolos de todo mundo.</div>
+      <button class="btn-ghost" id="profile-backup-btn" style="width:100%;padding:9px 0">💾 Baixar backup (JSON)</button>
     </div>
 
-    <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:14px">Sair</button>
+    <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:10px;padding:9px 0">Sair</button>
   </div>
 </div>
 
@@ -3897,25 +3901,36 @@ document.getElementById("auth-eye").onclick=()=>{
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
 
 /* ---- menu "Minha conta": dropdown pequeno ancorado embaixo do nome/foto no topo ---- */
+// calcula posição e altura máxima com base no espaço real disponível na tela (inclusive
+// quando o teclado do celular abre e "come" parte da tela) — nunca deixa cortar embaixo
+function posicionarDropdownConta(){
+  const dd = document.getElementById("profile-modal");
+  if(!dd.classList.contains("on")) return;
+  const rect = document.getElementById("acct-email").getBoundingClientRect();
+  const alturaVisivel = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const top = Math.round(rect.bottom + 8);
+  const espacoAbaixo = alturaVisivel - top - 12; // 12px de respiro no rodapé
+  dd.style.top = top + "px";
+  dd.style.right = Math.round(window.innerWidth - rect.right) + "px";
+  dd.style.left = "auto";
+  dd.style.maxHeight = Math.max(160, Math.min(420, espacoAbaixo)) + "px";
+}
 document.getElementById("acct-email").onclick=(e)=>{
   if(!currentUser) return;
   e.stopPropagation();
   const dd = document.getElementById("profile-modal");
   const jaAberto = dd.classList.contains("on");
   if(jaAberto){ dd.classList.remove("on"); return; }
-  document.getElementById("profile-email").value = currentUser.email || "";
+  document.getElementById("profile-header-name").textContent = displayNameFor(currentUser);
+  document.getElementById("profile-header-email").textContent = currentUser.email || "";
   document.getElementById("profile-name-input").value = displayNameFor(currentUser);
   document.getElementById("profile-name-status").textContent = "";
   document.getElementById("profile-pass-status").textContent = "";
   document.getElementById("profile-photo-status").textContent = "";
   aplicarAvatar(document.getElementById("profile-avatar-big"), PHOTO_URL, displayNameFor(currentUser));
   document.getElementById("profile-admin-section").style.display = IS_ADMIN ? "block" : "none";
-  // ancora o dropdown logo abaixo do botão da conta, alinhado pela direita
-  const rect = document.getElementById("acct-email").getBoundingClientRect();
-  dd.style.top = Math.round(rect.bottom + 8) + "px";
-  dd.style.right = Math.round(window.innerWidth - rect.right) + "px";
-  dd.style.left = "auto";
   dd.classList.add("on");
+  posicionarDropdownConta();
 };
 document.getElementById("profile-close").onclick=()=>document.getElementById("profile-modal").classList.remove("on");
 // clicar fora do menu (e fora do botão que o abre) fecha
@@ -3925,14 +3940,9 @@ document.addEventListener("click", (e)=>{
   if(dd.contains(e.target) || e.target.closest("#acct-email")) return;
   dd.classList.remove("on");
 });
-// reposiciona se a tela girar/redimensionar enquanto está aberto
-window.addEventListener("resize", ()=>{
-  const dd = document.getElementById("profile-modal");
-  if(!dd.classList.contains("on")) return;
-  const rect = document.getElementById("acct-email").getBoundingClientRect();
-  dd.style.top = Math.round(rect.bottom + 8) + "px";
-  dd.style.right = Math.round(window.innerWidth - rect.right) + "px";
-});
+// reposiciona se a tela girar/redimensionar — ou se o teclado do celular abrir/fechar
+window.addEventListener("resize", posicionarDropdownConta);
+if(window.visualViewport) window.visualViewport.addEventListener("resize", posicionarDropdownConta);
 
 document.getElementById("profile-save-name-btn").onclick=()=>{
   if(!currentUser) return;
@@ -3943,6 +3953,8 @@ document.getElementById("profile-save-name-btn").onclick=()=>{
     else localStorage.removeItem("apelido-"+currentUser.uid);
   }catch(e){}
   renderAcctName();
+  const headerName = document.getElementById("profile-header-name");
+  if(headerName) headerName.textContent = displayNameFor(currentUser);
   const st = document.getElementById("profile-name-status");
   if(st) st.textContent = "✓ Nome salvo!";
   try{ setDoc(doc(db,'users',currentUser.uid), {nickname:nome}, {merge:true}).catch(e=>console.warn('nick',e)); }catch(e){}
