@@ -379,6 +379,8 @@
   .acct-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:4px;}
   .acct-email:hover{background:var(--surface3);color:var(--text);}
   .acct-email svg{width:12px;height:12px;flex:none;opacity:.55;}
+  .acct-avatar{width:20px;height:20px;border-radius:50%;flex:none;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:10px;overflow:hidden;}
+  .profile-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:32px;overflow:hidden;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .theme-b, .icon-b{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
@@ -1134,7 +1136,10 @@
       <button class="icon-b" id="theme-btn" aria-label="Tema">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
-      <button class="acct-email" id="acct-email" title="Toque para editar seu nome"><span id="acct-name-txt"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+      <button class="acct-email" id="acct-email" title="Toque para ver sua conta">
+        <span class="acct-avatar" id="acct-avatar-mini"></span>
+        <span id="acct-name-txt"></span>
+      </button>
       <button class="admin-b" id="admin-btn" style="display:none">Admin</button>
       <button class="logout" id="logout-btn">Sair</button>
     </div>
@@ -1361,6 +1366,13 @@
       <div class="ad-stat"><div class="ad-v" id="ad-doses">0</div><div class="ad-k">Doses registradas</div></div>
       <div class="ad-stat"><div class="ad-v" id="ad-peps">0</div><div class="ad-k">Peptídeos adicionados</div></div>
     </div>
+
+    <p class="eyebrow" style="margin-top:22px">Backup do sistema</p>
+    <div class="panel">
+      <div class="ad-note" style="margin-bottom:12px">💾 Baixa um arquivo com tudo que está configurado hoje: anúncios (com atendentes, mensagens e status), histórico de cliques, contas registradas, o recado do letreiro — e também os protocolos individuais de todas as contas. Guarde esse arquivo num lugar seguro (Google Drive, e-mail pra você mesmo, etc.) — se algo der errado no Firebase um dia, dá pra usar esse arquivo pra recriar tudo na mão.</div>
+      <button class="btn-primary" id="admin-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
+      <div class="ad-note" style="margin:10px 0 0">⚠️ Esse arquivo passa a conter dados sensíveis de todas as contas — guarde com cuidado e não compartilhe à toa. Não inclui os arquivos de vídeo/foto em si, só os links deles.</div>
+    </div>
     <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(cada caixa é uma notícia — passam em sequência)</span></p>
     <div class="panel">
       <div class="ad-note" style="margin-bottom:12px">💡 Preencha as caixas que quiser usar (pode deixar as outras em branco). Para um botão clicável sem expor o número/link: <b>[Fale comigo no WhatsApp](84999937819)</b>.</div>
@@ -1439,13 +1451,6 @@
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
     <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados, os números de uso, e pode suspender uma conta por um número de dias — enquanto suspensa, a pessoa não consegue entrar no aplicativo e verá uma mensagem para contatar o suporte. A lista de contas mostra quem entrou a partir desta versão.</div>
-
-    <p class="eyebrow" style="margin-top:22px">Backup do sistema</p>
-    <div class="panel">
-      <div class="ad-note" style="margin-bottom:12px">💾 Baixa um arquivo com tudo que está configurado hoje: anúncios (com atendentes, mensagens e status), histórico de cliques, contas registradas, o recado do letreiro — e agora também os protocolos individuais de todas as contas. Guarde esse arquivo num lugar seguro (Google Drive, e-mail pra você mesmo, etc.) — se algo der errado no Firebase um dia, dá pra usar esse arquivo pra recriar tudo na mão.</div>
-      <button class="btn-primary" id="admin-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
-      <div class="ad-note" style="margin:10px 0 0">⚠️ Esse arquivo passa a conter dados sensíveis de todas as contas — guarde com cuidado e não compartilhe à toa. Não inclui os arquivos de vídeo/foto em si, só os links deles.</div>
-    </div>
   </section>
 
   <div class="disclaimer">
@@ -1580,6 +1585,37 @@
       <button class="btn-ghost" id="ev-del" style="display:none">Excluir</button>
       <button class="btn-ghost" id="ev-cancel">Cancelar</button>
       <button class="btn-primary" id="ev-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal: minha conta (foto, nome, e-mail, backup se for admin, sair) -->
+<div class="modal" id="profile-modal">
+  <div class="sheet">
+    <div class="sheet-head"><div class="sheet-title">Minha conta</div><button class="sheet-x" id="profile-close">✕</button></div>
+    <div class="sheet-body">
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px">
+        <div class="profile-avatar" id="profile-avatar-big"></div>
+        <div class="inrow" style="margin-top:10px">
+          <button type="button" class="btn-ghost" id="profile-photo-upload-btn">📤 Enviar foto do PC</button>
+        </div>
+        <input type="file" id="profile-photo-file" accept="image/*" style="display:none">
+        <div class="ad-note" id="profile-photo-status" style="margin-top:8px;text-align:center;min-height:1em"></div>
+      </div>
+      <div class="fld" style="margin-bottom:12px"><label>E-mail</label><input class="txt" id="profile-email" disabled style="margin-top:5px;opacity:.65"></div>
+      <div class="fld" style="margin-bottom:12px"><label>Nome de exibição</label><input class="txt" id="profile-name-input" placeholder="Como você quer ser chamado" style="margin-top:5px"></div>
+      <button class="btn-primary" id="profile-save-name-btn" style="width:100%;margin-bottom:8px">Salvar nome</button>
+      <div id="profile-name-status" class="ad-note" style="min-height:1em;margin-bottom:6px"></div>
+
+      <button class="btn-ghost" id="profile-change-pass-btn" style="width:100%;margin-top:6px">🔒 Alterar senha</button>
+      <div id="profile-pass-status" class="ad-note" style="min-height:1em;margin:6px 0 0"></div>
+
+      <div id="profile-admin-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="ad-note" style="margin-bottom:10px">💾 Baixa anúncios, cliques, contas e os protocolos individuais de todo mundo.</div>
+        <button class="btn-ghost" id="profile-backup-btn" style="width:100%">💾 Baixar backup completo (JSON)</button>
+      </div>
+
+      <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:18px">Sair</button>
     </div>
   </div>
 </div>
@@ -1806,6 +1842,22 @@ let contouNovaConta = false;   // evita contar a mesma conta nova mais de uma ve
 let currentUser = null;
 let IS_ADMIN = false;
 let NICKNAME = "";
+let PHOTO_URL = "";
+// aplica foto (com fallback pra inicial do nome, caso não tenha foto ou a imagem falhe)
+function aplicarAvatar(el, url, nome){
+  if(!el) return;
+  const letra = ((nome||"?").trim()[0]||"?").toUpperCase();
+  el.textContent = letra;
+  el.style.position = "relative";
+  if(url){
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "";
+    img.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;";
+    img.onerror = ()=>{ img.remove(); };
+    el.appendChild(img);
+  }
+}
 let POP_ID = null;
 let VIAL_PULSE_ID = null; // dispara o "chacoalhar" do líquido quando o nível do frasco muda
 let builderProto = null;
@@ -3613,6 +3665,7 @@ function renderAcctName(){
   if(!currentUser) return;
   const el = document.getElementById("acct-name-txt");
   if(el) el.textContent = displayNameFor(currentUser);
+  aplicarAvatar(document.getElementById("acct-avatar-mini"), PHOTO_URL, displayNameFor(currentUser));
 }
 function banMessage(bannedUntil){
   return `Sua conta foi suspensa até ${fmtBanDate(bannedUntil)}. Entre em contato com o suporte para mais informações.`;
@@ -3699,6 +3752,10 @@ async function showApp(user){
         try{ if(NICKNAME) localStorage.setItem("apelido-"+user.uid, NICKNAME); else localStorage.removeItem("apelido-"+user.uid); }catch(e){}
         renderAcctName();
       }
+      if(typeof d.photoURL === "string"){
+        PHOTO_URL = d.photoURL;
+        renderAcctName();
+      }
       dataLoaded = true;   // a partir daqui é seguro gravar
       if(!d.counted){ bumpStats({users:increment(1)}); setDoc(ref,{counted:true},{merge:true}).catch(()=>{}); }
     } else {
@@ -3753,6 +3810,7 @@ function showAuth(){
   pcSearchQuery=""; pcExpanded=false;
   { const s=document.getElementById("pc-search"); if(s) s.value=""; }
   NICKNAME="";
+  PHOTO_URL="";
   authScreen.classList.add("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="hidden";
   const _nav=document.querySelector(".nav"); if(_nav) _nav.style.visibility="hidden";
@@ -3833,21 +3891,108 @@ document.getElementById("auth-eye").onclick=()=>{
 };
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
 
-/* editar nome/apelido de exibição */
+/* ---- modal "Minha conta": foto, nome, e-mail, backup (se admin) e sair ---- */
 document.getElementById("acct-email").onclick=()=>{
   if(!currentUser) return;
-  const atual = displayNameFor(currentUser);
-  const novo = prompt("Como você quer ser chamado?", atual);
-  if(novo===null) return; // cancelou
-  const nome = novo.trim();
+  document.getElementById("profile-email").value = currentUser.email || "";
+  document.getElementById("profile-name-input").value = displayNameFor(currentUser);
+  document.getElementById("profile-name-status").textContent = "";
+  document.getElementById("profile-pass-status").textContent = "";
+  document.getElementById("profile-photo-status").textContent = "";
+  aplicarAvatar(document.getElementById("profile-avatar-big"), PHOTO_URL, displayNameFor(currentUser));
+  document.getElementById("profile-admin-section").style.display = IS_ADMIN ? "block" : "none";
+  document.getElementById("profile-modal").classList.add("on");
+};
+document.getElementById("profile-close").onclick=()=>document.getElementById("profile-modal").classList.remove("on");
+document.getElementById("profile-modal").onclick=e=>{ if(e.target.id==="profile-modal") document.getElementById("profile-modal").classList.remove("on"); };
+
+document.getElementById("profile-save-name-btn").onclick=()=>{
+  if(!currentUser) return;
+  const nome = document.getElementById("profile-name-input").value.trim();
   NICKNAME = nome;
   try{
     if(nome) localStorage.setItem("apelido-"+currentUser.uid, nome);
     else localStorage.removeItem("apelido-"+currentUser.uid);
   }catch(e){}
   renderAcctName();
-  // sincroniza na nuvem (funciona em qualquer aparelho)
+  const st = document.getElementById("profile-name-status");
+  if(st) st.textContent = "✓ Nome salvo!";
   try{ setDoc(doc(db,'users',currentUser.uid), {nickname:nome}, {merge:true}).catch(e=>console.warn('nick',e)); }catch(e){}
+};
+
+/* foto de perfil: envia do PC/celular pro Storage, em uma pasta que só o próprio usuário
+   pode escrever (avatars/{uid}/...), e salva o link em users/{uid}.photoURL */
+document.getElementById("profile-photo-upload-btn").onclick=()=>document.getElementById("profile-photo-file").click();
+document.getElementById("profile-photo-file").addEventListener("change", function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!file || !currentUser) return;
+  const st = document.getElementById("profile-photo-status");
+  if(!/^image\//i.test(file.type||"")){
+    if(st) st.textContent = "⚠️ Escolha um arquivo de imagem (jpg, png, webp...).";
+    return;
+  }
+  const LIMITE_MB = 8;
+  if(file.size > LIMITE_MB*1024*1024){
+    if(st) st.textContent = `⚠️ Imagem muito grande (${(file.size/1024/1024).toFixed(1)} MB). Limite de ${LIMITE_MB} MB.`;
+    return;
+  }
+  const ext = (file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"") || "jpg";
+  const caminho = "avatars/"+currentUser.uid+"/foto-"+Date.now()+"."+ext;
+  const sref = storageRef(storage, caminho);
+  const btn = document.getElementById("profile-photo-upload-btn");
+  btn.disabled = true;
+  const task = uploadBytesResumable(sref, file, {contentType:file.type||"image/jpeg"});
+  if(st) st.textContent = "Enviando foto... 0%";
+  task.on("state_changed",
+    snap=>{ const pct = snap.totalBytes ? Math.round((snap.bytesTransferred/snap.totalBytes)*100) : 0; if(st) st.textContent = "Enviando foto... "+pct+"%"; },
+    err=>{
+      btn.disabled = false;
+      console.warn("upload-avatar", err);
+      const cod = (err && err.code) || "";
+      if(st) st.textContent = (cod.indexOf("unauthorized")>=0 || cod.indexOf("permission")>=0)
+        ? '⚠️ Bloqueado pelas regras do Firebase Storage. Libere escrita na pasta "avatars/" no console (Storage → Regras).'
+        : "⚠️ Não consegui enviar a foto. Tente de novo.";
+    },
+    ()=>{
+      btn.disabled = false;
+      getDownloadURL(sref).then(url=>{
+        PHOTO_URL = url;
+        aplicarAvatar(document.getElementById("profile-avatar-big"), PHOTO_URL, displayNameFor(currentUser));
+        renderAcctName();
+        if(st) st.textContent = "✓ Foto atualizada!";
+        setDoc(doc(db,'users',currentUser.uid), {photoURL:url}, {merge:true}).catch(e=>console.warn('photoURL',e));
+      }).catch(err=>{
+        console.warn("geturl-avatar", err);
+        if(st) st.textContent = "⚠️ Foto enviada, mas não consegui pegar o link. Tente de novo.";
+      });
+    }
+  );
+});
+
+// dentro do modal, o backup do admin é o mesmo botão da aba Admin — só aciona ele
+document.getElementById("profile-backup-btn").onclick=()=>{
+  const btn = document.getElementById("admin-backup-btn");
+  if(btn) btn.click();
+};
+document.getElementById("profile-change-pass-btn").onclick=async ()=>{
+  if(!currentUser || !currentUser.email) return;
+  const st = document.getElementById("profile-pass-status");
+  const btn = document.getElementById("profile-change-pass-btn");
+  btn.disabled = true;
+  if(st){ st.textContent = "Enviando link..."; st.style.color = ""; }
+  try{
+    await sendPasswordResetEmail(auth, currentUser.email);
+    if(st){ st.textContent = "✓ Enviamos um link de redefinição para "+currentUser.email+" — abra o e-mail (olhe também a caixa de spam) e siga o link pra criar a nova senha."; st.style.color = "var(--primary)"; }
+  }catch(e){
+    if(st){ st.textContent = "⚠️ Não consegui enviar agora. Tente de novo em instantes."; st.style.color = "var(--danger)"; }
+    console.warn("change-pass", e);
+  }
+  btn.disabled = false;
+};
+document.getElementById("profile-logout-btn").onclick=()=>{
+  document.getElementById("profile-modal").classList.remove("on");
+  signOut(auth);
 };
 
 /* tema claro/escuro */
