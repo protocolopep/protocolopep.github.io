@@ -376,8 +376,19 @@
 /* topbar account + auth screen */
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
   .tb-presenca{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);padding:0 2px;white-space:nowrap;}
-  .tb-presenca-item{display:inline-flex;align-items:center;gap:3px;}
+  .tb-presenca-item{position:relative;display:inline-flex;align-items:center;}
+  .tb-presenca-item>span{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:4px 5px;border-radius:8px;}
+  .tb-presenca-item>span:hover{background:var(--surface2);}
   .tb-presenca-item b{font-family:var(--display);color:var(--text);font-weight:700;font-size:12.5px;}
+  .tb-presenca-seta{font-style:normal;font-size:9px;color:var(--muted2);margin-left:1px;}
+  .tb-dropdown{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:210px;max-width:260px;max-height:280px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:8px;box-shadow:0 12px 28px rgba(0,0,0,.35);z-index:50;}
+  .tb-presenca-item.aberto .tb-dropdown{display:block;}
+  .tb-presenca-item.aberto .tb-presenca-seta{transform:rotate(180deg);display:inline-block;}
+  .tb-dropdown-titulo{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.03em;padding:4px 8px 6px;}
+  .tb-dropdown-row{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:9px;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tb-dropdown-row:hover{background:var(--surface3);}
+  .tb-dropdown-dot{width:6px;height:6px;border-radius:50%;background:#2FD8AC;flex:none;}
+  .tb-dropdown-empty{font-size:12px;color:var(--muted2);padding:6px 8px;}
   .acct{display:flex;align-items:center;gap:8px;flex:none;}
   .acct-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:4px;}
   .acct-email:hover{background:var(--surface3);color:var(--text);}
@@ -495,7 +506,10 @@
   .mb-row:first-child{border-top:none;}
   .mb-row.mb-row-banned{background:color-mix(in srgb, var(--danger) 7%, transparent);border-radius:10px;margin-top:2px;}
   .mb-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
-  .mb-email{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mb-email{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+  .mb-email-sub{font-size:11.5px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mb-onlinedot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex:none;}
+  .mb-onlinedot.on{background:#2FD8AC;box-shadow:0 0 0 3px color-mix(in srgb, #2FD8AC 20%, transparent);}
   .mb-date{flex:none;font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;}
   .mb-lastlogin{opacity:.75;}
   .mb-banned-tag{color:var(--danger);font-weight:700;}
@@ -1173,9 +1187,15 @@
       <div class="datestrip" id="datestrip"></div>
     </div>
     <div class="acct" id="acct-row" style="display:none">
-      <div class="tb-presenca" id="tb-presenca" style="display:none" title="Estimativa: online = atividade nos últimos ~2,5min. Só admin vê isso.">
-        <span class="tb-presenca-item">🟢<b id="tb-online">0</b></span>
-        <span class="tb-presenca-item">📅<b id="tb-hoje">0</b></span>
+      <div class="tb-presenca" id="tb-presenca" style="display:none">
+        <div class="tb-presenca-item" id="tb-online-btn">
+          <span>🟢<b id="tb-online">0</b><i class="tb-presenca-seta">▾</i></span>
+          <div class="tb-dropdown" id="tb-online-dropdown"></div>
+        </div>
+        <div class="tb-presenca-item" id="tb-hoje-btn">
+          <span>📅<b id="tb-hoje">0</b><i class="tb-presenca-seta">▾</i></span>
+          <div class="tb-dropdown" id="tb-hoje-dropdown"></div>
+        </div>
       </div>
       <button class="icon-b" id="theme-btn" aria-label="Tema">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -1515,7 +1535,7 @@
     <div id="admin-only-block2">
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
     <div class="panel">
-      <input class="txt" id="mb-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
+      <input class="txt" id="mb-search" type="text" placeholder="🔎 Pesquisar por nome ou e-mail..." style="margin-bottom:10px">
       <div id="ad-members"></div>
     </div>
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
@@ -1831,7 +1851,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, deleteDoc, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
@@ -1932,9 +1952,15 @@ function atualizarInscricoesPorPermissao(){
     renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
     membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({...d.data(), uid:d.id})); renderMembers(); }, e=>console.warn('members',e));
+    profilesUnsub = onSnapshot(collection(db,'users'), snap=>{
+      PERFIS_USUARIOS = {};
+      snap.docs.forEach(d=>{ const p=d.data(); PERFIS_USUARIOS[d.id] = {nickname:p.nickname||"", photoURL:p.photoURL||""}; });
+      renderMembers();
+    }, e=>console.warn('profiles',e));
   } else if(!IS_ADMIN && membersUnsub){
     if(statsUnsub){ statsUnsub(); statsUnsub=null; }
     membersUnsub(); membersUnsub=null;
+    if(profilesUnsub){ profilesUnsub(); profilesUnsub=null; }
   }
   if(IS_ADS_MANAGER && !partnerClicksUnsub){
     partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
@@ -3516,6 +3542,9 @@ calc();
 let unsub = null;
 let statsUnsub = null;
 let membersUnsub = null;
+let profilesUnsub = null;      // observa nickname/foto de TODOS os usuários (só admin) — pra
+                                // mostrar o nome do perfil na lista de contas/online, não só o e-mail
+let PERFIS_USUARIOS = {};      // uid -> {nickname, photoURL}
 let partnerClicksUnsub = null;  // "assinatura" ao vivo dos cliques nos botões de atendente
 let adminPartnerClicks = [];    // cliques carregados (só o admin lê essa coleção)
 let pcSearchQuery = "";         // termo digitado na busca por e-mail dos cliques
@@ -3568,6 +3597,11 @@ function memberRowHtml(m){
     : criadoTxt;
   // linha 2: data/hora do último login (só aparece quando o dado existe)
   const linha2 = m.lastLogin ? `<span class="mb-date mb-lastlogin">Último login: ${fmtDataHora(m.lastLogin)}</span>` : '';
+  // nome do perfil (apelido cadastrado pela própria pessoa) — quando existe, vira o
+  // destaque da linha e o e-mail desce pra linha secundária; sem apelido, mostra só o e-mail
+  const nomeExibicao = nomeCurto(m) === m.email ? '' : nomeCurto(m);
+  const dotHtml = `<span class="mb-onlinedot${m.online?' on':''}" title="${m.online?'Online agora':'Offline'}"></span>`;
+  const linhaEmailSub = nomeExibicao ? `<span class="mb-email-sub">${esc(m.email)}</span>` : '';
   const panelHtml = (canManage && openSuspendUid===m.uid) ? `
     <div class="mb-susp-panel">
       <span>Suspender por</span>
@@ -3587,7 +3621,8 @@ function memberRowHtml(m){
     </div>` : '';
   return `<div class="mb-row${banned?' mb-row-banned':''}">
       <div class="mb-info">
-        <span class="mb-email">${esc(m.email)}</span>
+        <span class="mb-email">${dotHtml}${esc(nomeExibicao || m.email)}</span>
+        ${linhaEmailSub}
         <span class="mb-date">${linha1}</span>
         ${linha2}
       </div>
@@ -3647,23 +3682,50 @@ document.getElementById("perm-list").addEventListener("click", (e)=>{
 // cache do último cálculo de membros (renderMembers já traz tudo pronto); serve pra
 // recalcular "online agora"/"entraram hoje" sozinho a cada 30s, sem precisar de um
 // evento novo do Firestore pra "descontar" quem ficou inativo
+const JANELA_ONLINE_MS = 150000; // 2,5min de folga sobre o heartbeat de 60s — usado aqui e por pessoa
 let ULTIMO_ARR_MEMBROS = [];
 function atualizarStatsPresenca(){
   const elOnline = document.getElementById("tb-online");
   const elHoje = document.getElementById("tb-hoje");
   if(!elOnline && !elHoje) return;
   const agora = Date.now();
-  const JANELA_ONLINE_MS = 150000; // 2,5min de folga sobre o heartbeat de 60s
   const hojeStr = new Date().toLocaleDateString("pt-BR");
-  let onlineAgora=0, entraramHoje=0;
+  const online=[], hoje=[];
   ULTIMO_ARR_MEMBROS.forEach(m=>{
-    if(m.lastSeen && (agora-m.lastSeen)<JANELA_ONLINE_MS) onlineAgora++;
-    if(m.lastLogin && new Date(m.lastLogin).toLocaleDateString("pt-BR")===hojeStr) entraramHoje++;
+    if(m.lastSeen && (agora-m.lastSeen)<JANELA_ONLINE_MS) online.push(m);
+    if(m.lastLogin && new Date(m.lastLogin).toLocaleDateString("pt-BR")===hojeStr) hoje.push(m);
   });
-  if(elOnline) elOnline.textContent = onlineAgora;
-  if(elHoje) elHoje.textContent = entraramHoje;
+  if(elOnline) elOnline.textContent = online.length;
+  if(elHoje) elHoje.textContent = hoje.length;
+  const ddOnline = document.getElementById("tb-online-dropdown");
+  if(ddOnline) ddOnline.innerHTML = `<div class="tb-dropdown-titulo">Online agora · estimativa</div>` + dropdownListaHTML(online, "Ninguém online agora");
+  const ddHoje = document.getElementById("tb-hoje-dropdown");
+  if(ddHoje) ddHoje.innerHTML = `<div class="tb-dropdown-titulo">Entraram hoje</div>` + dropdownListaHTML(hoje, "Ninguém entrou hoje ainda");
+}
+function nomeCurto(m){ return (m.nome||'').trim() || m.email || 'Sem e-mail'; }
+function dropdownListaHTML(lista, vazioTxt){
+  if(!lista.length) return `<div class="tb-dropdown-empty">${vazioTxt}</div>`;
+  return lista
+    .sort((a,b)=>nomeCurto(a).localeCompare(nomeCurto(b)))
+    .map(m=>`<div class="tb-dropdown-row" title="${esc(m.email||'')}"><span class="tb-dropdown-dot"></span>${esc(nomeCurto(m))}</div>`)
+    .join('');
 }
 setInterval(atualizarStatsPresenca, 30000);
+// abre/fecha o dropdown de online/hoje ao clicar; fecha se clicar fora ou apertar Esc
+document.querySelectorAll(".tb-presenca-item").forEach(item=>{
+  item.querySelector("span").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    const jaAberto = item.classList.contains("aberto");
+    document.querySelectorAll(".tb-presenca-item.aberto").forEach(o=>o.classList.remove("aberto"));
+    if(!jaAberto) item.classList.add("aberto");
+  });
+});
+document.addEventListener("click", ()=>{
+  document.querySelectorAll(".tb-presenca-item.aberto").forEach(o=>o.classList.remove("aberto"));
+});
+document.addEventListener("keydown", (e)=>{
+  if(e.key==="Escape") document.querySelectorAll(".tb-presenca-item.aberto").forEach(o=>o.classList.remove("aberto"));
+});
 function renderMembers(){
   const list=document.getElementById("ad-members");
   if(!list) return;
@@ -3678,26 +3740,31 @@ function renderMembers(){
     const d = tsCriacao ? new Date(tsCriacao).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}) : prev.d;
     map.set(e, {
       email: m.email || prev.email,
+      nome: (m.uid && PERFIS_USUARIOS[m.uid] && PERFIS_USUARIOS[m.uid].nickname) || prev.nome || '',
       d: d || '',
       ts: tsCriacao || prev.ts || 0,
       createdAt: m.createdAt || prev.createdAt || 0,
       lastLogin: m.ts || prev.lastLogin || 0,
       lastSeen: m.lastSeen || prev.lastSeen || 0,
+      online: !!(m.lastSeen && (Date.now()-m.lastSeen)<JANELA_ONLINE_MS),
       uid: m.uid,
       banned: !!m.banned,
       bannedUntil: m.bannedUntil || null
     });
   });
-  const arr=[...map.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const arr=[...map.values()].sort((a,b)=>{
+    if(!!b.online !== !!a.online) return (b.online?1:0)-(a.online?1:0); // online agora sempre no topo
+    return (b.lastSeen||b.lastLogin||b.ts||0) - (a.lastSeen||a.lastLogin||a.ts||0); // depois, mais ativo recentemente primeiro
+  });
   document.getElementById("ad-users").textContent = arr.length;
   ULTIMO_ARR_MEMBROS = arr;
   atualizarStatsPresenca();
   if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
 
   const q = memberSearchQuery;
-  const filtered = q ? arr.filter(m=>(m.email||'').toLowerCase().includes(q)) : arr;
+  const filtered = q ? arr.filter(m=>(m.email||'').toLowerCase().includes(q) || (m.nome||'').toLowerCase().includes(q)) : arr;
   if(filtered.length===0){
-    list.innerHTML = `<div class="empty-note">Nenhuma conta com e-mail contendo "${esc(q)}".</div>`;
+    list.innerHTML = `<div class="empty-note">Nenhuma conta com e-mail ou nome contendo "${esc(q)}".</div>`;
     return;
   }
 
@@ -5498,6 +5565,7 @@ function blocoAtendenteHTML(n, exemploNome){
           <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
         </div>
       </div>
+      <button type="button" class="btn-ghost atd-clear-btn" data-n="${n}" style="width:100%;margin-top:8px;color:var(--danger)">🗑️ Limpar dados deste atendente</button>
     </div>
   </div>`;
 }
@@ -5833,6 +5901,36 @@ function atualizarBotaoAddAtendente(el){
   });
   addBtn.style.display = temEscondido ? "" : "none";
 }
+// "🗑️ Limpar dados deste atendente": apaga nome, whatsapp, foto, e-mail e invalida o link
+// de status desse slot específico — não mexe em nenhum outro atendente nem no resto do anúncio
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const clearBtn = e.target.closest && e.target.closest(".atd-clear-btn");
+  if(!clearBtn) return;
+  const bloco = clearBtn.closest(".atd-bloco");
+  const el = clearBtn.closest(".pt-editor");
+  if(!bloco || !el) return;
+  const n = bloco.dataset.n;
+  const campoNomeAtual = bloco.querySelector(".f-n"+n);
+  const nomeAtual = (campoNomeAtual ? campoNomeAtual.value : "").trim();
+  const aviso = "Limpar todos os dados do Atendente "+n+(nomeAtual?(" (\""+nomeAtual+"\")"):"")+"?\n\nApaga nome, WhatsApp, foto, e-mail e invalida o link de status dele. Não afeta os outros atendentes.";
+  if(!confirm(aviso)) return;
+  const id = el.dataset.id;
+  ["f-n","f-w","f-f","f-email"].forEach(pref=>{
+    const inp = bloco.querySelector("."+pref+n);
+    if(inp) inp.value = "";
+  });
+  const resumo = bloco.querySelector(".atd-bloco-resumo");
+  if(resumo){ resumo.textContent="vazio"; resumo.classList.add("vazio"); }
+  const row = bloco.querySelector('.atd-link-row[data-n="'+n+'"]');
+  if(row) row.style.display="none";
+  const campo={};
+  campo["n"+n]=""; campo["w"+n]=""; campo["f"+n]=""; campo["email"+n]="";
+  campo["tok"+n]=deleteField(); campo["online"+n]=deleteField();
+  clearBtn.disabled=true;
+  setDoc(doc(db,'partnerAds',id), campo, {merge:true})
+    .catch(err=>{ alert("Não consegui limpar agora. Tente de novo."); console.warn('limpar-atendente', err); })
+    .finally(()=>{ clearBtn.disabled=false; });
+});
 // roda 1x quando o card do anúncio é criado no DOM: decide quantos atendentes já
 // aparecem visíveis (com base no que já tem dado) e se o slot 1 começa aberto (só
 // quando o anúncio inteiro ainda está vazio, pra facilitar quem está criando do zero).
