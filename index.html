@@ -375,6 +375,9 @@
 
 /* topbar account + auth screen */
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .tb-presenca{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);padding:0 2px;white-space:nowrap;}
+  .tb-presenca-item{display:inline-flex;align-items:center;gap:3px;}
+  .tb-presenca-item b{font-family:var(--display);color:var(--text);font-weight:700;font-size:12.5px;}
   .acct{display:flex;align-items:center;gap:8px;flex:none;}
   .acct-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:4px;}
   .acct-email:hover{background:var(--surface3);color:var(--text);}
@@ -664,6 +667,14 @@
   .atd-bloco.aberto .atd-bloco-chevron{transform:rotate(180deg);}
   .atd-bloco-body{display:none;padding:2px 14px 14px;}
   .atd-bloco.aberto .atd-bloco-body{display:block;}
+  .pt-editor-header{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+  .pt-editor-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .pt-editor-titulo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pt-editor-status{font-size:11.5px;color:var(--muted2);}
+  .pt-editor-chevron{flex:none;color:var(--muted2);font-size:12px;transition:transform .15s ease;}
+  .pt-editor.aberto .pt-editor-chevron{transform:rotate(180deg);}
+  .pt-editor-body{display:none;margin-top:12px;}
+  .pt-editor.aberto .pt-editor-body{display:block;}
   .pt-atd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .pt-atd-info .pt-atd-nome{flex:none;}
   .pt-atd-status{align-self:flex-start;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;}
@@ -1162,6 +1173,10 @@
       <div class="datestrip" id="datestrip"></div>
     </div>
     <div class="acct" id="acct-row" style="display:none">
+      <div class="tb-presenca" id="tb-presenca" style="display:none" title="Estimativa: online = atividade nos últimos ~2,5min. Só admin vê isso.">
+        <span class="tb-presenca-item">🟢<b id="tb-online">0</b></span>
+        <span class="tb-presenca-item">📅<b id="tb-hoje">0</b></span>
+      </div>
       <button class="icon-b" id="theme-btn" aria-label="Tema">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
@@ -1435,19 +1450,20 @@
           <label>Notícia 2</label>
           <input class="txt notice-box" data-n="2" placeholder="Ex.: Reunião do grupo sábado às 10h" style="margin-top:5px">
         </div>
-        <div class="fld" style="margin-bottom:10px">
+        <div class="fld notice-box-wrap" data-n="3" style="margin-bottom:10px;display:none">
           <label>Notícia 3</label>
           <input class="txt notice-box" data-n="3" placeholder="(opcional)" style="margin-top:5px">
         </div>
-        <div class="fld" style="margin-bottom:10px">
+        <div class="fld notice-box-wrap" data-n="4" style="margin-bottom:10px;display:none">
           <label>Notícia 4</label>
           <input class="txt notice-box" data-n="4" placeholder="(opcional)" style="margin-top:5px">
         </div>
-        <div class="fld" style="margin-bottom:10px">
+        <div class="fld notice-box-wrap" data-n="5" style="margin-bottom:10px;display:none">
           <label>Notícia 5</label>
           <input class="txt notice-box" data-n="5" placeholder="(opcional)" style="margin-top:5px">
         </div>
       </div>
+      <button type="button" class="btn-ghost" id="notice-add-btn" style="width:100%;margin-bottom:10px">+ Adicionar notícia</button>
       <p id="notice-preview" style="font-size:11.5px;color:var(--primary);margin:4px 0 8px;min-height:1em;"></p>
       <div class="fld" style="margin-top:10px">
         <label>Velocidade que a notícia passa</label>
@@ -1938,6 +1954,8 @@ function recalcularPermissoes(){
   IS_ADS_MANAGER = IS_ADMIN || ROLE_GRANTED === 'ads_manager';
   const btn = document.getElementById("admin-btn");
   if(btn) btn.style.display = (IS_ADMIN || IS_ADS_MANAGER) ? "inline-flex" : "none";
+  const presencaEl = document.getElementById("tb-presenca");
+  if(presencaEl) presencaEl.style.display = IS_ADMIN ? "flex" : "none";
   document.querySelectorAll("#admin-only-block, #admin-only-block2").forEach(el=>{
     el.style.display = IS_ADMIN ? "" : "none";
   });
@@ -3626,6 +3644,26 @@ document.getElementById("perm-list").addEventListener("click", (e)=>{
   deleteDoc(doc(db,'roles',email)).catch(err=>{ console.warn('revoke-role',err); alert("Não consegui revogar. Tente de novo."); });
 });
 
+// cache do último cálculo de membros (renderMembers já traz tudo pronto); serve pra
+// recalcular "online agora"/"entraram hoje" sozinho a cada 30s, sem precisar de um
+// evento novo do Firestore pra "descontar" quem ficou inativo
+let ULTIMO_ARR_MEMBROS = [];
+function atualizarStatsPresenca(){
+  const elOnline = document.getElementById("tb-online");
+  const elHoje = document.getElementById("tb-hoje");
+  if(!elOnline && !elHoje) return;
+  const agora = Date.now();
+  const JANELA_ONLINE_MS = 150000; // 2,5min de folga sobre o heartbeat de 60s
+  const hojeStr = new Date().toLocaleDateString("pt-BR");
+  let onlineAgora=0, entraramHoje=0;
+  ULTIMO_ARR_MEMBROS.forEach(m=>{
+    if(m.lastSeen && (agora-m.lastSeen)<JANELA_ONLINE_MS) onlineAgora++;
+    if(m.lastLogin && new Date(m.lastLogin).toLocaleDateString("pt-BR")===hojeStr) entraramHoje++;
+  });
+  if(elOnline) elOnline.textContent = onlineAgora;
+  if(elHoje) elHoje.textContent = entraramHoje;
+}
+setInterval(atualizarStatsPresenca, 30000);
 function renderMembers(){
   const list=document.getElementById("ad-members");
   if(!list) return;
@@ -3644,6 +3682,7 @@ function renderMembers(){
       ts: tsCriacao || prev.ts || 0,
       createdAt: m.createdAt || prev.createdAt || 0,
       lastLogin: m.ts || prev.lastLogin || 0,
+      lastSeen: m.lastSeen || prev.lastSeen || 0,
       uid: m.uid,
       banned: !!m.banned,
       bannedUntil: m.bannedUntil || null
@@ -3651,6 +3690,8 @@ function renderMembers(){
   });
   const arr=[...map.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
   document.getElementById("ad-users").textContent = arr.length;
+  ULTIMO_ARR_MEMBROS = arr;
+  atualizarStatsPresenca();
   if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
 
   const q = memberSearchQuery;
@@ -3901,6 +3942,7 @@ async function showApp(user){
   try{
     const criadoEm = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : Date.now();
     setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now(), createdAt:criadoEm}, {merge:true});
+    enviarHeartbeatPresenca();
   }catch(e){}
   // ---- observa em tempo real: se o admin suspender a conta enquanto ela está em uso, desloga na hora ----
   if(banUnsub){ banUnsub(); banUnsub=null; }
@@ -4032,6 +4074,22 @@ if(SHARE_MODE){
     .catch(e=>{ document.getElementById("share-list").innerHTML='<div class="empty-note">Não consegui carregar este protocolo.</div>'; console.warn(e); });
 }
 onAuthStateChanged(auth, u=>{ if(u) showApp(u); else showAuth(); });
+
+/* =========================================================
+   PRESENÇA — "heartbeat" simples pra estimar quem está online agora.
+   Enquanto a pessoa está logada e com a aba em primeiro plano, atualiza um carimbo
+   (lastSeen) a cada 60s no próprio documento dela em members/{uid} — já permitido
+   pelas regras atuais (dono do uid pode atualizar seu member, exceto banned/bannedUntil).
+   Não é uma certeza absoluta (a aba pode fechar sem avisar o servidor), mas dá uma
+   estimativa confiável: quem está online de verdade sempre tem um carimbo recente.
+   ========================================================= */
+function enviarHeartbeatPresenca(){
+  if(!currentUser) return;
+  if(document.visibilityState !== "visible") return;
+  setDoc(doc(db,'members',currentUser.uid), {lastSeen:Date.now()}, {merge:true}).catch(()=>{});
+}
+setInterval(enviarHeartbeatPresenca, 60000);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") enviarHeartbeatPresenca(); });
 
 function showErr(msg){ authErr.textContent = msg; authErr.style.color="var(--danger)"; authErr.style.display = "block"; }
 function clearErr(){ authErr.style.display = "none"; }
@@ -4772,6 +4830,14 @@ function renderNotice(){
     document.querySelectorAll(".notice-box").forEach(function(box, i){
       if(document.activeElement !== box) box.value = linhasCarregar[i] || "";
     });
+    if(!noticeBoxesInicializadas){
+      noticeBoxesInicializadas = true;
+      var ultimaPreenchida = 2;
+      linhasCarregar.forEach(function(l, i){ if((l||"").trim() && (i+1)>ultimaPreenchida) ultimaPreenchida=i+1; });
+      revelarNoticiasAte(ultimaPreenchida);
+    }
+  } else if(!noticeBoxesInicializadas){
+    noticeBoxesInicializadas = true; // sem recado salvo ainda: começa só com as 2 primeiras caixas
   }
   const spdInp=document.getElementById("notice-speed");
   const spdVal=Math.min(400, Math.max(10, Number(noticeData && noticeData.speed) || 55));
@@ -4938,6 +5004,31 @@ document.getElementById("nv-remove").onclick=()=>{
     .then(()=>alert("Novidade removida."))
     .catch(e=>console.warn(e));
 };
+
+// controla quais caixas de "Recado para todos" ficam visíveis — começa só com as 2
+// primeiras; "noticeBoxesInicializadas" garante que isso só é decidido 1x (na primeira
+// leitura dos dados), pra não reaparecer/sumir sozinho enquanto o admin está editando
+let noticeBoxesInicializadas = false;
+function revelarNoticiasAte(n){
+  document.querySelectorAll(".notice-box-wrap").forEach(function(wrap){
+    if(Number(wrap.dataset.n) <= n) wrap.style.display = "";
+  });
+  atualizarBotaoAddNoticia();
+}
+function atualizarBotaoAddNoticia(){
+  const btn = document.getElementById("notice-add-btn");
+  if(!btn) return;
+  const temEscondida = [...document.querySelectorAll(".notice-box-wrap")].some(w=>w.style.display==="none");
+  btn.style.display = temEscondida ? "" : "none";
+}
+document.getElementById("notice-add-btn").addEventListener("click", function(){
+  const escondida = [...document.querySelectorAll(".notice-box-wrap")].find(w=>w.style.display==="none");
+  if(!escondida) return;
+  escondida.style.display = "";
+  const inp = escondida.querySelector(".notice-box");
+  if(inp) inp.focus();
+  atualizarBotaoAddNoticia();
+});
 
 document.querySelectorAll(".notice-box").forEach(box=>{
   box.oninput = ()=>{
@@ -5398,9 +5489,14 @@ function blocoAtendenteHTML(n, exemploNome){
 }
 function adEditorHTML(d){
   return `<div class="panel pt-editor" data-id="${esc(d.id)}" style="margin-bottom:14px">
-    <div class="inrow" style="justify-content:space-between;align-items:center;margin-bottom:10px">
-      <strong class="pt-editor-titulo" style="font-size:13.5px">${esc(tituloBlocoAnuncio(d))}</strong>
+    <div class="pt-editor-header">
+      <div class="pt-editor-info">
+        <strong class="pt-editor-titulo" style="font-size:13.5px">${esc(tituloBlocoAnuncio(d))}</strong>
+        <span class="pt-editor-status">${esc(statusTextoAnuncio(d))}</span>
+      </div>
+      <div class="pt-editor-chevron">▾</div>
     </div>
+    <div class="pt-editor-body">
     <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt f-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area f-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
     ${campoImagemHTML("Imagem do banner","(opcional — ignorado se preencher o vídeo)","f-img","https://...","banner")}
@@ -5448,6 +5544,7 @@ function adEditorHTML(d){
       <button class="btn-ghost pt-ad-undo" style="flex:1">↺ Desfazer</button>
     </div>
     <button class="btn-ghost pt-ad-remove" style="width:100%;margin-top:8px">Remover anúncio</button>
+    </div>
   </div>`;
 }
 // preenche os campos de um bloco já existente no DOM sem mexer no campo em que a pessoa
@@ -5483,6 +5580,8 @@ function preencherBlocoAnuncio(el, d, forcar){
   if(st) st.textContent = statusTextoAnuncio(d);
   const tit=el.querySelector(".pt-editor-titulo");
   if(tit) tit.textContent = tituloBlocoAnuncio(d);
+  const stHead=el.querySelector(".pt-editor-status");
+  if(stHead) stHead.textContent = statusTextoAnuncio(d);
   const pubBtn=el.querySelector(".pt-ad-publish");
   if(pubBtn) pubBtn.textContent = d._rascunho ? "Publicar anúncio" : "Salvar alterações";
   const undoBtn=el.querySelector(".pt-ad-undo");
@@ -5505,6 +5604,7 @@ function syncAdsEditorDOM(){
       wrap.insertAdjacentHTML("beforeend", adEditorHTML(d));
       el=wrap.querySelector('.pt-editor[data-id="'+d.id+'"]');
       aplicarEstadoInicialAtendentes(el, d);
+      if(d._rascunho) el.classList.add("aberto"); // rascunho novo já abre pra preencher; anúncio existente começa recolhido
     }
     preencherBlocoAnuncio(el, d);
   });
@@ -5673,6 +5773,14 @@ document.getElementById("pt-ads-editor").addEventListener("input", function(e){
   const el = t.closest(".pt-editor");
   const row = el && el.querySelector('.atd-link-row[data-n="'+m[1]+'"]');
   if(row) row.style.display = t.value.trim() ? "" : "none";
+});
+
+// abre/fecha o card inteiro de um anúncio ao tocar no cabeçalho compacto
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const header = e.target.closest && e.target.closest(".pt-editor-header");
+  if(!header) return;
+  const editor = header.closest(".pt-editor");
+  if(editor) editor.classList.toggle("aberto");
 });
 
 // abre/fecha o card de um atendente ao tocar no cabeçalho compacto
