@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B1017">
+<meta name="robots" content="noindex, nofollow">
+<title>Meu status de atendimento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1017; --surface:#131B26; --surface2:#1A2532;
+    --border:#26313F; --border2:#324152;
+    --text:#EAF0F6; --muted:#8A97A6;
+    --on:#2FD8AC; --on-bg:#12362D;
+    --off:#8A97A6; --off-bg:#1A2532;
+    --danger:#F0616D;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --display:'Space Grotesk',var(--font);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; min-height:100dvh;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+    font-family:var(--font); background:var(--bg); color:var(--text);
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    width:100%; max-width:380px;
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:28px 24px; text-align:center;
+  }
+  .eyebrow{font-size:12.5px; color:var(--muted); margin-bottom:4px;}
+  .nome{font-family:var(--display); font-size:20px; font-weight:700; margin-bottom:22px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:9px;
+    padding:10px 18px; border-radius:100px; font-weight:700; font-size:15px;
+    margin-bottom:22px; transition:background .2s ease, color .2s ease;
+  }
+  .badge .dot{width:9px; height:9px; border-radius:50%;}
+  .badge.on{background:var(--on-bg); color:var(--on);}
+  .badge.on .dot{background:var(--on); box-shadow:0 0 0 4px rgba(47,216,172,.18);}
+  .badge.off{background:var(--off-bg); color:var(--off);}
+  .badge.off .dot{background:var(--off);}
+  .btn{
+    width:100%; border:none; border-radius:14px; padding:16px 18px;
+    font-family:var(--font); font-size:15.5px; font-weight:700; cursor:pointer;
+    transition:opacity .15s ease, transform .05s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.55; cursor:default;}
+  .btn.to-off{background:var(--surface2); color:var(--text); border:1px solid var(--border2);}
+  .btn.to-on{background:var(--on); color:#053b39;}
+  .hint{font-size:12.5px; color:var(--muted); margin-top:16px; line-height:1.5;}
+  .erro-titulo{font-family:var(--display); font-size:18px; font-weight:700; margin-bottom:8px;}
+  .erro-texto{font-size:13.5px; color:var(--muted); line-height:1.55;}
+  .spinner{
+    width:26px; height:26px; margin:6px auto 18px;
+    border:3px solid var(--border2); border-top-color:var(--on); border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .oculto{display:none;}
+</style>
+</head>
+<body>
+
+  <div class="card" id="tela-carregando">
+    <div class="spinner"></div>
+    <div class="erro-texto">Verificando seu link...</div>
+  </div>
+
+  <div class="card oculto" id="tela-erro">
+    <div class="erro-titulo">Link inválido</div>
+    <div class="erro-texto">Esse link de status não existe mais ou foi trocado por um novo. Peça um link atualizado a quem administra o anúncio.</div>
+  </div>
+
+  <div class="card oculto" id="tela-status">
+    <div class="eyebrow">Seu status de atendimento</div>
+    <div class="nome" id="txt-nome">Atendente</div>
+    <div class="badge" id="badge">
+      <span class="dot"></span>
+      <span id="badge-texto">—</span>
+    </div>
+    <button type="button" class="btn" id="btn-toggle"></button>
+    <div class="hint" id="hint">Toque no botão para trocar. Pode fechar esta página e usar o mesmo link quando quiser.</div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+// mesma config do app principal (a apiKey do Firebase é pública por natureza —
+// a proteção de verdade vem das Regras do Firestore, não do sigilo dela)
+const firebaseConfig = {
+  apiKey: "AIzaSyAgZbBSdko3RQuAH5j48abJ7k5HPsyyGu8",
+  authDomain: "protocolo-peps.firebaseapp.com",
+  projectId: "protocolo-peps",
+  storageBucket: "protocolo-peps.firebasestorage.app",
+  messagingSenderId: "144645852121",
+  appId: "1:144645852121:web:e3cd4fd51425451898a7c8"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+const params = new URLSearchParams(location.search);
+const adId = params.get("ad") || "";
+const n = params.get("n") || "";
+const token = params.get("t") || "";
+
+const telaCarregando = document.getElementById("tela-carregando");
+const telaErro = document.getElementById("tela-erro");
+const telaStatus = document.getElementById("tela-status");
+const txtNome = document.getElementById("txt-nome");
+const badge = document.getElementById("badge");
+const badgeTexto = document.getElementById("badge-texto");
+const btn = document.getElementById("btn-toggle");
+const hint = document.getElementById("hint");
+
+function mostrarErro(){
+  telaCarregando.classList.add("oculto");
+  telaStatus.classList.add("oculto");
+  telaErro.classList.remove("oculto");
+}
+
+function pintarEstado(online){
+  badge.className = "badge " + (online ? "on" : "off");
+  badgeTexto.textContent = online ? "Online" : "Offline";
+  btn.className = "btn " + (online ? "to-off" : "to-on");
+  btn.textContent = online ? "Ficar offline" : "Ficar online";
+}
+
+let onlineAtual = true;
+
+async function carregar(){
+  if(!adId || !["1","2","3","4"].includes(n) || !token){ mostrarErro(); return; }
+  let snap;
+  try{
+    snap = await getDoc(doc(db, "partnerAds", adId));
+  }catch(e){ mostrarErro(); return; }
+  if(!snap.exists()){ mostrarErro(); return; }
+  const d = snap.data();
+  if(!d["tok"+n] || d["tok"+n] !== token){ mostrarErro(); return; }
+
+  txtNome.textContent = (d["n"+n] || "").trim() || ("Atendente " + n);
+  onlineAtual = d["online"+n] !== false;
+  pintarEstado(onlineAtual);
+
+  telaCarregando.classList.add("oculto");
+  telaStatus.classList.remove("oculto");
+}
+
+btn.addEventListener("click", async ()=>{
+  const novoValor = !onlineAtual;
+  btn.disabled = true;
+  const textoAnterior = hint.textContent;
+  hint.textContent = "Salvando...";
+  try{
+    const campo = {}; campo["online"+n] = novoValor;
+    await setDoc(doc(db, "partnerAds", adId), campo, {merge:true});
+    onlineAtual = novoValor;
+    pintarEstado(onlineAtual);
+    hint.textContent = textoAnterior;
+  }catch(e){
+    hint.textContent = "Não consegui salvar agora. Confira sua internet e tente de novo.";
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+carregar();
+</script>
+</body>
+</html>
