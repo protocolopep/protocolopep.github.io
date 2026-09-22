@@ -137,7 +137,7 @@ function pintarEstado(online){
 let onlineAtual = true;
 
 async function carregar(){
-  if(!adId || !["1","2","3","4"].includes(n) || !token){ mostrarErro(); return; }
+  if(!adId || !["1","2","3","4","5","6","7","8"].includes(n) || !token){ mostrarErro(); return; }
   let snap;
   try{
     snap = await getDoc(doc(db, "partnerAds", adId));
