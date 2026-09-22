@@ -653,8 +653,17 @@
   .pt-atd-avatar-grupo{font-size:20px;color:var(--tesa);background:color-mix(in srgb, var(--tesa) 16%, transparent);}
   .pt-atd-nome{flex:1;font-weight:600;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pt-atd-chevron{flex:none;color:var(--muted2);}
-  .atd-bloco{border:1px solid var(--border2);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--surface2);}
-  .atd-bloco-titulo{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;}
+  .atd-bloco{border:1px solid var(--border2);border-radius:14px;margin-bottom:10px;background:var(--surface2);overflow:hidden;}
+  .atd-bloco-titulo{font-family:var(--display);font-weight:700;font-size:11.5px;color:var(--primary);text-transform:uppercase;letter-spacing:.04em;}
+  .atd-bloco-header{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;user-select:none;}
+  .atd-bloco-avatar{width:30px;height:30px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--primary);flex:none;}
+  .atd-bloco-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .atd-bloco-resumo{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .atd-bloco-resumo.vazio{color:var(--muted2);font-weight:500;}
+  .atd-bloco-chevron{flex:none;color:var(--muted2);font-size:11px;transition:transform .15s ease;}
+  .atd-bloco.aberto .atd-bloco-chevron{transform:rotate(180deg);}
+  .atd-bloco-body{display:none;padding:2px 14px 14px;}
+  .atd-bloco.aberto .atd-bloco-body{display:block;}
   .pt-atd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .pt-atd-info .pt-atd-nome{flex:none;}
   .pt-atd-status{align-self:flex-start;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;}
@@ -1171,7 +1180,7 @@
   </div>
 
   <!-- só aparece pra quem estiver vinculado como atendente de algum anúncio (e-mail
-       cadastrado pelo admin num dos 4 slots) — deixa a pessoa ligar/desligar o próprio
+       cadastrado pelo admin num dos slots) — deixa a pessoa ligar/desligar o próprio
        "online" sem ter acesso a mais nada do painel admin -->
   <div id="my-attendant-status" style="display:none"></div>
 
@@ -1473,7 +1482,7 @@
     </div><!-- /admin-only-block -->
 
     <p class="eyebrow" style="margin-top:22px">Anúncios / Parcerias <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparecem na aba Protocolo, um abaixo do outro)</span></p>
-    <div class="ad-note" style="margin-bottom:12px">💡 Cada anúncio aparece identificado como <b>Parceria</b> para os usuários. Você pode publicar quantos quiser — cada novo entra abaixo dos anteriores, com seu próprio vídeo/imagem, mensagem e até 4 atendentes.</div>
+    <div class="ad-note" style="margin-bottom:12px">💡 Cada anúncio aparece identificado como <b>Parceria</b> para os usuários. Você pode publicar quantos quiser — cada novo entra abaixo dos anteriores, com seu próprio vídeo/imagem, mensagem e até 8 atendentes.</div>
     <div id="pt-ads-editor"></div>
     <button type="button" class="add-pep" id="pt-ad-add" style="margin-bottom:22px"><span>＋</span> Adicionar novo anúncio</button>
 
@@ -4964,7 +4973,7 @@ document.getElementById("notice-remove").onclick=()=>{
 /* =========================================================
    ANÚNCIOS / PARCERIAS (múltiplos)
    Cada anúncio é um documento na coleção "partnerAds" — pode haver quantos
-   o admin quiser, cada um com vídeo/imagem, mensagem e até 4 atendentes
+   o admin quiser, cada um com vídeo/imagem, mensagem e até 8 atendentes
    próprios, sempre empilhados na ordem em que foram criados (o mais novo
    entra embaixo dos anteriores). O antigo doc único "meta/partner" só é
    usado uma vez, para migrar automaticamente quem já tinha um anúncio
@@ -5017,7 +5026,7 @@ function partnerHref(raw, msg){
 // Cada um pode ser um n° de WhatsApp ou uma URL própria; a mensagem é a mesma pra todos,
 // mas com {nome} trocado pelo nome de cada atendente.
 function atendentesDoAnuncio(d){
-  let ats=[1,2,3,4]
+  let ats=[1,2,3,4,5,6,7,8]
     .map(n=>({
       n,
       nome:(d["n"+n]||"").trim() || ("Atendente "+n),
@@ -5031,7 +5040,7 @@ function atendentesDoAnuncio(d){
     }))
     .filter(a=>a.href);
   // compatibilidade: anúncios publicados antes desta atualização usavam só "link" — se
-  // nenhum dos 4 atendimentos estiver preenchido, aproveita o link antigo como Atendente 1.
+  // nenhum atendimento estiver preenchido, aproveita o link antigo como Atendente 1.
   if(!ats.length){
     const legacy=partnerHref(d.link, personalizarMsg(d.msg, d.n1));
     if(legacy) ats=[{n:1, nome:(d.n1||"").trim()||"Atendente 1", foto:(d.f1||"").trim(), numero:(d.link||"").trim(), href:legacy, temStatus:false, online:true}];
@@ -5359,20 +5368,30 @@ function copiarTexto(txt){
     prompt("Copie o link abaixo:", txt);
   }
 }
-// monta o bloco completo de 1 atendente: nome + whatsapp + foto + e-mail de login (opcional)
+// monta o bloco completo de 1 atendente: cabeçalho compacto (recolhido) + corpo com
+// nome + whatsapp + foto + e-mail de login (opcional), que só aparece ao clicar
 function blocoAtendenteHTML(n, exemploNome){
-  return `<div class="atd-bloco">
-    <div class="atd-bloco-titulo">Atendente ${n}</div>
-    <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
-      <div class="fld"><label>Nome</label><input class="txt f-n${n}" placeholder="Ex.: ${exemploNome}" style="margin-top:5px"></div>
-      <div class="fld"><label>WhatsApp</label><input class="txt f-w${n}" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+  return `<div class="atd-bloco" data-n="${n}">
+    <div class="atd-bloco-header">
+      <div class="atd-bloco-avatar">${n}</div>
+      <div class="atd-bloco-info">
+        <div class="atd-bloco-titulo">Atendente ${n}</div>
+        <div class="atd-bloco-resumo vazio" data-resumo="${n}">vazio</div>
+      </div>
+      <div class="atd-bloco-chevron">▾</div>
     </div>
-    ${campoImagemHTML("Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
-    <div class="fld" style="margin-bottom:0"><label>E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>
-    <div class="atd-link-row" data-n="${n}" style="margin-top:8px;display:none">
-      <button type="button" class="btn-ghost atd-link-btn" data-n="${n}" style="width:100%">🔗 Copiar link de status (sem precisar logar)</button>
-      <div style="text-align:center;margin-top:5px">
-        <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
+    <div class="atd-bloco-body">
+      <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
+        <div class="fld"><label>Nome</label><input class="txt f-n${n}" placeholder="Ex.: ${exemploNome}" style="margin-top:5px"></div>
+        <div class="fld"><label>WhatsApp</label><input class="txt f-w${n}" placeholder="Ex.: 84999937819" style="margin-top:5px"></div>
+      </div>
+      ${campoImagemHTML("Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
+      <div class="fld" style="margin-bottom:0"><label>E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>
+      <div class="atd-link-row" data-n="${n}" style="margin-top:8px;display:none">
+        <button type="button" class="btn-ghost atd-link-btn" data-n="${n}" style="width:100%">🔗 Copiar link de status (sem precisar logar)</button>
+        <div style="text-align:center;margin-top:5px">
+          <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
+        </div>
       </div>
     </div>
   </div>`;
@@ -5395,13 +5414,20 @@ function adEditorHTML(d){
       <div class="pt-vid-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
     </div>
     <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina.</div>
-    <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada nos 4 atendentes abaixo)</span></label><input class="txt f-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (https://protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
+    <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada em todos os atendentes abaixo)</span></label><input class="txt f-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (https://protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
     <div class="ad-note" style="margin:0 0 12px">💬 Use <b>{nome}</b> em qualquer parte da mensagem — é trocado automaticamente pelo nome do atendente clicado.</div>
-    ${blocoAtendenteHTML(1,"Guilherme")}
-    ${blocoAtendenteHTML(2,"Paulo")}
-    ${blocoAtendenteHTML(3,"(opcional)")}
-    ${blocoAtendenteHTML(4,"(opcional)")}
-    <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
+    <div class="atd-lista">
+      ${blocoAtendenteHTML(1,"Guilherme")}
+      ${blocoAtendenteHTML(2,"Paulo")}
+      ${blocoAtendenteHTML(3,"(opcional)")}
+      ${blocoAtendenteHTML(4,"(opcional)")}
+      ${blocoAtendenteHTML(5,"(opcional)")}
+      ${blocoAtendenteHTML(6,"(opcional)")}
+      ${blocoAtendenteHTML(7,"(opcional)")}
+      ${blocoAtendenteHTML(8,"(opcional)")}
+    </div>
+    <button type="button" class="btn-ghost atd-add-btn" style="width:100%;margin:0 0 12px">+ Adicionar atendente</button>
+    <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar (até 8 por anúncio). Cada um pode ser um número de WhatsApp ou uma URL própria. Toque no cabeçalho de cada um pra abrir e editar. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
     <div class="ad-note" style="margin:0 0 10px">🟢 Se preencher o <b>e-mail de login</b> de um atendente, ele mesmo passa a controlar se está online/offline (aparece um painelzinho pra ele quando entra no app com esse e-mail) — sem ter acesso a mais nada do painel admin. Enquanto offline, quem tentar falar com ele na caixinha vê um aviso e não consegue enviar mensagem. Sem e-mail preenchido, o atendente fica sempre disponível, como já era antes.</div>
     <div class="ad-note" style="margin:0 0 10px">🔗 Com o e-mail preenchido, aparece também um botão pra copiar um <b>link de status</b> — o atendente abre esse link (ex.: salvo como mensagem fixada pra ele mesmo no WhatsApp) e liga/desliga o próprio status com um toque, sem precisar abrir o app nem fazer login. O link é único e secreto por atendente; se ele perder ou repassar sem querer, gere um novo pra invalidar o antigo.</div>
     <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
@@ -5430,12 +5456,23 @@ function preencherBlocoAnuncio(el, d, forcar){
   const set=(sel,v)=>{ const i=el.querySelector(sel); if(i && (forcar || document.activeElement!==i)) i.value=v||""; };
   set(".f-title",d.title); set(".f-text",d.text); set(".f-img",d.img); set(".f-vid",d.vid); set(".f-msg",d.msg);
   set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
+  set(".f-n5",d.n5); set(".f-n6",d.n6); set(".f-n7",d.n7); set(".f-n8",d.n8);
   set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
+  set(".f-w5",d.w5); set(".f-w6",d.w6); set(".f-w7",d.w7); set(".f-w8",d.w8);
   set(".f-f1",d.f1); set(".f-f2",d.f2); set(".f-f3",d.f3); set(".f-f4",d.f4);
+  set(".f-f5",d.f5); set(".f-f6",d.f6); set(".f-f7",d.f7); set(".f-f8",d.f8);
   set(".f-email1",d.email1); set(".f-email2",d.email2); set(".f-email3",d.email3); set(".f-email4",d.email4);
-  [1,2,3,4].forEach(n=>{
+  set(".f-email5",d.email5); set(".f-email6",d.email6); set(".f-email7",d.email7); set(".f-email8",d.email8);
+  [1,2,3,4,5,6,7,8].forEach(n=>{
     const row = el.querySelector('.atd-link-row[data-n="'+n+'"]');
     if(row) row.style.display = (d["email"+n]||"").trim() ? "" : "none";
+    const bloco = el.querySelector('.atd-bloco[data-n="'+n+'"]');
+    const resumo = bloco && bloco.querySelector(".atd-bloco-resumo");
+    if(resumo){
+      const texto = (d["n"+n]||"").trim() || (d["w"+n]||"").trim();
+      resumo.textContent = texto || "vazio";
+      resumo.classList.toggle("vazio", !texto);
+    }
   });
   set(".f-gnome",d.gnome); set(".f-glink",d.glink); set(".f-gfoto",d.gfoto);
   const chk=el.querySelector(".f-pop");
@@ -5467,6 +5504,7 @@ function syncAdsEditorDOM(){
     if(!el){
       wrap.insertAdjacentHTML("beforeend", adEditorHTML(d));
       el=wrap.querySelector('.pt-editor[data-id="'+d.id+'"]');
+      aplicarEstadoInicialAtendentes(el, d);
     }
     preencherBlocoAnuncio(el, d);
   });
@@ -5612,19 +5650,90 @@ document.getElementById("pt-ads-editor").addEventListener("change", function(e){
 });
 
 // mostra o botão "link de status" assim que um e-mail de atendente é preenchido
-// (e some se ele for apagado) — sem precisar salvar pra ver o botão aparecer
+// (e some se ele for apagado) — sem precisar salvar pra ver o botão aparecer.
+// também atualiza o resuminho (nome/whatsapp) no cabeçalho recolhido, em tempo real.
 document.getElementById("pt-ads-editor").addEventListener("input", function(e){
   const t=e.target;
-  const m = t.className.match(/\bf-email([1-4])\b/);
+  const bloco = t.closest && t.closest(".atd-bloco");
+  if(bloco){
+    const n = bloco.dataset.n;
+    if(t.classList.contains("f-n"+n) || t.classList.contains("f-w"+n)){
+      const resumo = bloco.querySelector(".atd-bloco-resumo");
+      if(resumo){
+        const nomeVal=(bloco.querySelector(".f-n"+n).value||"").trim();
+        const wppVal=(bloco.querySelector(".f-w"+n).value||"").trim();
+        const texto = nomeVal || wppVal;
+        resumo.textContent = texto || "vazio";
+        resumo.classList.toggle("vazio", !texto);
+      }
+    }
+  }
+  const m = t.className.match(/\bf-email([1-8])\b/);
   if(!m) return;
   const el = t.closest(".pt-editor");
   const row = el && el.querySelector('.atd-link-row[data-n="'+m[1]+'"]');
   if(row) row.style.display = t.value.trim() ? "" : "none";
 });
 
+// abre/fecha o card de um atendente ao tocar no cabeçalho compacto
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const header = e.target.closest && e.target.closest(".atd-bloco-header");
+  if(!header) return;
+  const bloco = header.closest(".atd-bloco");
+  if(bloco) bloco.classList.toggle("aberto");
+});
+
+// "+ Adicionar atendente": revela o próximo slot escondido (até 8 no total) e já abre
+// ele pra edição, focando no campo Nome
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const addBtn = e.target.closest && e.target.closest(".atd-add-btn");
+  if(!addBtn) return;
+  const el = addBtn.closest(".pt-editor");
+  if(!el) return;
+  for(let n=1;n<=8;n++){
+    const bloco = el.querySelector('.atd-bloco[data-n="'+n+'"]');
+    if(bloco && bloco.style.display==="none"){
+      bloco.style.display = "";
+      bloco.classList.add("aberto");
+      atualizarBotaoAddAtendente(el);
+      const campoNome = bloco.querySelector(".f-n"+n);
+      if(campoNome) campoNome.focus();
+      break;
+    }
+  }
+});
+function atualizarBotaoAddAtendente(el){
+  const addBtn = el.querySelector(".atd-add-btn");
+  if(!addBtn) return;
+  const temEscondido = [1,2,3,4,5,6,7,8].some(n=>{
+    const b = el.querySelector('.atd-bloco[data-n="'+n+'"]');
+    return b && b.style.display==="none";
+  });
+  addBtn.style.display = temEscondido ? "" : "none";
+}
+// roda 1x quando o card do anúncio é criado no DOM: decide quantos atendentes já
+// aparecem visíveis (com base no que já tem dado) e se o slot 1 começa aberto (só
+// quando o anúncio inteiro ainda está vazio, pra facilitar quem está criando do zero).
+// Não roda de novo depois disso — evita fechar um card que o admin abriu pra editar
+// toda vez que a tela sincroniza com o Firestore.
+function aplicarEstadoInicialAtendentes(el, d){
+  let ultimoComDado = 4;
+  const algumPreenchido = [1,2,3,4,5,6,7,8].some(n=>((d["n"+n]||d["w"+n]||d["f"+n]||d["email"+n]||"").trim()));
+  [1,2,3,4,5,6,7,8].forEach(n=>{
+    if((d["n"+n]||d["w"+n]||d["f"+n]||d["email"+n]||"").trim() && n>ultimoComDado) ultimoComDado=n;
+  });
+  [1,2,3,4,5,6,7,8].forEach(n=>{
+    const bloco = el.querySelector('.atd-bloco[data-n="'+n+'"]');
+    if(!bloco) return;
+    bloco.style.display = n<=ultimoComDado ? "" : "none";
+    bloco.classList.toggle("aberto", !algumPreenchido && n===1);
+  });
+  atualizarBotaoAddAtendente(el);
+}
+
 /* ---- link de status de 1 atendente: copia o existente, gera um novo (1a vez) ou revoga
    (gera outro e invalida o anterior). Sempre grava o token no próprio anúncio, no
-   campo tok1..tok4 — só esse token dá acesso a trocar online1..online4 sem login. ---- */
+   campo tok1..tok8 — só esse token dá acesso a trocar online1..online8 sem login. ---- */
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const linkBtn = e.target.closest && e.target.closest(".atd-link-btn");
   const revokeA = e.target.closest && e.target.closest(".atd-link-revoke-a");
@@ -5672,21 +5781,23 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     if(!jaExistente) return; // rascunho novo: não tem nada salvo ainda pra desfazer
     if(!confirm("Desfazer as alterações não salvas deste anúncio? Ele volta a mostrar o que está publicado agora.")) return;
     preencherBlocoAnuncio(el, jaExistente, true); // true = força, mesmo em campo focado
+    aplicarEstadoInicialAtendentes(el, jaExistente); // também refaz quais slots ficam visíveis/abertos
     return;
   }
 
   if(pubBtn){
     const title=g(".f-title"), text=g(".f-text"), img=g(".f-img"), vid=g(".f-vid"), msg=g(".f-msg");
-    const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4");
-    const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4");
-    const f1=g(".f-f1"), f2=g(".f-f2"), f3=g(".f-f3"), f4=g(".f-f4");
+    const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4"), w5=g(".f-w5"), w6=g(".f-w6"), w7=g(".f-w7"), w8=g(".f-w8");
+    const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4"), n5=g(".f-n5"), n6=g(".f-n6"), n7=g(".f-n7"), n8=g(".f-n8");
+    const f1=g(".f-f1"), f2=g(".f-f2"), f3=g(".f-f3"), f4=g(".f-f4"), f5=g(".f-f5"), f6=g(".f-f6"), f7=g(".f-f7"), f8=g(".f-f8");
     const email1=g(".f-email1").toLowerCase(), email2=g(".f-email2").toLowerCase(), email3=g(".f-email3").toLowerCase(), email4=g(".f-email4").toLowerCase();
+    const email5=g(".f-email5").toLowerCase(), email6=g(".f-email6").toLowerCase(), email7=g(".f-email7").toLowerCase(), email8=g(".f-email8").toLowerCase();
     const gnome=g(".f-gnome"), glink=g(".f-glink"), gfoto=g(".f-gfoto");
     const popChk=el.querySelector(".f-pop");
     const pop = !!(popChk && popChk.checked);
     const popDaysInput=el.querySelector(".f-popdays");
     const popDays=Math.min(365, Math.max(1, parseInt(popDaysInput && popDaysInput.value)||7));
-    for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4]]){
+    for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4],["5",w5],["6",w6],["7",w7],["8",w8]]){
       if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
     }
     if(glink && !/^https?:\/\//i.test(glink)){ alert("O link do grupo precisa começar com http:// ou https://"); return; }
@@ -5694,8 +5805,13 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     if(!title && !text && !img && !vid && !jaExistente){
       if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
     }
-    // merge:true — nunca sobrescreve o online1..online4 que o próprio atendente controla
-    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg, w1, w2, w3, w4, n1, n2, n3, n4, f1, f2, f3, f4, email1, email2, email3, email4, gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()}, {merge:true})
+    // merge:true — nunca sobrescreve o online1..online8 que o próprio atendente controla
+    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg,
+      w1, w2, w3, w4, w5, w6, w7, w8,
+      n1, n2, n3, n4, n5, n6, n7, n8,
+      f1, f2, f3, f4, f5, f6, f7, f8,
+      email1, email2, email3, email4, email5, email6, email7, email8,
+      gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()}, {merge:true})
       .then(()=>{
         try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
         alert(jaExistente ? "Alterações salvas!" : ("Publicado! Já aparece na aba Protocolo"+(pop?" e como pop-up.":".")));
@@ -5721,7 +5837,13 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     }
     if(!confirm("Remover este anúncio? Ele deixa de aparecer para os usuários (os textos ficam salvos aqui).")) return;
     const d=jaExistente;
-    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"", w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", f1:d.f1||"", f2:d.f2||"", f3:d.f3||"", f4:d.f4||"", email1:d.email1||"", email2:d.email2||"", email3:d.email3||"", email4:d.email4||"", gnome:d.gnome||"", glink:d.glink||"", gfoto:d.gfoto||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()}, {merge:true})
+    setDoc(doc(db,'partnerAds',id), {title:d.title||"", text:d.text||"", img:d.img||"", vid:d.vid||"", msg:d.msg||"",
+      w1:d.w1||"", w2:d.w2||"", w3:d.w3||"", w4:d.w4||"", w5:d.w5||"", w6:d.w6||"", w7:d.w7||"", w8:d.w8||"",
+      n1:d.n1||"", n2:d.n2||"", n3:d.n3||"", n4:d.n4||"", n5:d.n5||"", n6:d.n6||"", n7:d.n7||"", n8:d.n8||"",
+      f1:d.f1||"", f2:d.f2||"", f3:d.f3||"", f4:d.f4||"", f5:d.f5||"", f6:d.f6||"", f7:d.f7||"", f8:d.f8||"",
+      email1:d.email1||"", email2:d.email2||"", email3:d.email3||"", email4:d.email4||"",
+      email5:d.email5||"", email6:d.email6||"", email7:d.email7||"", email8:d.email8||"",
+      gnome:d.gnome||"", glink:d.glink||"", gfoto:d.gfoto||"", pop:!!d.pop, popDays:Number(d.popDays)||7, active:false, ts:d.ts||Date.now()}, {merge:true})
       .then(()=>alert("Anúncio removido."))
       .catch(err=>console.warn(err));
   }
@@ -5747,7 +5869,7 @@ function tentarMigrarAnuncioAntigo(){
 
 /* =========================================================
    "MEU STATUS DE ATENDIMENTO" — pra quem foi vinculado como atendente
-   (e-mail cadastrado pelo admin num dos 4 slots de algum anúncio). Essa pessoa NÃO é
+   (e-mail cadastrado pelo admin num dos slots de algum anúncio). Essa pessoa NÃO é
    admin, mas ganha esse painelzinho pra ligar/desligar o próprio online — nada além disso.
    A permissão de escrita real (só esse campo, só desse slot) fica garantida nas regras
    do Firestore, então mesmo que alguém tente burlar pelo console, não consegue mexer em
@@ -5758,7 +5880,7 @@ function meusSlotsDeAtendente(){
   if(!email) return [];
   const out=[];
   PARTNER_ADS.forEach(ad=>{
-    for(let n=1;n<=4;n++){
+    for(let n=1;n<=8;n++){
       const slotEmail = (ad["email"+n]||"").trim().toLowerCase();
       if(slotEmail && slotEmail===email){
         out.push({ adId:ad.id, adTitle:ad.title||"Anúncio sem título", n, online: ad["online"+n]!==false });
