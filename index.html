@@ -678,6 +678,8 @@
   .atd-bloco-resumo{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .atd-bloco-resumo.vazio{color:var(--muted2);font-weight:500;}
   .atd-bloco-chevron{flex:none;color:var(--muted2);font-size:11px;transition:transform .15s ease;}
+  .atd-bloco-excluir{flex:none;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--muted2);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .atd-bloco-excluir:hover{background:var(--surface3);color:var(--danger);}
   .atd-bloco.aberto .atd-bloco-chevron{transform:rotate(180deg);}
   .atd-bloco-body{display:none;padding:2px 14px 14px;}
   .atd-bloco.aberto .atd-bloco-body{display:block;}
@@ -5550,6 +5552,7 @@ function blocoAtendenteHTML(n, exemploNome){
         <div class="atd-bloco-titulo">Atendente ${n}</div>
         <div class="atd-bloco-resumo vazio" data-resumo="${n}">vazio</div>
       </div>
+      <button type="button" class="atd-bloco-excluir" data-n="${n}" title="Excluir este atendente" aria-label="Excluir este atendente">✕</button>
       <div class="atd-bloco-chevron">▾</div>
     </div>
     <div class="atd-bloco-body">
@@ -5901,6 +5904,32 @@ function atualizarBotaoAddAtendente(el){
   });
   addBtn.style.display = temEscondido ? "" : "none";
 }
+// limpa os dados de 1 atendente no Firestore (nome, whatsapp, foto, e-mail, link de
+// status) — usado tanto pelo botão "Limpar dados" quanto pelo X de excluir. "esconder"
+// além de limpar, também recolhe o card de novo (fica disponível pro botão "+ Adicionar
+// atendente" reaproveitar o slot depois).
+function limparDadosAtendente(bloco, el, esconder){
+  const n = bloco.dataset.n;
+  const id = el.dataset.id;
+  ["f-n","f-w","f-f","f-email"].forEach(pref=>{
+    const inp = bloco.querySelector("."+pref+n);
+    if(inp) inp.value = "";
+  });
+  const resumo = bloco.querySelector(".atd-bloco-resumo");
+  if(resumo){ resumo.textContent="vazio"; resumo.classList.add("vazio"); }
+  const row = bloco.querySelector('.atd-link-row[data-n="'+n+'"]');
+  if(row) row.style.display="none";
+  if(esconder){
+    bloco.classList.remove("aberto");
+    bloco.style.display="none";
+    atualizarBotaoAddAtendente(el);
+  }
+  const campo={};
+  campo["n"+n]=""; campo["w"+n]=""; campo["f"+n]=""; campo["email"+n]="";
+  campo["tok"+n]=deleteField(); campo["online"+n]=deleteField();
+  return setDoc(doc(db,'partnerAds',id), campo, {merge:true})
+    .catch(err=>{ alert("Não consegui salvar agora. Tente de novo."); console.warn('limpar-atendente', err); });
+}
 // "🗑️ Limpar dados deste atendente": apaga nome, whatsapp, foto, e-mail e invalida o link
 // de status desse slot específico — não mexe em nenhum outro atendente nem no resto do anúncio
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
@@ -5914,22 +5943,25 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const nomeAtual = (campoNomeAtual ? campoNomeAtual.value : "").trim();
   const aviso = "Limpar todos os dados do Atendente "+n+(nomeAtual?(" (\""+nomeAtual+"\")"):"")+"?\n\nApaga nome, WhatsApp, foto, e-mail e invalida o link de status dele. Não afeta os outros atendentes.";
   if(!confirm(aviso)) return;
-  const id = el.dataset.id;
-  ["f-n","f-w","f-f","f-email"].forEach(pref=>{
-    const inp = bloco.querySelector("."+pref+n);
-    if(inp) inp.value = "";
-  });
-  const resumo = bloco.querySelector(".atd-bloco-resumo");
-  if(resumo){ resumo.textContent="vazio"; resumo.classList.add("vazio"); }
-  const row = bloco.querySelector('.atd-link-row[data-n="'+n+'"]');
-  if(row) row.style.display="none";
-  const campo={};
-  campo["n"+n]=""; campo["w"+n]=""; campo["f"+n]=""; campo["email"+n]="";
-  campo["tok"+n]=deleteField(); campo["online"+n]=deleteField();
   clearBtn.disabled=true;
-  setDoc(doc(db,'partnerAds',id), campo, {merge:true})
-    .catch(err=>{ alert("Não consegui limpar agora. Tente de novo."); console.warn('limpar-atendente', err); })
-    .finally(()=>{ clearBtn.disabled=false; });
+  limparDadosAtendente(bloco, el, false).finally(()=>{ clearBtn.disabled=false; });
+});
+// "✕" no cabeçalho: além de limpar, esconde o card de novo (some da lista visível —
+// o slot volta a ficar disponível pro botão "+ Adicionar atendente")
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const xBtn = e.target.closest && e.target.closest(".atd-bloco-excluir");
+  if(!xBtn) return;
+  e.stopImmediatePropagation(); // não deixa isso também abrir/fechar o card pelo cabeçalho
+  const bloco = xBtn.closest(".atd-bloco");
+  const el = xBtn.closest(".pt-editor");
+  if(!bloco || !el) return;
+  const n = bloco.dataset.n;
+  const campoNomeAtual = bloco.querySelector(".f-n"+n);
+  const nomeAtual = (campoNomeAtual ? campoNomeAtual.value : "").trim();
+  const aviso = "Excluir o Atendente "+n+(nomeAtual?(" (\""+nomeAtual+"\")"):"")+"?\n\nApaga os dados dele e some da lista (o slot fica livre pra usar de novo depois, pelo \"+ Adicionar atendente\"). Não afeta os outros atendentes.";
+  if(!confirm(aviso)) return;
+  xBtn.disabled=true;
+  limparDadosAtendente(bloco, el, true).finally(()=>{ xBtn.disabled=false; });
 });
 // roda 1x quando o card do anúncio é criado no DOM: decide quantos atendentes já
 // aparecem visíveis (com base no que já tem dado) e se o slot 1 começa aberto (só
