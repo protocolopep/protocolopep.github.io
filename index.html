@@ -5335,6 +5335,30 @@ function campoImagemHTML(label, desc, campoClasse, placeholder, slot){
     <div class="pt-img-upload-status" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:1em"></div>
   </div>`;
 }
+// gera um código aleatório e imprevisível (usado como "senha" do link de status de cada
+// atendente) — 26 caracteres, sem depender de nada externo, só o gerador de números
+// aleatórios seguro do próprio navegador.
+function randToken(len){
+  len = len || 26;
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const arr = new Uint8Array(len);
+  (window.crypto || window.msCrypto).getRandomValues(arr);
+  let out='';
+  for(let i=0;i<len;i++) out += chars[arr[i] % chars.length];
+  return out;
+}
+// monta a URL completa do link de status de 1 atendente (mesma pasta do index.html + toggle.html)
+function linkStatusAtendente(adId, n, tok){
+  const base = location.href.replace(/[^\/]*$/, "");
+  return base + "toggle.html?ad=" + encodeURIComponent(adId) + "&n=" + n + "&t=" + encodeURIComponent(tok);
+}
+function copiarTexto(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>alert("Link copiado! Envie para o atendente:\n\n"+txt)).catch(()=>prompt("Copie o link abaixo:", txt));
+  } else {
+    prompt("Copie o link abaixo:", txt);
+  }
+}
 // monta o bloco completo de 1 atendente: nome + whatsapp + foto + e-mail de login (opcional)
 function blocoAtendenteHTML(n, exemploNome){
   return `<div class="atd-bloco">
@@ -5345,6 +5369,12 @@ function blocoAtendenteHTML(n, exemploNome){
     </div>
     ${campoImagemHTML("Foto", n==1?"(opcional, sem foto usa a inicial do nome)":"(opcional)", "f-f"+n, "https://...", "atendente"+n)}
     <div class="fld" style="margin-bottom:0"><label>E-mail de login <span class="desc">(opcional — dá acesso a ele mesmo ligar/desligar o próprio online)</span></label><input class="txt f-email${n}" placeholder="Ex.: colega@gmail.com" style="margin-top:5px"></div>
+    <div class="atd-link-row" data-n="${n}" style="margin-top:8px;display:none">
+      <button type="button" class="btn-ghost atd-link-btn" data-n="${n}" style="width:100%">🔗 Copiar link de status (sem precisar logar)</button>
+      <div style="text-align:center;margin-top:5px">
+        <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
+      </div>
+    </div>
   </div>`;
 }
 function adEditorHTML(d){
@@ -5373,6 +5403,7 @@ function adEditorHTML(d){
     ${blocoAtendenteHTML(4,"(opcional)")}
     <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar. Cada um pode ser um número de WhatsApp ou uma URL própria. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
     <div class="ad-note" style="margin:0 0 10px">🟢 Se preencher o <b>e-mail de login</b> de um atendente, ele mesmo passa a controlar se está online/offline (aparece um painelzinho pra ele quando entra no app com esse e-mail) — sem ter acesso a mais nada do painel admin. Enquanto offline, quem tentar falar com ele na caixinha vê um aviso e não consegue enviar mensagem. Sem e-mail preenchido, o atendente fica sempre disponível, como já era antes.</div>
+    <div class="ad-note" style="margin:0 0 10px">🔗 Com o e-mail preenchido, aparece também um botão pra copiar um <b>link de status</b> — o atendente abre esse link (ex.: salvo como mensagem fixada pra ele mesmo no WhatsApp) e liga/desliga o próprio status com um toque, sem precisar abrir o app nem fazer login. O link é único e secreto por atendente; se ele perder ou repassar sem querer, gere um novo pra invalidar o antigo.</div>
     <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Nome do grupo</label><input class="txt f-gnome" placeholder="Ex.: Grupo de ofertas" style="margin-top:5px"></div>
@@ -5402,6 +5433,10 @@ function preencherBlocoAnuncio(el, d, forcar){
   set(".f-w1",d.w1); set(".f-w2",d.w2); set(".f-w3",d.w3); set(".f-w4",d.w4);
   set(".f-f1",d.f1); set(".f-f2",d.f2); set(".f-f3",d.f3); set(".f-f4",d.f4);
   set(".f-email1",d.email1); set(".f-email2",d.email2); set(".f-email3",d.email3); set(".f-email4",d.email4);
+  [1,2,3,4].forEach(n=>{
+    const row = el.querySelector('.atd-link-row[data-n="'+n+'"]');
+    if(row) row.style.display = (d["email"+n]||"").trim() ? "" : "none";
+  });
   set(".f-gnome",d.gnome); set(".f-glink",d.glink); set(".f-gfoto",d.gfoto);
   const chk=el.querySelector(".f-pop");
   if(chk && (forcar || document.activeElement!==chk)) chk.checked=!!d.pop;
@@ -5574,6 +5609,51 @@ document.getElementById("pt-ads-editor").addEventListener("change", function(e){
   input.value = "";
   if(!file || !campo || !el) return;
   uploadImagemAoCampo(file, campo, el.dataset.id, campo.dataset.slot || "img");
+});
+
+// mostra o botão "link de status" assim que um e-mail de atendente é preenchido
+// (e some se ele for apagado) — sem precisar salvar pra ver o botão aparecer
+document.getElementById("pt-ads-editor").addEventListener("input", function(e){
+  const t=e.target;
+  const m = t.className.match(/\bf-email([1-4])\b/);
+  if(!m) return;
+  const el = t.closest(".pt-editor");
+  const row = el && el.querySelector('.atd-link-row[data-n="'+m[1]+'"]');
+  if(row) row.style.display = t.value.trim() ? "" : "none";
+});
+
+/* ---- link de status de 1 atendente: copia o existente, gera um novo (1a vez) ou revoga
+   (gera outro e invalida o anterior). Sempre grava o token no próprio anúncio, no
+   campo tok1..tok4 — só esse token dá acesso a trocar online1..online4 sem login. ---- */
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const linkBtn = e.target.closest && e.target.closest(".atd-link-btn");
+  const revokeA = e.target.closest && e.target.closest(".atd-link-revoke-a");
+  if(!linkBtn && !revokeA) return;
+  e.preventDefault();
+  const el = (linkBtn||revokeA).closest(".pt-editor");
+  if(!el) return;
+  const id = el.dataset.id, n = (linkBtn||revokeA).dataset.n;
+  const ad = PARTNER_ADS.find(x=>x.id===id) || localDraftAds.find(x=>x.id===id);
+  const gerarEUsar = ()=>{
+    const novo = randToken();
+    const campo={}; campo["tok"+n]=novo;
+    const alvo = linkBtn||revokeA;
+    const textoOriginal = alvo.textContent;
+    alvo.textContent = "Gerando link...";
+    setDoc(doc(db,'partnerAds',id), campo, {merge:true})
+      .then(()=>copiarTexto(linkStatusAtendente(id, n, novo)))
+      .catch(err=>{ alert("Não consegui gerar o link. Tente de novo."); console.warn('gerar-link-status', err); })
+      .finally(()=>{ alvo.textContent = textoOriginal; });
+  };
+  if(revokeA){
+    if(!confirm("Gerar um novo link invalida o link antigo desse atendente — ele vai precisar do link novo. Confirma?")) return;
+    gerarEUsar();
+    return;
+  }
+  if(!id){ alert("Salve o anúncio primeiro."); return; }
+  const tokExistente = ad && ad["tok"+n];
+  if(tokExistente){ copiarTexto(linkStatusAtendente(id, n, tokExistente)); return; }
+  gerarEUsar();
 });
 
 /* ---- publicar/salvar, desfazer ou remover um anúncio específico (delegado) ---- */
