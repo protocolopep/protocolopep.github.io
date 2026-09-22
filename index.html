@@ -5190,6 +5190,11 @@ function partnerVisibleToMe(d){
 function anunciosVisiveis(){
   return PARTNER_ADS.filter(partnerVisibleToMe).sort((a,b)=>(a.ts||0)-(b.ts||0));
 }
+// cache do último HTML gerado pro card do anúncio — online1..8/tok1..8/email1..8 nunca
+// aparecem no card em si (só no seletor de atendente, montado à parte), então quando só
+// isso muda o HTML gerado sai idêntico e a gente evita recriar o <video>/<img> à toa
+// (recriar o elemento reinicia o vídeo do zero, mesmo sendo o mesmo arquivo de sempre)
+let ULTIMO_HTML_PARTNER = null;
 function renderPartner(){
   const box=document.getElementById("partner-box");
   const evo=document.getElementById("partner-evo");
@@ -5198,11 +5203,15 @@ function renderPartner(){
   if(!ativos.length){
     box.style.display="none"; box.innerHTML="";
     if(evo){ evo.style.display="none"; evo.innerHTML=""; }
+    ULTIMO_HTML_PARTNER = "";
     return;
   }
   const h = ativos.map(d=>partnerHTML(d, IS_ADMIN)).join('');
-  box.innerHTML=h;
-  if(evo) evo.innerHTML=h;
+  if(h !== ULTIMO_HTML_PARTNER){
+    ULTIMO_HTML_PARTNER = h;
+    box.innerHTML=h;
+    if(evo) evo.innerHTML=h;
+  }
   applyPartnerPlacement();
 }
 // decide onde os anúncios aparecem:
@@ -5254,11 +5263,16 @@ function maybeShowPartnerPop(){
   });
   mostrarProximoPopupAnuncio();
 }
+let ULTIMO_HTML_POPUP = null;
 function mostrarProximoPopupAnuncio(){
   const ov=document.getElementById("pt-overlay");
   if(!ov) return;
-  if(!filaPopupsAnuncio.length){ ov.style.display="none"; return; }
-  document.getElementById("pt-pop-content").innerHTML=partnerHTML(filaPopupsAnuncio[0], IS_ADMIN);
+  if(!filaPopupsAnuncio.length){ ov.style.display="none"; ULTIMO_HTML_POPUP=null; return; }
+  const h = partnerHTML(filaPopupsAnuncio[0], IS_ADMIN);
+  if(h !== ULTIMO_HTML_POPUP){
+    ULTIMO_HTML_POPUP = h;
+    document.getElementById("pt-pop-content").innerHTML=h;
+  }
   ov.style.display="flex";
 }
 function popupAnuncioAberto(){
