@@ -1791,6 +1791,16 @@
   </div>
 </div>
 
+<div class="modal" id="ponto-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="ponto-title">Ponto</div>
+      <button class="sheet-x" id="ponto-close">✕</button>
+    </div>
+    <div class="sheet-body" id="ponto-body"></div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -2011,6 +2021,11 @@ function atualizarInscricoesPorPermissao(){
     partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
   } else if(!IS_ADS_MANAGER && partnerClicksUnsub){
     partnerClicksUnsub(); partnerClicksUnsub=null;
+  }
+  if(IS_ADS_MANAGER && !attendantLogsUnsub){
+    attendantLogsUnsub = onSnapshot(collection(db,'attendantLogs'), snap=>{ adminAttendantLogs = snap.docs.map(d=>({...d.data(), id:d.id})); renderPontoAtendente(); }, e=>console.warn('attendant-logs',e));
+  } else if(!IS_ADS_MANAGER && attendantLogsUnsub){
+    attendantLogsUnsub(); attendantLogsUnsub=null;
   }
   if(IS_SUPER_ADMIN && !rolesListUnsub){
     rolesListUnsub = onSnapshot(collection(db,'roles'), snap=>{ PAPEIS_CONCEDIDOS = snap.docs.map(d=>({email:d.id, ...d.data()})); renderListaPermissoes(); }, e=>console.warn('roles-list',e));
@@ -3811,6 +3826,8 @@ let profilesUnsub = null;      // observa nickname/foto de TODOS os usuários (s
 let PERFIS_USUARIOS = {};      // uid -> {nickname, photoURL}
 let partnerClicksUnsub = null;  // "assinatura" ao vivo dos cliques nos botões de atendente
 let adminPartnerClicks = [];    // cliques carregados (só o admin lê essa coleção)
+let attendantLogsUnsub = null;  // "assinatura" ao vivo do ponto (online/offline) dos atendentes
+let adminAttendantLogs = [];    // registros de ponto carregados (só admin/gestor de anúncios lê essa coleção)
 let pcSearchQuery = "";         // termo digitado na busca por e-mail dos cliques
 let pcExpanded = false;
 const PC_VISIBLE = 8;
@@ -4287,6 +4304,7 @@ async function showApp(user){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
+  if(attendantLogsUnsub){ attendantLogsUnsub(); attendantLogsUnsub=null; }
   if(rolesListUnsub){ rolesListUnsub(); rolesListUnsub=null; }
   atualizarInscricoesPorPermissao(); // já abre as que já podem ser abertas com o que se sabe agora (dono original)
   if(unsub) unsub();
@@ -4361,6 +4379,7 @@ function showAuth(){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
+  if(attendantLogsUnsub){ attendantLogsUnsub(); attendantLogsUnsub=null; }
   if(rolesUnsub){ rolesUnsub(); rolesUnsub=null; }
   if(rolesListUnsub){ rolesListUnsub(); rolesListUnsub=null; }
   if(banUnsub){ banUnsub(); banUnsub=null; }
@@ -4380,6 +4399,7 @@ function showAuth(){
   memberSearchQuery="";
   { const s=document.getElementById("mb-search"); if(s) s.value=""; }
   adminPartnerClicks=[];
+  adminAttendantLogs=[];
   pcSearchQuery=""; pcExpanded=false;
   { const s=document.getElementById("pc-search"); if(s) s.value=""; }
   NICKNAME="";
@@ -5829,6 +5849,7 @@ function blocoAtendenteHTML(n, exemploNome){
         <div style="text-align:center;margin-top:5px">
           <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
         </div>
+        <button type="button" class="btn-ghost ver-ponto-btn" data-n="${n}" style="width:100%;margin-top:8px">📋 Ver ponto (histórico de online/offline)</button>
       </div>
       <button type="button" class="btn-ghost atd-clear-btn" data-n="${n}" style="width:100%;margin-top:8px;color:var(--danger)">🗑️ Limpar dados deste atendente</button>
     </div>
@@ -6188,7 +6209,7 @@ function limparDadosAtendente(bloco, el, esconder){
   }
   const campo={};
   campo["n"+n]=""; campo["w"+n]=""; campo["f"+n]=""; campo["email"+n]="";
-  campo["tok"+n]=deleteField(); campo["online"+n]=deleteField();
+  campo["tok"+n]=deleteField(); campo["online"+n]=deleteField(); campo["logAberto"+n]=deleteField();
   return setDoc(doc(db,'partnerAds',id), campo, {merge:true})
     .catch(err=>{ alert("Não consegui salvar agora. Tente de novo."); console.warn('limpar-atendente', err); });
 }
@@ -6278,6 +6299,86 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   if(tokExistente){ copiarTexto(linkStatusAtendente(id, n, tokExistente)); return; }
   gerarEUsar();
 });
+
+/* ================= ponto (log online/offline) de atendentes =================
+   Cada vez que um atendente liga o próprio status, abre 1 registro em
+   "attendantLogs" (onlineAt=agora, offlineAt=null). Quando ele desliga, esse
+   mesmo registro é fechado (offlineAt=agora). O admin/gestor de anúncios vê
+   aqui o histórico completo de cada atendente, com a duração de cada sessão. */
+const pontoModal = document.getElementById("ponto-modal");
+let PONTO_AD_ID = null, PONTO_N = null;
+
+function fmtDuracaoMin(min){
+  min = Math.max(0, Math.round(min));
+  const h = Math.floor(min/60), m = min%60;
+  if(h<=0) return m+"min";
+  if(m<=0) return h+"h";
+  return h+"h "+m+"min";
+}
+function abrirPontoAtendente(adId, n){
+  PONTO_AD_ID = adId; PONTO_N = String(n);
+  renderPontoAtendente();
+  pontoModal.classList.add("on");
+}
+function fecharPontoAtendente(){
+  pontoModal.classList.remove("on");
+  PONTO_AD_ID = null; PONTO_N = null;
+}
+function renderPontoAtendente(){
+  if(!PONTO_AD_ID) return; // modal fechado, nada a atualizar
+  const body = document.getElementById("ponto-body");
+  if(!body) return;
+  const ad = PARTNER_ADS.find(x=>x.id===PONTO_AD_ID);
+  const nomeAtual = (ad && (ad["n"+PONTO_N]||"").trim()) || ("Atendente "+PONTO_N);
+  document.getElementById("ponto-title").textContent = "Ponto · "+nomeAtual;
+
+  const logs = adminAttendantLogs
+    .filter(l=>l.adId===PONTO_AD_ID && String(l.n)===String(PONTO_N))
+    .sort((a,b)=>(b.onlineAt||0)-(a.onlineAt||0));
+
+  const agora = Date.now();
+  let totalMin = 0, totalHojeMin = 0;
+  const hojeStr = new Date().toLocaleDateString("pt-BR");
+  logs.forEach(l=>{
+    const fim = l.offlineAt || agora;
+    const dur = Math.max(0, (fim - l.onlineAt)/60000);
+    totalMin += dur;
+    if(new Date(l.onlineAt).toLocaleDateString("pt-BR")===hojeStr) totalHojeMin += dur;
+  });
+
+  const linhasHTML = logs.length ? logs.map(l=>{
+    const emAndamento = !l.offlineAt;
+    const fim = l.offlineAt || agora;
+    const dur = Math.max(0, (fim - l.onlineAt)/60000);
+    return `<div class="bmap-hist-row">
+        <span class="bmap-hist-dot" style="background:${emAndamento?'#2FD8AC':'#8CA0B3'}"></span>
+        <span class="bmap-hist-txt">
+          <b>${fmtDataHora(l.onlineAt)}</b> → ${emAndamento ? '<span style="color:var(--primary)">em andamento</span>' : fmtDataHora(l.offlineAt)}
+          <br><span class="muted">${fmtDuracaoMin(dur)}${emAndamento?' até agora':''}</span>
+        </span>
+      </div>`;
+  }).join("") : `<div class="bmap-empty-hist">Nenhum registro de ponto ainda — aparece aqui assim que o atendente ligar o status pela primeira vez.</div>`;
+
+  body.innerHTML = `
+    <div class="bmap-today">
+      <div class="vs-big">${fmtDuracaoMin(totalMin)}</div>
+      <div class="vs-sub">tempo online no total · ${fmtDuracaoMin(totalHojeMin)} hoje · ${logs.length} sess${logs.length===1?'ão':'ões'} registrada${logs.length===1?'':'s'}</div>
+    </div>
+    <div class="bmap-hist-title">Histórico de sessões</div>
+    <div class="bmap-hist">${linhasHTML}</div>
+  `;
+}
+document.getElementById("pt-ads-editor").addEventListener("click", function(e){
+  const btn = e.target.closest && e.target.closest(".ver-ponto-btn");
+  if(!btn) return;
+  const el = btn.closest(".pt-editor");
+  if(!el) return;
+  const id = el.dataset.id, n = btn.dataset.n;
+  if(!id){ alert("Salve o anúncio primeiro."); return; }
+  abrirPontoAtendente(id, n);
+});
+document.getElementById("ponto-close").onclick = fecharPontoAtendente;
+pontoModal.onclick = e=>{ if(e.target.id==="ponto-modal") fecharPontoAtendente(); };
 
 /* ---- publicar/salvar, desfazer ou remover um anúncio específico (delegado) ---- */
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
@@ -6425,11 +6526,37 @@ document.getElementById("my-attendant-status").addEventListener("click", functio
   const ad=PARTNER_ADS.find(x=>x.id===adId);
   if(!ad) return;
   const estavaOnline = ad["online"+n]!==false;
-  const campo={}; campo["online"+n]=!estavaOnline;
+  const novoOnline = !estavaOnline;
   btn.disabled=true;
-  setDoc(doc(db,'partnerAds',adId), campo, {merge:true})
-    .catch(err=>{ console.warn('toggle-online', err); alert("Não consegui atualizar seu status. Tente de novo."); })
-    .finally(()=>{ btn.disabled=false; });
+  (async ()=>{
+    try{
+      const campoAd={}; campoAd["online"+n]=novoOnline;
+      if(novoOnline){
+        // ligou: abre um novo registro de ponto (fica "em andamento" até desligar)
+        const logRef = doc(collection(db,'attendantLogs'));
+        await setDoc(logRef, {
+          adId: ad.id, adTitle: ad.title||"", n:Number(n),
+          nome: (ad["n"+n]||("Atendente "+n)).trim() || ("Atendente "+n),
+          onlineAt: Date.now(), offlineAt: null
+        });
+        campoAd["logAberto"+n] = logRef.id;
+      } else {
+        // desligou: fecha o registro de ponto que estava aberto (se houver)
+        const logAbertoId = ad["logAberto"+n];
+        if(logAbertoId){
+          await updateDoc(doc(db,'attendantLogs',logAbertoId), { offlineAt: Date.now() })
+            .catch(err=>console.warn('fechar-ponto', err));
+        }
+        campoAd["logAberto"+n] = deleteField();
+      }
+      await setDoc(doc(db,'partnerAds',adId), campoAd, {merge:true});
+    }catch(err){
+      console.warn('toggle-online', err);
+      alert("Não consegui atualizar seu status. Tente de novo.");
+    }finally{
+      btn.disabled=false;
+    }
+  })();
 });
 </script>
 <!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->

@@ -96,7 +96,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-lite.js";
+import { getFirestore, doc, getDoc, setDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-lite.js";
 
 // mesma config do app principal (a apiKey do Firebase é pública por natureza —
 // a proteção de verdade vem das Regras do Firestore, não do sigilo dela)
@@ -139,6 +139,8 @@ function pintarEstado(online){
 }
 
 let onlineAtual = true;
+let logAbertoAtual = "";
+let adTitleAtual = "";
 
 async function carregar(){
   if(!adId || !["1","2","3","4","5","6","7","8"].includes(n) || !token){ mostrarErro(); return; }
@@ -151,6 +153,8 @@ async function carregar(){
   if(!d["tok"+n] || d["tok"+n] !== token){ mostrarErro(); return; }
 
   txtNome.textContent = (d["n"+n] || "").trim() || ("Atendente " + n);
+  adTitleAtual = d.title || "";
+  logAbertoAtual = d["logAberto"+n] || "";
   onlineAtual = d["online"+n] !== false;
   pintarEstado(onlineAtual);
 
@@ -165,6 +169,24 @@ btn.addEventListener("click", async ()=>{
   hint.textContent = "Salvando...";
   try{
     const campo = {}; campo["online"+n] = novoValor;
+    if(novoValor){
+      // ficou online: abre um novo registro de ponto (fica "em andamento" até desligar)
+      const logRef = doc(collection(db,"attendantLogs"));
+      await setDoc(logRef, {
+        adId, adTitle: adTitleAtual, n:Number(n),
+        nome: txtNome.textContent,
+        onlineAt: Date.now(), offlineAt: null
+      });
+      campo["logAberto"+n] = logRef.id;
+      logAbertoAtual = logRef.id;
+    } else {
+      // ficou offline: fecha o registro de ponto que estava aberto (se houver)
+      if(logAbertoAtual){
+        await updateDoc(doc(db,"attendantLogs",logAbertoAtual), { offlineAt: Date.now() }).catch(()=>{});
+      }
+      campo["logAberto"+n] = "";
+      logAbertoAtual = "";
+    }
     await setDoc(doc(db, "partnerAds", adId), campo, {merge:true});
     onlineAtual = novoValor;
     pintarEstado(onlineAtual);
