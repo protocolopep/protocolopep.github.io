@@ -699,13 +699,16 @@
   .pt-atd-row.pt-atd-offline{opacity:.65;}
   /* painel "meu status de atendimento" — só quem tem e-mail vinculado a um atendente vê isso */
   #my-attendant-status{margin:10px 16px 0;}
-  .mas-row{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .mas-row{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 14px;display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-bottom:8px;}
   .mas-info{display:flex;align-items:center;gap:9px;min-width:0;}
+  .mas-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none;}
   .mas-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted2);}
   .mas-dot.on{background:#2FD8AC;box-shadow:0 0 0 3px color-mix(in srgb, #2FD8AC 22%, transparent);}
   .mas-title{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mas-toggle{flex:none;font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;}
   .mas-toggle.on{border-color:#2FD8AC;color:#2FD8AC;background:color-mix(in srgb, #2FD8AC 12%, transparent);}
+  .mas-equipe-btn{flex:none;font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;}
+  .mas-equipe-btn:hover{border-color:var(--primary);color:var(--primary);}
   /* fora do card: fica claramente separado da caixa do anúncio */
   .pt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
   .pt-btns .pt-btn{margin-top:0;}
@@ -1801,6 +1804,16 @@
   </div>
 </div>
 
+<div class="modal" id="equipe-ponto-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="equipe-ponto-title">Ponto da equipe</div>
+      <button class="sheet-x" id="equipe-ponto-close">✕</button>
+    </div>
+    <div class="sheet-body" id="equipe-ponto-body"></div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -1906,7 +1919,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot, increment, collection, getDoc, getDocs, arrayUnion, query, where } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
 
@@ -5783,6 +5796,7 @@ function statusTextoAnuncio(d){
   return txt;
 }
 function tituloBlocoAnuncio(d){
+  if(d.apelido) return d.apelido;
   if(d._rascunho) return "Novo anúncio";
   return d.title || (d.active ? "Anúncio sem título" : "Anúncio removido");
 }
@@ -5850,6 +5864,10 @@ function blocoAtendenteHTML(n, exemploNome){
           <a href="#" class="atd-link-revoke-a" data-n="${n}" style="font-size:11.5px;color:var(--muted)">gerar novo link (invalida o antigo)</a>
         </div>
         <button type="button" class="btn-ghost ver-ponto-btn" data-n="${n}" style="width:100%;margin-top:8px">📋 Ver ponto (histórico de online/offline)</button>
+        <label class="chk-row" style="margin-top:10px;display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" class="f-supervisor${n}" style="width:16px;height:16px;flex:none;margin-top:1px">
+          <span>👁️ Este atendente também pode ver o ponto de <b>todos</b> os atendentes deste anúncio (não só o próprio)</span>
+        </label>
       </div>
       <button type="button" class="btn-ghost atd-clear-btn" data-n="${n}" style="width:100%;margin-top:8px;color:var(--danger)">🗑️ Limpar dados deste atendente</button>
     </div>
@@ -5865,6 +5883,7 @@ function adEditorHTML(d){
       <div class="pt-editor-chevron">▾</div>
     </div>
     <div class="pt-editor-body">
+    <div class="fld" style="margin-bottom:10px"><label>Nome interno <span class="desc">(só pra você identificar aqui no painel — os usuários não veem isso)</span></label><input class="txt f-apelido" placeholder="Ex.: Academia Bairro Norte" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt f-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area f-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
     ${campoImagemHTML("Imagem do banner","(opcional — ignorado se preencher o vídeo)","f-img","https://...","banner")}
@@ -5919,6 +5938,7 @@ function adEditorHTML(d){
 // está digitando agora (mesmo padrão usado no resto do app pra não atrapalhar quem escreve)
 function preencherBlocoAnuncio(el, d, forcar){
   const set=(sel,v)=>{ const i=el.querySelector(sel); if(i && (forcar || document.activeElement!==i)) i.value=v||""; };
+  set(".f-apelido",d.apelido);
   set(".f-title",d.title); set(".f-text",d.text); set(".f-img",d.img); set(".f-vid",d.vid); set(".f-msg",d.msg);
   set(".f-n1",d.n1); set(".f-n2",d.n2); set(".f-n3",d.n3); set(".f-n4",d.n4);
   set(".f-n5",d.n5); set(".f-n6",d.n6); set(".f-n7",d.n7); set(".f-n8",d.n8);
@@ -5928,6 +5948,10 @@ function preencherBlocoAnuncio(el, d, forcar){
   set(".f-f5",d.f5); set(".f-f6",d.f6); set(".f-f7",d.f7); set(".f-f8",d.f8);
   set(".f-email1",d.email1); set(".f-email2",d.email2); set(".f-email3",d.email3); set(".f-email4",d.email4);
   set(".f-email5",d.email5); set(".f-email6",d.email6); set(".f-email7",d.email7); set(".f-email8",d.email8);
+  [1,2,3,4,5,6,7,8].forEach(n=>{
+    const chkSup = el.querySelector(".f-supervisor"+n);
+    if(chkSup && (forcar || document.activeElement!==chkSup)) chkSup.checked = !!d["supervisor"+n];
+  });
   [1,2,3,4,5,6,7,8].forEach(n=>{
     const row = el.querySelector('.atd-link-row[data-n="'+n+'"]');
     if(row) row.style.display = (d["email"+n]||"").trim() ? "" : "none";
@@ -5978,8 +6002,9 @@ function syncAdsEditorDOM(){
   });
 }
 function novoRascunhoAnuncio(){
+  const apelido = (prompt("Dê um nome pra identificar esse anúncio aqui no painel (só você vê isso — os usuários não veem):", "") || "").trim();
   const id = doc(collection(db,'partnerAds')).id; // gera o id já de vez (mesmo antes de salvar)
-  localDraftAds.push({id, _rascunho:true});
+  localDraftAds.push({id, _rascunho:true, apelido});
   syncAdsEditorDOM();
   setTimeout(()=>{
     const el=document.querySelector('.pt-editor[data-id="'+id+'"]');
@@ -6380,6 +6405,94 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
 document.getElementById("ponto-close").onclick = fecharPontoAtendente;
 pontoModal.onclick = e=>{ if(e.target.id==="ponto-modal") fecharPontoAtendente(); };
 
+/* ================= ponto da EQUIPE (visão do supervisor) =================
+   Um atendente marcado como "supervisor" (checkbox no editor admin, campo
+   supervisor1..8) consegue ver, sem ser admin, o ponto de TODOS os atendentes
+   daquele mesmo anúncio — não só o próprio. Como essa pessoa não é admin, não
+   dá pra usar a assinatura ao vivo (attendantLogsUnsub, só admin/gestor lê a
+   coleção inteira); aqui é uma busca pontual, filtrada só pelo anúncio dela,
+   toda vez que abre a tela. */
+const equipePontoModal = document.getElementById("equipe-ponto-modal");
+let EQUIPE_AD_ID = null;
+let EQUIPE_LOGS = [];
+let EQUIPE_EXPANDIDO = null; // número do slot com o histórico aberto, se algum
+
+async function abrirEquipePonto(adId){
+  EQUIPE_AD_ID = adId;
+  EQUIPE_EXPANDIDO = null;
+  const ad = PARTNER_ADS.find(x=>x.id===adId);
+  document.getElementById("equipe-ponto-title").textContent = "Ponto da equipe · "+((ad&&ad.title)||"Anúncio");
+  const body = document.getElementById("equipe-ponto-body");
+  body.innerHTML = '<div class="bmap-empty-hist">Carregando...</div>';
+  equipePontoModal.classList.add("on");
+  try{
+    const snap = await getDocs(query(collection(db,'attendantLogs'), where('adId','==',adId)));
+    EQUIPE_LOGS = snap.docs.map(d=>({...d.data(), id:d.id}));
+  }catch(err){
+    console.warn('equipe-ponto-load', err);
+    body.innerHTML = '<div class="bmap-empty-hist">Não consegui carregar agora. Feche e tente de novo.</div>';
+    return;
+  }
+  renderEquipePonto();
+}
+function fecharEquipePonto(){
+  equipePontoModal.classList.remove("on");
+  EQUIPE_AD_ID = null; EQUIPE_LOGS = []; EQUIPE_EXPANDIDO = null;
+}
+function renderEquipePonto(){
+  const ad = PARTNER_ADS.find(x=>x.id===EQUIPE_AD_ID);
+  const body = document.getElementById("equipe-ponto-body");
+  if(!ad || !body) return;
+  const agora = Date.now();
+  const linhas = [];
+  for(let n=1; n<=8; n++){
+    const nome = (ad["n"+n]||"").trim();
+    const temEmail = (ad["email"+n]||"").trim();
+    if(!nome && !temEmail && !(ad["w"+n]||"").trim()) continue; // slot vazio, pula
+    const logsSlot = EQUIPE_LOGS.filter(l=>String(l.n)===String(n));
+    let totalMin=0;
+    logsSlot.forEach(l=>{ totalMin += Math.max(0, ((l.offlineAt||agora)-l.onlineAt)/60000); });
+    const online = ad["online"+n]!==false;
+    const expandido = EQUIPE_EXPANDIDO===n;
+    const historico = [...logsSlot].sort((a,b)=>(b.onlineAt||0)-(a.onlineAt||0));
+    const histHTML = historico.length ? historico.map(l=>{
+      const emAndamento = !l.offlineAt, fim = l.offlineAt||agora;
+      const dur = Math.max(0, (fim-l.onlineAt)/60000);
+      return `<div class="bmap-hist-row">
+          <span class="bmap-hist-dot" style="background:${emAndamento?'#2FD8AC':'#8CA0B3'}"></span>
+          <span class="bmap-hist-txt">
+            <b>${fmtDataHora(l.onlineAt)}</b> → ${emAndamento?'<span style="color:var(--primary)">em andamento</span>':fmtDataHora(l.offlineAt)}
+            <br><span class="muted">${fmtDuracaoMin(dur)}${emAndamento?' até agora':''}</span>
+          </span>
+        </div>`;
+    }).join("") : `<div class="bmap-empty-hist">Sem registros de ponto ainda.</div>`;
+    linhas.push(`
+      <div class="atd-bloco ${expandido?'aberto':''}">
+        <div class="atd-bloco-header equipe-ponto-row" data-n="${n}">
+          <div class="atd-bloco-avatar">${n}</div>
+          <div class="atd-bloco-info">
+            <div class="atd-bloco-titulo">Atendente ${n}</div>
+            <div class="atd-bloco-resumo">${esc(nome||("Atendente "+n))} <span class="mb-onlinedot${online?' on':''}" title="${online?'Online agora':'Offline'}"></span></div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${fmtDuracaoMin(totalMin)} no total · ${logsSlot.length} sess${logsSlot.length===1?'ão':'ões'}</div>
+          </div>
+          <div class="atd-bloco-chevron">▾</div>
+        </div>
+        <div class="atd-bloco-body">${histHTML}</div>
+      </div>
+    `);
+  }
+  body.innerHTML = linhas.length ? linhas.join("") : '<div class="bmap-empty-hist">Nenhum atendente configurado neste anúncio ainda.</div>';
+  body.querySelectorAll(".equipe-ponto-row").forEach(row=>{
+    row.onclick = ()=>{
+      const n = Number(row.dataset.n);
+      EQUIPE_EXPANDIDO = (EQUIPE_EXPANDIDO===n) ? null : n;
+      renderEquipePonto();
+    };
+  });
+}
+document.getElementById("equipe-ponto-close").onclick = fecharEquipePonto;
+equipePontoModal.onclick = e=>{ if(e.target.id==="equipe-ponto-modal") fecharEquipePonto(); };
+
 /* ---- publicar/salvar, desfazer ou remover um anúncio específico (delegado) ---- */
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const pubBtn=e.target.closest && e.target.closest(".pt-ad-publish");
@@ -6401,12 +6514,16 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   }
 
   if(pubBtn){
+    const apelido=g(".f-apelido");
     const title=g(".f-title"), text=g(".f-text"), img=g(".f-img"), vid=g(".f-vid"), msg=g(".f-msg");
     const w1=g(".f-w1"), w2=g(".f-w2"), w3=g(".f-w3"), w4=g(".f-w4"), w5=g(".f-w5"), w6=g(".f-w6"), w7=g(".f-w7"), w8=g(".f-w8");
     const n1=g(".f-n1"), n2=g(".f-n2"), n3=g(".f-n3"), n4=g(".f-n4"), n5=g(".f-n5"), n6=g(".f-n6"), n7=g(".f-n7"), n8=g(".f-n8");
     const f1=g(".f-f1"), f2=g(".f-f2"), f3=g(".f-f3"), f4=g(".f-f4"), f5=g(".f-f5"), f6=g(".f-f6"), f7=g(".f-f7"), f8=g(".f-f8");
     const email1=g(".f-email1").toLowerCase(), email2=g(".f-email2").toLowerCase(), email3=g(".f-email3").toLowerCase(), email4=g(".f-email4").toLowerCase();
     const email5=g(".f-email5").toLowerCase(), email6=g(".f-email6").toLowerCase(), email7=g(".f-email7").toLowerCase(), email8=g(".f-email8").toLowerCase();
+    const sup=(n)=>{ const i=el.querySelector(".f-supervisor"+n); return !!(i && i.checked); };
+    const supervisor1=sup(1), supervisor2=sup(2), supervisor3=sup(3), supervisor4=sup(4);
+    const supervisor5=sup(5), supervisor6=sup(6), supervisor7=sup(7), supervisor8=sup(8);
     const gnome=g(".f-gnome"), glink=g(".f-glink"), gfoto=g(".f-gfoto");
     const popChk=el.querySelector(".f-pop");
     const pop = !!(popChk && popChk.checked);
@@ -6421,11 +6538,12 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
       if(!confirm('Nenhum conteúdo preenchido. Publicar apenas o espaço de teste "Anuncie aqui"?')) return;
     }
     // merge:true — nunca sobrescreve o online1..online8 que o próprio atendente controla
-    setDoc(doc(db,'partnerAds',id), {title, text, img, vid, msg,
+    setDoc(doc(db,'partnerAds',id), {apelido, title, text, img, vid, msg,
       w1, w2, w3, w4, w5, w6, w7, w8,
       n1, n2, n3, n4, n5, n6, n7, n8,
       f1, f2, f3, f4, f5, f6, f7, f8,
       email1, email2, email3, email4, email5, email6, email7, email8,
+      supervisor1, supervisor2, supervisor3, supervisor4, supervisor5, supervisor6, supervisor7, supervisor8,
       gnome, glink, gfoto, pop, popDays, active:true, ts:(jaExistente&&jaExistente.ts)||Date.now()}, {merge:true})
       .then(()=>{
         try{ localStorage.removeItem("pt-pop-visto-"+id); }catch(e){}
@@ -6498,7 +6616,7 @@ function meusSlotsDeAtendente(){
     for(let n=1;n<=8;n++){
       const slotEmail = (ad["email"+n]||"").trim().toLowerCase();
       if(slotEmail && slotEmail===email){
-        out.push({ adId:ad.id, adTitle:ad.title||"Anúncio sem título", n, online: ad["online"+n]!==false });
+        out.push({ adId:ad.id, adTitle:ad.title||"Anúncio sem título", n, online: ad["online"+n]!==false, supervisor: !!ad["supervisor"+n] });
       }
     }
   });
@@ -6515,10 +6633,15 @@ function renderMeuStatusAtendente(){
         <span class="mas-dot ${s.online?'on':''}"></span>
         <span class="mas-title">${esc(s.adTitle)} · Atendente ${s.n}</span>
       </div>
-      <button type="button" class="mas-toggle ${s.online?'on':''}">${s.online?'🟢 Online':'⚫ Offline'}</button>
+      <div class="mas-actions">
+        <button type="button" class="mas-toggle ${s.online?'on':''}">${s.online?'🟢 Online':'⚫ Offline'}</button>
+        ${s.supervisor?`<button type="button" class="mas-equipe-btn" data-ad-id="${esc(s.adId)}">👥 Ponto da equipe</button>`:''}
+      </div>
     </div>`).join('');
 }
 document.getElementById("my-attendant-status").addEventListener("click", function(e){
+  const eqBtn=e.target.closest && e.target.closest(".mas-equipe-btn");
+  if(eqBtn){ abrirEquipePonto(eqBtn.dataset.adId); return; }
   const btn=e.target.closest && e.target.closest(".mas-toggle");
   if(!btn) return;
   const row=btn.closest(".mas-row");
