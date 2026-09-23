@@ -981,6 +981,39 @@
   .swatches button.on{border-color:var(--text);transform:scale(1.08);}
   .btn-ghost{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:13px;border-radius:13px;cursor:pointer;}
   .btn-primary{flex:2;background:var(--primary);border:none;color:#0B1017;font-family:var(--font);font-weight:700;font-size:14px;padding:13px;border-radius:13px;cursor:pointer;}
+
+  /* ================= mapa de aplicação (local no corpo) ================= */
+  .bmap-btn{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;cursor:pointer;}
+  .bmap-beta{font-size:7.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:6px;padding:1.5px 5px;white-space:nowrap;}
+  .bmap-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1.5px solid var(--border2);color:var(--muted);transition:all .15s ease;}
+  .bmap-ico svg{width:18px;height:18px;}
+  .bmap-btn:hover .bmap-ico{border-color:var(--acc);color:var(--acc);}
+  .bmap-ico.hoje{background:var(--acc);border-color:var(--acc);color:#0B1017;}
+  .bmap-lbl{font-size:9px;font-weight:700;color:var(--muted);line-height:1.25;text-align:center;white-space:normal;max-width:72px;}
+  .bmap-lbl.hoje{color:var(--acc);}
+
+  .bmap-tabs{margin-bottom:14px;}
+  .bmap-figure-wrap{display:flex;justify-content:center;margin-bottom:4px;}
+  .bmap-figure-wrap svg{width:100%;max-width:184px;height:auto;display:block;}
+  .site-dot{cursor:pointer;}
+  .site-dot .site-dot-vis{transition:r .12s ease, stroke-width .12s ease, opacity .12s ease;}
+  .site-dot:active .site-dot-vis{opacity:.8;}
+  .site-dot.today .site-dot-vis{stroke:#fff;stroke-width:2.4;}
+  .site-dot.recent .site-dot-vis{stroke:#E9B872;stroke-width:2;stroke-dasharray:1.6 1.6;}
+  .bmap-legend{display:flex;flex-wrap:wrap;gap:9px 14px;justify-content:center;margin:12px 0 18px;}
+  .bmap-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+  .bmap-legend-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .bmap-today{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;}
+  .bmap-hist-title{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:600;margin:4px 0 6px;font-family:var(--display);}
+  .bmap-hist-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--border);}
+  .bmap-hist-row:first-child{border-top:none;}
+  .bmap-hist-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .bmap-hist-txt{flex:1;font-size:12.5px;line-height:1.4;}
+  .bmap-hist-txt b{font-weight:600;}
+  .bmap-hist-txt .muted{color:var(--muted);font-size:11px;}
+  .bmap-hist-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:4px 6px;flex:none;}
+  .bmap-hist-del:hover{color:var(--danger);}
+  .bmap-empty-hist{color:var(--muted);font-size:12.5px;padding:8px 2px 2px;}
 </style>
 </head>
 <body>
@@ -1748,6 +1781,16 @@
   </div>
 </div>
 
+<div class="modal" id="bodymap-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="bmap-title">Local da aplicação</div>
+      <button class="sheet-x" id="bmap-close">✕</button>
+    </div>
+    <div class="sheet-body" id="bmap-body"></div>
+  </div>
+</div>
+
 <div class="modal" id="add-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -2295,6 +2338,20 @@ function renderToday(){
       </div>`;
     }
 
+    // ---------- mapa de aplicação: local no corpo (só para injetáveis) ----------
+    let bodyMapHTML = '';
+    if(!isOralRoute(p)){
+      const sitesArr = Array.isArray(p.sites) ? p.sites : [];
+      const ultimoSite = sitesArr.length ? [...sitesArr].sort((a,b)=> a.date<b.date?1:(a.date>b.date?-1:0))[0] : null;
+      const marcadoHoje = !!(ultimoSite && ultimoSite.date===todayKey);
+      const dicaTitulo = ultimoSite ? `Último local: ${ultimoSite.label} · ${fmtBR(ultimoSite.date)}` : "Marque aqui onde aplicou";
+      bodyMapHTML = `<div class="bmap-btn" data-id="${p.id}" title="${esc(dicaTitulo)}">
+        <div class="bmap-beta">fase de testes</div>
+        <div class="bmap-ico ${marcadoHoje?'hoje':''}">${ICO_BODY}</div>
+        <div class="bmap-lbl">marque aqui onde aplicou</div>
+      </div>`;
+    }
+
     // controle: botão simples (1x) ou caixinhas (múltiplas)
     let ctrlHTML;
     if(perDay <= 1){
@@ -2335,6 +2392,7 @@ function renderToday(){
         </button>
       </div>
       ${vialHTML}
+      ${bodyMapHTML}
       ${ctrlHTML}`;
     cont.appendChild(el);
   });
@@ -2404,6 +2462,7 @@ function renderToday(){
     const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(!p) return;
     openVialSheet(p.id);
   });
+  cont.querySelectorAll(".bmap-btn").forEach(b=>b.onclick=()=>openBodyMap(b.dataset.id));
 }
 
 /* ================= folha do frasco =================
@@ -2568,6 +2627,209 @@ function renderVialSheet(manualAberto){
 
 document.getElementById("vial-close").onclick = closeVialSheet;
 vialModal.onclick = e=>{ if(e.target.id==="vial-modal") closeVialSheet(); };
+
+/* ================= mapa de aplicação (local no corpo) =================
+   Boneco unissex (frente/costas) ao lado do frasco: a pessoa toca no ponto
+   onde aplicou a dose, e o app guarda a data. Ajuda a lembrar o rodízio dos
+   locais, evitando aplicar sempre no mesmo lugar. Fica salvo dentro do
+   próprio peptídeo (p.sites), então sincroniza na nuvem junto com o resto
+   do protocolo — mesmo mecanismo do cloudSave() já usado pelo frasco. */
+
+const bmapModal = document.getElementById("bodymap-modal");
+let BMAP_ID = null;
+let BMAP_VIEW = "frente";
+
+function isOralRoute(p){ return p.unit==="comprimido" || p.unit==="cápsula"; }
+
+const SITE_ZONES = {
+  abdomen:     { label:"Abdômen",                   color:"#5EC8E5" },
+  coxaFrente:  { label:"Coxa (frente/lateral)",     color:"#67C15E" },
+  coxaInterna: { label:"Coxa (interna)",            color:"#F59158" },
+  braco:       { label:"Parte superior do braço",   color:"#8593F7" },
+  gluteo:      { label:"Glúteo (superior externo)", color:"#E5709B" },
+};
+
+// coordenadas dos pontos tocáveis no boneco (viewBox 0 0 200 440) — mesma
+// silhueta unissex nas duas vistas; só os pontos disponíveis mudam.
+// braço fica disponível nas duas vistas (frente e costas), já que a parte
+// lateral do braço aparece dos dois ângulos.
+const BRACO_DOTS = [
+  {id:"bra-e1", cx:62,  cy:75,  zone:"braco", side:"esq"},
+  {id:"bra-e2", cx:57,  cy:90,  zone:"braco", side:"esq"},
+  {id:"bra-d1", cx:138, cy:75,  zone:"braco", side:"dir"},
+  {id:"bra-d2", cx:143, cy:90,  zone:"braco", side:"dir"},
+];
+const SITE_DOTS = {
+  frente: [
+    {id:"abd-1",   cx:85,  cy:148, zone:"abdomen"},
+    {id:"abd-2",   cx:100, cy:143, zone:"abdomen"},
+    {id:"abd-3",   cx:115, cy:148, zone:"abdomen"},
+    {id:"abd-4",   cx:85,  cy:168, zone:"abdomen"},
+    {id:"abd-5",   cx:100, cy:173, zone:"abdomen"},
+    {id:"abd-6",   cx:115, cy:168, zone:"abdomen"},
+    {id:"coxf-e1", cx:78,  cy:215, zone:"coxaFrente",  side:"esq"},
+    {id:"coxf-d1", cx:122, cy:215, zone:"coxaFrente",  side:"dir"},
+    {id:"coxi-e1", cx:94,  cy:222, zone:"coxaInterna", side:"esq"},
+    {id:"coxi-d1", cx:106, cy:222, zone:"coxaInterna", side:"dir"},
+    ...BRACO_DOTS,
+  ],
+  costas: [
+    {id:"glu-e1", cx:72,  cy:185, zone:"gluteo", side:"esq"},
+    {id:"glu-e2", cx:76,  cy:200, zone:"gluteo", side:"esq"},
+    {id:"glu-d1", cx:128, cy:185, zone:"gluteo", side:"dir"},
+    {id:"glu-d2", cx:124, cy:200, zone:"gluteo", side:"dir"},
+    ...BRACO_DOTS,
+  ],
+};
+
+function findDotDef(dotId){
+  return SITE_DOTS.frente.find(d=>d.id===dotId) || SITE_DOTS.costas.find(d=>d.id===dotId);
+}
+function ladoTxt(zone, side){
+  if(!side) return "";
+  const masc = (zone==="braco" || zone==="gluteo");
+  return side==="esq" ? (masc?"esquerdo":"esquerda") : (masc?"direito":"direita");
+}
+function zoneSideLabel(zone, side){
+  const l = ladoTxt(zone, side);
+  switch(zone){
+    case "abdomen":     return "Abdômen";
+    case "coxaFrente":  return `Coxa ${l} (frente/lateral)`;
+    case "coxaInterna": return `Coxa ${l} (interna)`;
+    case "braco":       return `Braço ${l}`;
+    case "gluteo":      return `Glúteo ${l} (superior externo)`;
+    default: return (SITE_ZONES[zone]&&SITE_ZONES[zone].label) || zone;
+  }
+}
+function relDate(dk){
+  const d = daysBetween(dk, new Date());
+  if(d<=0) return "hoje";
+  if(d===1) return "ontem";
+  return `há ${d} dias`;
+}
+
+const ICO_BODY = '<svg viewBox="0 0 24 24"><path d="M9,17.5 L9.3,22 C9.3,22.6 8.7,23 8,23 C7.3,23 6.8,22.5 6.9,21.9 L7.7,17.2 Z" fill="#7C8B9B"/><path d="M15,17.5 L14.7,22 C14.7,22.6 15.3,23 16,23 C16.7,23 17.2,22.5 17.1,21.9 L16.3,17.2 Z" fill="#7C8B9B"/><ellipse cx="7.7" cy="22.6" rx="1.5" ry="1" fill="#3D6FB4"/><ellipse cx="16.3" cy="22.6" rx="1.5" ry="1" fill="#3D6FB4"/><path d="M8.2,12 C8.2,10.9 9.7,10 12,10 C14.3,10 15.8,10.9 15.8,12 L16.3,17.8 C16.3,18.4 14.4,19 12,19 C9.6,19 7.7,18.4 7.7,17.8 Z" fill="#2CC5A6"/><rect x="10.6" y="8.6" width="2.8" height="2" fill="#E3A671"/><circle cx="12" cy="6.6" r="3.4" fill="#E9AE7E"/><path d="M8.6,6.2 C8.5,3.9 10,2.6 12,2.6 C14,2.6 15.5,3.9 15.4,6.2 C15.4,5 15,4.2 14.3,4 C13.7,4.6 12.8,4.9 12,4.9 C11.2,4.9 10.3,4.6 9.7,4 C9,4.2 8.6,5 8.6,6.2 Z" fill="#4A3526"/></svg>';
+
+// silhueta unissex — mesmo desenho para frente/costas, só os pontos mudam
+function bodyFigureSVG(dots){
+  const pep = PEPTIDES.find(x=>x.id===BMAP_ID);
+  const sitesArr = (pep && Array.isArray(pep.sites)) ? pep.sites : [];
+  const dotsHTML = dots.map(d=>{
+    const zone = SITE_ZONES[d.zone];
+    const label = zoneSideLabel(d.zone, d.side);
+    const hist = sitesArr.filter(s=>s.dotId===d.id).sort((a,b)=> a.date<b.date?1:(a.date>b.date?-1:0));
+    const last = hist[0];
+    const daysAgo = last ? daysBetween(last.date, new Date()) : null;
+    let cls = "site-dot", opacity = 0.3;
+    if(last) opacity = 0.85;
+    if(daysAgo===0){ cls += " today"; opacity = 1; }
+    else if(daysAgo!=null && daysAgo<=3){ cls += " recent"; }
+    return `<g class="${cls}" data-dot="${d.id}" role="button" aria-label="${esc(label)}">
+        <circle class="site-dot-hit" cx="${d.cx}" cy="${d.cy}" r="11" fill="transparent"/>
+        <circle class="site-dot-vis" cx="${d.cx}" cy="${d.cy}" r="6.4" fill="${zone.color}" opacity="${opacity}" stroke="rgba(0,0,0,.4)" stroke-width="1"/>
+      </g>`;
+  }).join("");
+  return `<svg viewBox="0 0 200 440">
+    <g fill="rgba(255,255,255,.10)" stroke="rgba(255,255,255,.38)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M126,176 C133,180 137,188 135,197 C132,210 128,220 127,233 C126,250 124,264 122,277 C121,291 123,304 124,317 C125,334 123,349 120,362 C127,366 135,371 134,379 C133,386 123,388 113,386 C105,384 102,379 103,372 C104,361 105,351 104,339 C102,324 101,309 101,294 C101,279 102,264 101,249 C100,234 99,221 98,207 C97,197 98,187 100,179 Z"/>
+      <path d="M74,176 C67,180 63,188 65,197 C68,210 72,220 73,233 C74,250 76,264 78,277 C79,291 77,304 76,317 C75,334 77,349 80,362 C73,366 65,371 66,379 C67,386 77,388 87,386 C95,384 98,379 97,372 C96,361 95,351 96,339 C98,324 99,309 99,294 C99,279 98,264 99,249 C100,234 101,221 102,207 C103,197 102,187 100,179 Z"/>
+      <path d="M130,66 C142,70 148,82 148,100 C148,116 146,124 144,132 C143,144 142,152 141,160 C147,166 152,174 149,181 C146,187 136,187 131,180 C128,175 127,168 128,160 C126,148 125,138 125,128 C123,116 122,104 122,92 C122,82 124,72 130,66 Z"/>
+      <path d="M70,66 C58,70 52,82 52,100 C52,116 54,124 56,132 C57,144 58,152 59,160 C53,166 48,174 51,181 C54,187 64,187 69,180 C72,175 73,168 72,160 C74,148 75,138 75,128 C77,116 78,104 78,92 C78,82 76,72 70,66 Z"/>
+      <path d="M72,64 C66,68 63,78 64,92 C65,108 68,120 72,130 C68,145 66,160 70,178 L130,178 C134,160 132,145 128,130 C132,120 135,108 136,92 C137,78 134,68 128,64 C122,58 78,58 72,64 Z"/>
+      <path d="M91,50 C91,54 94,57 100,57 C106,57 109,54 109,50 C109,46 106,43 100,43 C94,43 91,46 91,50 Z" stroke="none"/>
+      <circle cx="100" cy="34" r="21"/>
+    </g>
+    ${dotsHTML}
+  </svg>`;
+}
+
+function openBodyMap(id){
+  const p = PEPTIDES.find(x=>x.id===id);
+  if(!p) return;
+  BMAP_ID = id;
+  BMAP_VIEW = "frente";
+  document.getElementById("bmap-title").textContent = "Local da aplicação · " + p.name;
+  renderBodyMap();
+  bmapModal.classList.add("on");
+}
+function closeBodyMap(){ bmapModal.classList.remove("on"); BMAP_ID = null; }
+
+function handleDotClick(dotId){
+  const p = PEPTIDES.find(x=>x.id===BMAP_ID); if(!p) return;
+  const def = findDotDef(dotId); if(!def) return;
+  if(!Array.isArray(p.sites)) p.sites = [];
+  const idxHoje = p.sites.findIndex(s=>s.dotId===dotId && s.date===todayKey);
+  if(idxHoje>=0){
+    if(!confirm("Desfazer a marcação de hoje neste local?")) return;
+    p.sites.splice(idxHoje,1);
+  } else {
+    const label = zoneSideLabel(def.zone, def.side);
+    p.sites.push({
+      id:"st"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      date:todayKey, view:BMAP_VIEW, dotId, zone:def.zone, side:def.side||null, label
+    });
+    if(p.sites.length>80) p.sites = p.sites.slice(p.sites.length-80); // mantém o histórico enxuto
+  }
+  cloudSave();
+  renderBodyMap();
+  renderToday();
+}
+
+function renderBodyMap(){
+  const p = PEPTIDES.find(x=>x.id===BMAP_ID);
+  const body = document.getElementById("bmap-body");
+  if(!p){ body.innerHTML=""; return; }
+  const sites = Array.isArray(p.sites) ? p.sites : [];
+  const hojeList = sites.filter(s=>s.date===todayKey);
+  const zonesInView = [...new Set(SITE_DOTS[BMAP_VIEW].map(d=>d.zone))];
+
+  const legendHTML = zonesInView.map(z=>`
+    <span class="bmap-legend-item"><span class="bmap-legend-dot" style="background:${SITE_ZONES[z].color}"></span>${SITE_ZONES[z].label}</span>
+  `).join("");
+
+  const histOrdenado = [...sites].sort((a,b)=> a.date<b.date?1:(a.date>b.date?-1:0)).slice(0,8);
+  const histHTML = histOrdenado.length ? histOrdenado.map(s=>`
+    <div class="bmap-hist-row">
+      <span class="bmap-hist-dot" style="background:${(SITE_ZONES[s.zone]&&SITE_ZONES[s.zone].color)||'#888'}"></span>
+      <span class="bmap-hist-txt"><b>${esc(s.label)}</b><br><span class="muted">${fmtBR(s.date)} · ${relDate(s.date)}</span></span>
+      <button class="bmap-hist-del" data-sid="${s.id}" aria-label="Remover">✕</button>
+    </div>
+  `).join("") : `<div class="bmap-empty-hist">Nenhuma aplicação registrada ainda.</div>`;
+
+  body.innerHTML = `
+    <div class="bmap-today">
+      <div class="vs-big" style="color:${p.accent}">${hojeList.length ? hojeList.map(s=>esc(s.label)).join(" · ") : "Nenhum local marcado hoje"}</div>
+      <div class="vs-sub">${sites.length} aplicaç${sites.length===1?"ão registrada":"ões registradas"} no total · toque no boneco para marcar onde foi hoje</div>
+    </div>
+
+    <div class="segbtns bmap-tabs" id="bmap-tabs">
+      <button type="button" data-v="frente" class="${BMAP_VIEW==='frente'?'on':''}">Frente</button>
+      <button type="button" data-v="costas" class="${BMAP_VIEW==='costas'?'on':''}">Costas</button>
+    </div>
+
+    <div class="bmap-figure-wrap">${bodyFigureSVG(SITE_DOTS[BMAP_VIEW])}</div>
+    <div class="bmap-legend">${legendHTML}</div>
+
+    <div class="bmap-hist-title">Histórico recente</div>
+    <div class="bmap-hist">${histHTML}</div>
+
+    <div class="ad-note">💡 Alterne os locais a cada aplicação, mantenha ao menos 5 cm de distância do umbigo no abdômen, evite pele irritada ou com hematomas e use sempre uma agulha nova.</div>
+  `;
+
+  body.querySelectorAll(".site-dot").forEach(g=>{ g.onclick = ()=>handleDotClick(g.dataset.dot); });
+  body.querySelectorAll("#bmap-tabs button").forEach(b=>{
+    b.onclick = ()=>{ BMAP_VIEW = b.dataset.v; renderBodyMap(); };
+  });
+  body.querySelectorAll(".bmap-hist-del").forEach(b=>{
+    b.onclick = ()=>{
+      const idx = p.sites.findIndex(s=>s.id===b.dataset.sid);
+      if(idx>=0){ p.sites.splice(idx,1); cloudSave(); renderBodyMap(); renderToday(); }
+    };
+  });
+}
+
+document.getElementById("bmap-close").onclick = closeBodyMap;
+bmapModal.onclick = e=>{ if(e.target.id==="bodymap-modal") closeBodyMap(); };
 
 function removePep(id){
   const p=PEPTIDES.find(x=>x.id===id); if(!p) return;
