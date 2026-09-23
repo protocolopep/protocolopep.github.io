@@ -1017,6 +1017,22 @@
   .bmap-hist-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:4px 6px;flex:none;}
   .bmap-hist-del:hover{color:var(--danger);}
   .bmap-empty-hist{color:var(--muted);font-size:12.5px;padding:8px 2px 2px;}
+
+  /* ---- ponto: log detalhado por evento, agrupado por dia ---- */
+  .ponto-log{margin-bottom:4px;}
+  .ponto-dia{margin-bottom:16px;}
+  .ponto-dia-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px;}
+  .ponto-dia-data{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);text-transform:capitalize;}
+  .ponto-dia-total{font-size:11.5px;color:var(--muted);font-weight:600;text-align:right;white-space:nowrap;}
+  .ponto-dia-total.andamento{color:var(--primary);}
+  .ponto-dia-hoje{display:inline-block;background:var(--primary-dim);color:var(--primary);font-family:var(--font);font-size:9.5px;font-weight:800;letter-spacing:.03em;padding:1.5px 6px;border-radius:6px;margin-left:6px;vertical-align:middle;}
+  .ponto-evento{display:flex;align-items:center;gap:10px;padding:6px 2px;}
+  .ponto-evento-hora{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);width:44px;flex:none;}
+  .ponto-evento-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .ponto-evento-dot.on{background:#22C55E;box-shadow:0 0 0 3px color-mix(in srgb, #22C55E 22%, transparent);}
+  .ponto-evento-dot.off{background:#EF4444;box-shadow:0 0 0 3px color-mix(in srgb, #EF4444 18%, transparent);}
+  .ponto-evento-txt{font-size:12.5px;color:var(--muted);}
+  .ponto-evento-dot.on ~ .ponto-evento-txt{color:var(--text);}
 </style>
 </head>
 <body>
@@ -6340,6 +6356,91 @@ function fmtDuracaoMin(min){
   if(m<=0) return h+"h";
   return h+"h "+m+"min";
 }
+// chave só-do-dia (ano-mês-dia), pra agrupar/ordenar corretamente — diferente de
+// comparar "dd/mm/aaaa" como texto, que dá errado (setembro "09" vem antes de "22" etc)
+function isoDoDia(ts){
+  const d = new Date(ts);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function fmtHora(ts){ return new Date(ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
+function fmtDiaComSemana(ts){ return new Date(ts).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"}); }
+
+// transforma os registros (cada 1 = 1 sessão online→offline) num log de EVENTOS
+// (ficou online / ficou offline), agrupado por dia — mais fácil de ver exatamente
+// quando cada troca de status aconteceu, mesmo que tenha sido sem querer.
+function agruparPontoPorDia(logs, agora){
+  const porDia = {}; // isoDia -> {eventos:[{ts,tipo}], totalMin, labelData, emAndamento}
+  logs.forEach(l=>{
+    const iso = isoDoDia(l.onlineAt);
+    if(!porDia[iso]) porDia[iso] = {eventos:[], totalMin:0, labelData: fmtDiaComSemana(l.onlineAt), emAndamento:false};
+    porDia[iso].eventos.push({ts:l.onlineAt, tipo:"online"});
+    if(l.offlineAt){
+      porDia[iso].eventos.push({ts:l.offlineAt, tipo:"offline"});
+    } else {
+      porDia[iso].emAndamento = true; // esse dia tem uma sessão ainda aberta (turno em andamento)
+    }
+    const fim = l.offlineAt || agora;
+    porDia[iso].totalMin += Math.max(0, (fim-l.onlineAt)/60000);
+  });
+  const isosOrdenados = Object.keys(porDia).sort((a,b)=> a<b?1:(a>b?-1:0)); // mais recente primeiro
+  return { porDia, isosOrdenados };
+}
+function pontoLogHTML(logs, agora){
+  if(!logs.length) return `<div class="bmap-empty-hist">Nenhum registro de ponto ainda — aparece aqui assim que o atendente ligar o status pela primeira vez.</div>`;
+  const {porDia, isosOrdenados} = agruparPontoPorDia(logs, agora);
+  const hojeIso = isoDoDia(agora);
+  return `<div class="ponto-log">` + isosOrdenados.map(iso=>{
+    const dia = porDia[iso];
+    const ehHoje = iso===hojeIso;
+    const eventosHTML = [...dia.eventos].sort((a,b)=>a.ts-b.ts).map(ev=>{
+      const online = ev.tipo==="online";
+      return `<div class="ponto-evento">
+          <span class="ponto-evento-hora">${fmtHora(ev.ts)}</span>
+          <span class="ponto-evento-dot ${online?'on':'off'}"></span>
+          <span class="ponto-evento-txt">${online?'Ficou online':'Ficou offline'}</span>
+        </div>`;
+    }).join("");
+    // rótulo do total: deixa explícito que é tempo trabalhado, e se ainda tá em
+    // andamento (turno não fechou) avisa que a conta é "até agora", não o dia fechado
+    const rotuloTotal = dia.emAndamento
+      ? `${fmtDuracaoMin(dia.totalMin)} trabalhadas até agora`
+      : `${fmtDuracaoMin(dia.totalMin)} trabalhadas`;
+    return `<div class="ponto-dia">
+        <div class="ponto-dia-header">
+          <span class="ponto-dia-data">${esc(dia.labelData)}${ehHoje?' <span class="ponto-dia-hoje">HOJE</span>':''}</span>
+          <span class="ponto-dia-total ${dia.emAndamento?'andamento':''}">${rotuloTotal}</span>
+        </div>
+        ${eventosHTML}
+      </div>`;
+  }).join("") + `</div>`;
+}
+// gera e baixa um .csv com todos os eventos (ficou online/ficou offline) de 1 atendente —
+// separador ";" (não vírgula) porque é o que o Excel em português espera por padrão.
+function baixarLogAtendente(nome, logs){
+  if(!logs.length){ alert("Ainda não tem nenhum registro de ponto pra baixar."); return; }
+  const eventos = [];
+  logs.forEach(l=>{
+    eventos.push({ts:l.onlineAt, tipo:"Ficou online"});
+    if(l.offlineAt) eventos.push({ts:l.offlineAt, tipo:"Ficou offline"});
+  });
+  eventos.sort((a,b)=>a.ts-b.ts);
+  const linhas = ["Data;Hora;Evento"];
+  eventos.forEach(ev=>{
+    const d = new Date(ev.ts);
+    linhas.push(d.toLocaleDateString("pt-BR")+";"+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+";"+ev.tipo);
+  });
+  const csv = "\uFEFF"+linhas.join("\r\n"); // BOM: acentos abrem certo no Excel
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const slug = nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g,"-").toLowerCase().replace(/(^-|-$)/g,"");
+  a.download = "ponto-"+(slug||"atendente")+"-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
 function abrirPontoAtendente(adId, n){
   PONTO_AD_ID = adId; PONTO_N = String(n);
   renderPontoAtendente();
@@ -6363,35 +6464,25 @@ function renderPontoAtendente(){
 
   const agora = Date.now();
   let totalMin = 0, totalHojeMin = 0;
-  const hojeStr = new Date().toLocaleDateString("pt-BR");
+  const hojeIso = isoDoDia(agora);
   logs.forEach(l=>{
     const fim = l.offlineAt || agora;
     const dur = Math.max(0, (fim - l.onlineAt)/60000);
     totalMin += dur;
-    if(new Date(l.onlineAt).toLocaleDateString("pt-BR")===hojeStr) totalHojeMin += dur;
+    if(isoDoDia(l.onlineAt)===hojeIso) totalHojeMin += dur;
   });
-
-  const linhasHTML = logs.length ? logs.map(l=>{
-    const emAndamento = !l.offlineAt;
-    const fim = l.offlineAt || agora;
-    const dur = Math.max(0, (fim - l.onlineAt)/60000);
-    return `<div class="bmap-hist-row">
-        <span class="bmap-hist-dot" style="background:${emAndamento?'#2FD8AC':'#8CA0B3'}"></span>
-        <span class="bmap-hist-txt">
-          <b>${fmtDataHora(l.onlineAt)}</b> → ${emAndamento ? '<span style="color:var(--primary)">em andamento</span>' : fmtDataHora(l.offlineAt)}
-          <br><span class="muted">${fmtDuracaoMin(dur)}${emAndamento?' até agora':''}</span>
-        </span>
-      </div>`;
-  }).join("") : `<div class="bmap-empty-hist">Nenhum registro de ponto ainda — aparece aqui assim que o atendente ligar o status pela primeira vez.</div>`;
 
   body.innerHTML = `
     <div class="bmap-today">
       <div class="vs-big">${fmtDuracaoMin(totalMin)}</div>
       <div class="vs-sub">tempo online no total · ${fmtDuracaoMin(totalHojeMin)} hoje · ${logs.length} sess${logs.length===1?'ão':'ões'} registrada${logs.length===1?'':'s'}</div>
     </div>
-    <div class="bmap-hist-title">Histórico de sessões</div>
-    <div class="bmap-hist">${linhasHTML}</div>
+    <div class="bmap-hist-title">Registro detalhado (online/offline)</div>
+    ${pontoLogHTML(logs, agora)}
+    <button type="button" class="btn-ghost" id="ponto-baixar-btn" style="width:100%;margin-top:6px">⬇️ Baixar log deste atendente (.csv)</button>
   `;
+  const baixarBtn = document.getElementById("ponto-baixar-btn");
+  if(baixarBtn) baixarBtn.onclick = ()=>baixarLogAtendente(nomeAtual, logs);
 }
 document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const btn = e.target.closest && e.target.closest(".ver-ponto-btn");
@@ -6455,17 +6546,8 @@ function renderEquipePonto(){
     const online = ad["online"+n]!==false;
     const expandido = EQUIPE_EXPANDIDO===n;
     const historico = [...logsSlot].sort((a,b)=>(b.onlineAt||0)-(a.onlineAt||0));
-    const histHTML = historico.length ? historico.map(l=>{
-      const emAndamento = !l.offlineAt, fim = l.offlineAt||agora;
-      const dur = Math.max(0, (fim-l.onlineAt)/60000);
-      return `<div class="bmap-hist-row">
-          <span class="bmap-hist-dot" style="background:${emAndamento?'#2FD8AC':'#8CA0B3'}"></span>
-          <span class="bmap-hist-txt">
-            <b>${fmtDataHora(l.onlineAt)}</b> → ${emAndamento?'<span style="color:var(--primary)">em andamento</span>':fmtDataHora(l.offlineAt)}
-            <br><span class="muted">${fmtDuracaoMin(dur)}${emAndamento?' até agora':''}</span>
-          </span>
-        </div>`;
-    }).join("") : `<div class="bmap-empty-hist">Sem registros de ponto ainda.</div>`;
+    const histHTML = pontoLogHTML(historico, agora)
+      + (historico.length ? `<button type="button" class="btn-ghost equipe-ponto-baixar" data-n="${n}" style="width:100%;margin-top:10px">⬇️ Baixar log (.csv)</button>` : '');
     linhas.push(`
       <div class="atd-bloco ${expandido?'aberto':''}">
         <div class="atd-bloco-header equipe-ponto-row" data-n="${n}">
@@ -6482,6 +6564,15 @@ function renderEquipePonto(){
     `);
   }
   body.innerHTML = linhas.length ? linhas.join("") : '<div class="bmap-empty-hist">Nenhum atendente configurado neste anúncio ainda.</div>';
+  body.querySelectorAll(".equipe-ponto-baixar").forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const n = btn.dataset.n;
+      const nome = (ad["n"+n]||"").trim() || ("Atendente "+n);
+      const logsSlot = EQUIPE_LOGS.filter(l=>String(l.n)===String(n));
+      baixarLogAtendente(nome, logsSlot);
+    };
+  });
   body.querySelectorAll(".equipe-ponto-row").forEach(row=>{
     row.onclick = ()=>{
       const n = Number(row.dataset.n);
