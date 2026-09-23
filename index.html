@@ -38,7 +38,7 @@
   body.light .take.done, body.light .auth-submit, body.light .btn-primary, body.light .ia-btn{color:#053b39;}
   body.light .cell{color:#fff;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;overflow-x:hidden;max-width:100vw;}
   body{
     font-family:var(--font);
     background:transparent;
@@ -374,7 +374,7 @@
   .act.copied{border-color:var(--primary);color:var(--primary);}
 
 /* topbar account + auth screen */
-  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .topbar{display:flex;flex-wrap:wrap;row-gap:10px;justify-content:space-between;align-items:flex-start;gap:12px;}
   .tb-presenca{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);padding:0 2px;white-space:nowrap;}
   .tb-presenca-item{position:relative;display:inline-flex;align-items:center;}
   .tb-presenca-item>span{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:4px 5px;border-radius:8px;}
@@ -389,7 +389,7 @@
   .tb-dropdown-row:hover{background:var(--surface3);}
   .tb-dropdown-dot{width:6px;height:6px;border-radius:50%;background:#2FD8AC;flex:none;}
   .tb-dropdown-empty{font-size:12px;color:var(--muted2);padding:6px 8px;}
-  .acct{display:flex;align-items:center;gap:8px;flex:none;}
+  .acct{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none;max-width:100%;}
   .acct-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:4px;}
   .acct-email:hover{background:var(--surface3);color:var(--text);}
   .acct-email svg{width:12px;height:12px;flex:none;opacity:.55;}
