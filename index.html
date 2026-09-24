@@ -114,6 +114,18 @@
   }
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);}
   .card.done{background:var(--surface2);}
+  /* card com dose agendada pra hoje ("aplicar hoje"): fundo tingido + destaque forte na lista */
+  .card.due-today{
+    background:color-mix(in srgb, var(--warn-bg) 55%, var(--surface) 45%);
+    border-color:var(--warn-tx);
+    box-shadow:0 0 0 1px var(--warn-bd), 0 6px 20px rgba(233,184,114,.16);
+    animation:cardDuePulse 2.2s ease-in-out infinite;
+  }
+  .card.due-today.done{animation:none;box-shadow:none;border-color:var(--border);background:var(--surface2);} /* já foi tomada: some o alerta */
+  @keyframes cardDuePulse{
+    0%,100%{box-shadow:0 0 0 1px var(--warn-bd), 0 6px 20px rgba(233,184,114,.16);}
+    50%{box-shadow:0 0 0 1px var(--warn-tx), 0 8px 26px rgba(233,184,114,.32);}
+  }
   .card .info{flex:1;min-width:0;}
   .card .nm{font-family:var(--display);font-weight:600;font-size:17px;display:flex;align-items:center;gap:7px;}
   .card .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex:none;}
@@ -122,6 +134,21 @@
   .card .ui{font-family:var(--display);font-weight:700;font-size:15px;color:var(--text);}
   .card .freq{font-size:12px;color:var(--muted);}
   .chip-acc{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);}
+  /* contador de dias restantes até a próxima aplicação (peptídeos "a cada X dias") */
+  .cd{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .cd-wait{background:var(--surface3);color:var(--muted);}
+  .cd-today{
+    background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);
+    animation:cdPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes cdPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(233,184,114,.5);}
+    50%{box-shadow:0 0 0 5px rgba(233,184,114,0);}
+  }
+  .cd-late{background:color-mix(in srgb,var(--danger) 18%,transparent);color:var(--danger);}
+  @media (prefers-reduced-motion: reduce){
+    .cd-today, .card.due-today{animation:none;}
+  }
   .take{
     border:1.5px solid var(--acc);background:transparent;color:var(--acc);
     font-family:var(--font);font-weight:700;font-size:13.5px;
@@ -2282,6 +2309,57 @@ const isSched = (p,dow) => {
   return p.days===null || p.days.includes(dow);
 };
 
+// ---------- contador de dias restantes até a próxima aplicação ----------
+// Cobre os dois modos que têm um "dia certo" pra tomar: "a cada X dias" (interval>1)
+// e "dias específicos" (p.days = array de dias da semana). O modo "todos os dias"
+// não precisa de contador, já que a dose é sempre hoje.
+function nextDoseCountdown(p){
+  const rec = LOGS[todayKey]||{};
+  const tomouHoje = dosesTaken(rec, p.id) >= (p.perDay||1);
+
+  // ---- modo "a cada X dias": usa a última aplicação registrada como âncora do ciclo ----
+  if(p.interval && p.interval>1){
+    let ultimaData = null; // último dia (chave AAAA-MM-DD) em que houve pelo menos 1 dose registrada
+    for(const k in LOGS){
+      if(k>todayKey) continue; // ignora qualquer registro futuro
+      if(dosesTaken(LOGS[k]||{}, p.id) >= 1){
+        if(!ultimaData || k>ultimaData) ultimaData = k;
+      }
+    }
+
+    let diasRestantes;
+    if(ultimaData){
+      const prox = new Date(ultimaData+"T00:00:00");
+      prox.setDate(prox.getDate()+p.interval);
+      diasRestantes = daysBetween(todayKey, prox);
+    } else if(p.start){
+      const diff = daysBetween(p.start, now);
+      diasRestantes = diff<0 ? -diff : ((p.interval - (diff % p.interval)) % p.interval);
+    } else {
+      return null; // nunca aplicado e sem data de início: não dá pra calcular o ciclo
+    }
+
+    if(diasRestantes < 0) return {texto:`atrasado ${-diasRestantes} dia${-diasRestantes===1?'':'s'}`, cls:'cd-late'};
+    if(diasRestantes === 0) return {texto:'⏰ aplicar hoje', cls:'cd-today'};
+    return {texto:`faltam ${diasRestantes} dia${diasRestantes===1?'':'s'}`, cls:'cd-wait'};
+  }
+
+  // ---- modo "dias específicos": olha os dias da semana marcados e acha o próximo ----
+  if(Array.isArray(p.days) && p.days.length){
+    if(p.days.includes(todayDow) && !tomouHoje){
+      return {texto:'⏰ aplicar hoje', cls:'cd-today'};
+    }
+    // hoje já foi tomado (ou hoje não é dia de tomar): procura a próxima ocorrência
+    for(let i=1;i<=7;i++){
+      if(p.days.includes((todayDow+i)%7)){
+        return {texto:`faltam ${i} dia${i===1?'':'s'}`, cls:'cd-wait'};
+      }
+    }
+  }
+
+  return null; // "todos os dias" ou similar: não há contagem a fazer
+}
+
 const now = new Date();
 const todayKey = dateKey(now);
 const todayDow = now.getDay();
@@ -2318,7 +2396,8 @@ function renderToday(){
     const t = horarios.length ? horarios[horarios.length-1] : '';
     const moon = p.moon?' 🌙':'';
     const el=document.createElement("div");
-    el.className="card"+(done?" done":"");
+    const cd = nextDoseCountdown(p);
+    el.className="card"+(done?" done":"")+(cd&&cd.cls==="cd-today"&&!done?" due-today":"");
     el.style.setProperty('--acc',p.accent);
 
     // ---------- ampola: nível de estoque do frasco (opcional, por peptídeo) ----------
@@ -2424,6 +2503,7 @@ function renderToday(){
           <span class="ui">${p.ui} ${unitLabel(p)}</span>
           <span class="freq">· ${p.freq}</span>
           <span class="chip-acc">${p.dose}/${p.per}</span>
+          ${cd?`<span class="cd ${cd.cls}">${cd.texto}</span>`:''}
         </div>
         ${(p.start||p.note||p.time)?`<div class="note-line">${p.time?`<span class="note-start">⏰ ${p.time}</span>`:''}${p.start?`<span class="note-start">início ${fmtBR(p.start)}</span>`:''}${p.note?`<span class="note-txt">${esc(p.note)}</span>`:''}</div>`:''}
       </div>
