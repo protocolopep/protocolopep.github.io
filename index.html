@@ -109,11 +109,14 @@
     background:var(--surface);border:1px solid var(--border);
     border-radius:18px;padding:15px 16px;margin-bottom:12px;
     position:relative;overflow:hidden;
-    display:flex;align-items:center;gap:14px;
+    display:flex;align-items:center;gap:10px;
     transition:border-color .2s, background .2s;
   }
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);}
   .card.done{background:var(--surface2);}
+  /* frasco + local de aplicação + botão "Tomei", todos lado a lado com espaçamento reduzido
+     pra caber tudo numa linha só mesmo com o chip de contagem deixando o texto mais largo */
+  .card-side{display:flex;align-items:center;gap:6px;flex:none;margin-left:auto;}
   /* card com dose pendente pra hoje ("aplicar hoje"/"ainda não tomado"): contraste bem mais sutil
      no fundo (quase igual ao card normal) — quem chama atenção de verdade é o chip "Aplicar Hoje" */
   .card.due-today{
@@ -159,13 +162,13 @@
   }
   .take{
     border:1.5px solid var(--acc);background:transparent;color:var(--acc);
-    font-family:var(--font);font-weight:700;font-size:13.5px;
-    padding:8px 8px;border-radius:12px;cursor:pointer;white-space:nowrap;
+    font-family:var(--font);font-weight:700;font-size:12.5px;
+    padding:6px 6px;border-radius:12px;cursor:pointer;white-space:nowrap;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.2;
     transition:background .18s ease, color .18s ease, box-shadow .18s ease;
     /* tamanho fixo: "Tomei" (1 linha) e "✓ Tomado" + horário (2 linhas) ocupam exatamente
        o mesmo quadrante, então o botão não muda de tamanho ao marcar a dose */
-    width:104px;height:52px;flex:none;box-sizing:border-box;
+    width:88px;height:46px;flex:none;box-sizing:border-box;
     position:relative;overflow:hidden;
   }
   .take:hover{background:color-mix(in srgb, var(--acc) 12%, transparent);}
@@ -2530,9 +2533,7 @@ function renderToday(){
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
         </button>
       </div>
-      ${vialHTML}
-      ${bodyMapHTML}
-      ${ctrlHTML}`;
+      <div class="card-side">${vialHTML}${bodyMapHTML}${ctrlHTML}</div>`;
     cont.appendChild(el);
   });
   const totalUnidades = due.length;
