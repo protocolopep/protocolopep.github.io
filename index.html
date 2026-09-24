@@ -114,17 +114,18 @@
   }
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);}
   .card.done{background:var(--surface2);}
-  /* card com dose agendada pra hoje ("aplicar hoje"): fundo tingido + destaque forte na lista */
+  /* card com dose pendente pra hoje ("aplicar hoje"/"ainda não tomado"): contraste bem mais sutil
+     no fundo (quase igual ao card normal) — quem chama atenção de verdade é o chip "Aplicar Hoje" */
   .card.due-today{
-    background:color-mix(in srgb, var(--warn-bg) 55%, var(--surface) 45%);
-    border-color:var(--warn-tx);
-    box-shadow:0 0 0 1px var(--warn-bd), 0 6px 20px rgba(233,184,114,.16);
+    background:color-mix(in srgb, var(--acc) 7%, var(--surface) 93%);
+    border-color:color-mix(in srgb, var(--acc) 55%, var(--border) 45%);
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--acc) 25%, transparent);
     animation:cardDuePulse 2.2s ease-in-out infinite;
   }
   .card.due-today.done{animation:none;box-shadow:none;border-color:var(--border);background:var(--surface2);} /* já foi tomada: some o alerta */
   @keyframes cardDuePulse{
-    0%,100%{box-shadow:0 0 0 1px var(--warn-bd), 0 6px 20px rgba(233,184,114,.16);}
-    50%{box-shadow:0 0 0 1px var(--warn-tx), 0 8px 26px rgba(233,184,114,.32);}
+    0%,100%{box-shadow:0 0 0 1px color-mix(in srgb, var(--acc) 25%, transparent);}
+    50%{box-shadow:0 0 0 1px color-mix(in srgb, var(--acc) 55%, transparent);}
   }
   .card .info{flex:1;min-width:0;}
   .card .nm{font-family:var(--display);font-weight:600;font-size:17px;display:flex;align-items:center;gap:7px;}
@@ -138,14 +139,21 @@
   .cd{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
   .cd-wait{background:var(--surface3);color:var(--muted);}
   .cd-today{
-    background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);
+    background:color-mix(in srgb, var(--acc) 22%, transparent);
+    color:var(--acc);
+    border:1px solid color-mix(in srgb, var(--acc) 50%, transparent);
     animation:cdPulse 1.6s ease-in-out infinite;
+    font-size:13.5px; padding:4px 11px; /* "aplicar hoje": letra maior pra chamar mais atenção */
   }
   @keyframes cdPulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(233,184,114,.5);}
-    50%{box-shadow:0 0 0 5px rgba(233,184,114,0);}
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--acc) 55%, transparent);}
+    50%{box-shadow:0 0 0 5px color-mix(in srgb, var(--acc) 0%, transparent);}
   }
   .cd-late{background:color-mix(in srgb,var(--danger) 18%,transparent);color:var(--danger);}
+  /* diário ainda não tomado: aviso mais discreto (sem tomar o card inteiro nem pulsar) —
+     "aplicar hoje" (acima) é reservado pro dia certo de intervalo/dias específicos,
+     que é mais crítico de não perder */
+  .cd-pending{background:color-mix(in srgb, var(--acc) 15%, transparent);color:var(--acc);border:1px solid color-mix(in srgb, var(--acc) 32%, transparent);}
   @media (prefers-reduced-motion: reduce){
     .cd-today, .card.due-today{animation:none;}
   }
@@ -2310,9 +2318,9 @@ const isSched = (p,dow) => {
 };
 
 // ---------- contador de dias restantes até a próxima aplicação ----------
-// Cobre os dois modos que têm um "dia certo" pra tomar: "a cada X dias" (interval>1)
-// e "dias específicos" (p.days = array de dias da semana). O modo "todos os dias"
-// não precisa de contador, já que a dose é sempre hoje.
+// Cobre os três modos: "a cada X dias" (interval>1), "dias específicos" (p.days
+// = array de dias da semana) e "todos os dias" (sempre hoje) — nesse último caso
+// não tem "dias restantes" pra contar, mas ainda avisa se a dose de hoje segue pendente.
 function nextDoseCountdown(p){
   const rec = LOGS[todayKey]||{};
   const tomouHoje = dosesTaken(rec, p.id) >= (p.perDay||1);
@@ -2339,22 +2347,29 @@ function nextDoseCountdown(p){
       return null; // nunca aplicado e sem data de início: não dá pra calcular o ciclo
     }
 
-    if(diasRestantes < 0) return {texto:`atrasado ${-diasRestantes} dia${-diasRestantes===1?'':'s'}`, cls:'cd-late'};
-    if(diasRestantes === 0) return {texto:'⏰ aplicar hoje', cls:'cd-today'};
-    return {texto:`faltam ${diasRestantes} dia${diasRestantes===1?'':'s'}`, cls:'cd-wait'};
+    if(diasRestantes < 0) return {texto:`Atrasado ${-diasRestantes} Dia${-diasRestantes===1?'':'s'}`, cls:'cd-late'};
+    if(diasRestantes === 0) return {texto:'⏰ Aplicar Hoje', cls:'cd-today'};
+    return {texto:`Faltam ${diasRestantes} Dia${diasRestantes===1?'':'s'}`, cls:'cd-wait'};
   }
 
   // ---- modo "dias específicos": olha os dias da semana marcados e acha o próximo ----
   if(Array.isArray(p.days) && p.days.length){
     if(p.days.includes(todayDow) && !tomouHoje){
-      return {texto:'⏰ aplicar hoje', cls:'cd-today'};
+      return {texto:'⏰ Aplicar Hoje', cls:'cd-today'};
     }
     // hoje já foi tomado (ou hoje não é dia de tomar): procura a próxima ocorrência
     for(let i=1;i<=7;i++){
       if(p.days.includes((todayDow+i)%7)){
-        return {texto:`faltam ${i} dia${i===1?'':'s'}`, cls:'cd-wait'};
+        return {texto:`Faltam ${i} Dia${i===1?'':'s'}`, cls:'cd-wait'};
       }
     }
+  }
+
+  // ---- modo "todos os dias" (inclui "antes de dormir" e intervalo=1): sem contagem
+  // de dias, mas ainda avisa enquanto a dose de hoje não foi marcada ----
+  if(!p.days && !(p.interval>1)){
+    if(!tomouHoje) return {texto:'⏰ Ainda Não Tomado', cls:'cd-pending'};
+    return null; // já tomou hoje: nenhum aviso
   }
 
   return null; // "todos os dias" ou similar: não há contagem a fazer
