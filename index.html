@@ -1107,21 +1107,32 @@
   .bmap-hist-del:hover{color:var(--danger);}
   .bmap-empty-hist{color:var(--muted);font-size:12.5px;padding:8px 2px 2px;}
 
-  /* ---- ponto: log detalhado por evento, agrupado por dia ---- */
+  /* ---- ponto: log detalhado por evento, agrupado por dia (timeline + cards de total) ---- */
   .ponto-log{margin-bottom:4px;}
-  .ponto-dia{margin-bottom:16px;}
-  .ponto-dia-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px;}
-  .ponto-dia-data{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);text-transform:capitalize;}
-  .ponto-dia-total{font-size:11.5px;color:var(--muted);font-weight:600;text-align:right;white-space:nowrap;}
-  .ponto-dia-total.andamento{color:var(--primary);}
+  .ponto-dia{margin-bottom:22px;}
+  .ponto-dia-stats{display:flex;gap:8px;margin-bottom:12px;}
+  .ponto-dia-stat{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:9px 12px;min-width:0;}
+  .ponto-dia-stat .n{font-family:var(--display);font-weight:700;font-size:16px;white-space:nowrap;}
+  .ponto-dia-stat.on .n{color:#22C55E;}
+  .ponto-dia-stat.off .n{color:var(--danger);}
+  .ponto-dia-stat .l{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .ponto-dia-data{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);text-transform:capitalize;padding:0 2px 10px;border-bottom:1px solid var(--border2);margin-bottom:10px;display:block;}
   .ponto-dia-hoje{display:inline-block;background:var(--primary-dim);color:var(--primary);font-family:var(--font);font-size:9.5px;font-weight:800;letter-spacing:.03em;padding:1.5px 6px;border-radius:6px;margin-left:6px;vertical-align:middle;}
-  .ponto-evento{display:flex;align-items:center;gap:10px;padding:6px 2px;}
-  .ponto-evento-hora{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);width:44px;flex:none;}
-  .ponto-evento-dot{width:8px;height:8px;border-radius:50%;flex:none;}
-  .ponto-evento-dot.on{background:#22C55E;box-shadow:0 0 0 3px color-mix(in srgb, #22C55E 22%, transparent);}
-  .ponto-evento-dot.off{background:#EF4444;box-shadow:0 0 0 3px color-mix(in srgb, #EF4444 18%, transparent);}
-  .ponto-evento-txt{font-size:12.5px;color:var(--muted);}
-  .ponto-evento-dot.on ~ .ponto-evento-txt{color:var(--text);}
+  /* timeline vertical: pontos conectados por uma linha, duração pequena embaixo de cada evento */
+  .ponto-tl{position:relative;padding-left:24px;}
+  .ponto-tl-node{position:relative;}
+  .ponto-tl-dot{position:absolute;left:-24px;top:3px;width:9px;height:9px;border-radius:50%;border:2px solid var(--surface);z-index:1;}
+  .ponto-tl-dot.on{background:#22C55E;}
+  .ponto-tl-dot.off{background:var(--danger);}
+  .ponto-tl-line{position:absolute;left:-20.5px;top:12px;bottom:0;width:2px;border-radius:2px;}
+  .ponto-tl-line.on{background:#22C55E;opacity:.4;}
+  .ponto-tl-line.off{background:var(--danger);opacity:.3;}
+  .ponto-tl-row{display:flex;align-items:baseline;gap:8px;}
+  .ponto-tl-hora{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--text);}
+  .ponto-tl-txt{font-size:12.5px;color:var(--muted);}
+  .ponto-tl-txt.on{color:var(--text);}
+  .ponto-tl-dur{font-size:11px;color:var(--muted2);padding:2px 0 14px;}
+  .ponto-tl-node:last-child .ponto-tl-dur{padding-bottom:2px;}
 </style>
 </head>
 <body>
@@ -6556,6 +6567,7 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
    aqui o histórico completo de cada atendente, com a duração de cada sessão. */
 const pontoModal = document.getElementById("ponto-modal");
 let PONTO_AD_ID = null, PONTO_N = null;
+let pontoRefreshTimer = null; // atualiza os totais sozinho enquanto o modal de ponto estiver aberto
 
 function fmtDuracaoMin(min){
   min = Math.max(0, Math.round(min));
@@ -6577,7 +6589,8 @@ function fmtDiaComSemana(ts){ return new Date(ts).toLocaleDateString("pt-BR",{we
 // (ficou online / ficou offline), agrupado por dia — mais fácil de ver exatamente
 // quando cada troca de status aconteceu, mesmo que tenha sido sem querer.
 function agruparPontoPorDia(logs, agora){
-  const porDia = {}; // isoDia -> {eventos:[{ts,tipo}], totalMin, labelData, emAndamento}
+  const hojeIso = isoDoDia(agora);
+  const porDia = {}; // isoDia -> {eventos:[{ts,tipo}], totalMin, totalOfflineMin, labelData, emAndamento, offlineEmAndamento}
   logs.forEach(l=>{
     const iso = isoDoDia(l.onlineAt);
     if(!porDia[iso]) porDia[iso] = {eventos:[], totalMin:0, labelData: fmtDiaComSemana(l.onlineAt), emAndamento:false};
@@ -6591,6 +6604,22 @@ function agruparPontoPorDia(logs, agora){
     porDia[iso].totalMin += Math.max(0, (fim-l.onlineAt)/60000);
   });
   const isosOrdenados = Object.keys(porDia).sort((a,b)=> a<b?1:(a>b?-1:0)); // mais recente primeiro
+  // tempo offline de cada dia: pega o intervalo do primeiro ao último evento e
+  // tira o que já foi contado como online — o que sobra é o tempo parado entre
+  // uma sessão e outra. Só pro dia de HOJE que o "fim" vira "agora" (pra contar
+  // em tempo real, seja o turno atual online ou offline); dias passados já
+  // fecharam, então o fim é sempre o último evento registrado naquele dia.
+  isosOrdenados.forEach(iso=>{
+    const dia = porDia[iso];
+    const eventosOrdenados = [...dia.eventos].sort((a,b)=>a.ts-b.ts);
+    const ultimoEvento = eventosOrdenados[eventosOrdenados.length-1];
+    dia.offlineEmAndamento = iso===hojeIso && !dia.emAndamento && !!ultimoEvento && ultimoEvento.tipo==="offline";
+    const tss = dia.eventos.map(e=>e.ts);
+    const inicio = Math.min(...tss);
+    const fim = (iso===hojeIso) ? agora : Math.max(...tss);
+    const span = Math.max(0, (fim-inicio)/60000);
+    dia.totalOfflineMin = Math.max(0, span - dia.totalMin);
+  });
   return { porDia, isosOrdenados };
 }
 function pontoLogHTML(logs, agora){
@@ -6600,25 +6629,38 @@ function pontoLogHTML(logs, agora){
   return `<div class="ponto-log">` + isosOrdenados.map(iso=>{
     const dia = porDia[iso];
     const ehHoje = iso===hojeIso;
-    const eventosHTML = [...dia.eventos].sort((a,b)=>a.ts-b.ts).map(ev=>{
+    const eventosOrdenados = [...dia.eventos].sort((a,b)=>a.ts-b.ts);
+    const eventosHTML = eventosOrdenados.map((ev,i)=>{
       const online = ev.tipo==="online";
-      return `<div class="ponto-evento">
-          <span class="ponto-evento-hora">${fmtHora(ev.ts)}</span>
-          <span class="ponto-evento-dot ${online?'on':'off'}"></span>
-          <span class="ponto-evento-txt">${online?'Ficou online':'Ficou offline'}</span>
+      const prox = eventosOrdenados[i+1];
+      // a duração do intervalo fica pequena, embaixo do evento, ligada pela
+      // linha vertical — não repete "Ficou online/offline" toda hora
+      const duracaoHTML = prox
+        ? `<div class="ponto-tl-dur">${fmtDuracaoMin((prox.ts-ev.ts)/60000)} depois</div>`
+        : "";
+      return `<div class="ponto-tl-node">
+          <div class="ponto-tl-dot ${online?'on':'off'}"></div>
+          ${prox ? `<div class="ponto-tl-line ${online?'on':'off'}"></div>` : ""}
+          <div class="ponto-tl-row">
+            <span class="ponto-tl-hora">${fmtHora(ev.ts)}</span>
+            <span class="ponto-tl-txt ${online?'on':''}">${online?'Ficou online':'Ficou offline'}</span>
+          </div>
+          ${duracaoHTML}
         </div>`;
     }).join("");
-    // rótulo do total: deixa explícito que é tempo trabalhado, e se ainda tá em
-    // andamento (turno não fechou) avisa que a conta é "até agora", não o dia fechado
-    const rotuloTotal = dia.emAndamento
-      ? `${fmtDuracaoMin(dia.totalMin)} trabalhadas até agora`
-      : `${fmtDuracaoMin(dia.totalMin)} trabalhadas`;
     return `<div class="ponto-dia">
-        <div class="ponto-dia-header">
-          <span class="ponto-dia-data">${esc(dia.labelData)}${ehHoje?' <span class="ponto-dia-hoje">HOJE</span>':''}</span>
-          <span class="ponto-dia-total ${dia.emAndamento?'andamento':''}">${rotuloTotal}</span>
+        <div class="ponto-dia-stats">
+          <div class="ponto-dia-stat on">
+            <div class="n">${fmtDuracaoMin(dia.totalMin)}</div>
+            <div class="l">tempo online${dia.emAndamento?' até agora':''}</div>
+          </div>
+          <div class="ponto-dia-stat off">
+            <div class="n">${fmtDuracaoMin(dia.totalOfflineMin)}</div>
+            <div class="l">tempo offline${dia.offlineEmAndamento?' até agora':''}</div>
+          </div>
         </div>
-        ${eventosHTML}
+        <span class="ponto-dia-data">${esc(dia.labelData)}${ehHoje?' <span class="ponto-dia-hoje">HOJE</span>':''}</span>
+        <div class="ponto-tl">${eventosHTML}</div>
       </div>`;
   }).join("") + `</div>`;
 }
@@ -6653,10 +6695,15 @@ function abrirPontoAtendente(adId, n){
   PONTO_AD_ID = adId; PONTO_N = String(n);
   renderPontoAtendente();
   pontoModal.classList.add("on");
+  // enquanto o modal ficar aberto, o "tempo online"/"tempo offline" (e o total
+  // lá em cima) vão se atualizando sozinhos, sem precisar fechar e reabrir
+  if(pontoRefreshTimer) clearInterval(pontoRefreshTimer);
+  pontoRefreshTimer = setInterval(renderPontoAtendente, 10000);
 }
 function fecharPontoAtendente(){
   pontoModal.classList.remove("on");
   PONTO_AD_ID = null; PONTO_N = null;
+  if(pontoRefreshTimer){ clearInterval(pontoRefreshTimer); pontoRefreshTimer = null; }
 }
 function renderPontoAtendente(){
   if(!PONTO_AD_ID) return; // modal fechado, nada a atualizar
