@@ -2369,10 +2369,11 @@ function nextDoseCountdown(p){
   }
 
   // ---- modo "todos os dias" (inclui "antes de dormir" e intervalo=1): sem contagem
-  // de dias, mas ainda avisa enquanto a dose de hoje não foi marcada ----
+  // de dias, mas ainda avisa enquanto a dose de hoje não foi marcada; depois de marcada,
+  // mostra que a próxima dose já é amanhã (é diário, então sempre amanhã) ----
   if(!p.days && !(p.interval>1)){
     if(!tomouHoje) return {texto:'⏰ Ainda Não Tomado', cls:'cd-pending'};
-    return null; // já tomou hoje: nenhum aviso
+    return {texto:'Próxima Dose Amanhã', cls:'cd-wait'};
   }
 
   return null; // "todos os dias" ou similar: não há contagem a fazer
