@@ -1553,43 +1553,44 @@
         <li>Dúvidas frequentes e muito mais</li>
       </ul>
     </div>
+  </section>
 
-    <!-- FINANÇAS — comissões de indicação, admin-only (mesmo padrão do #admin-only-block) -->
-    <div id="admin-only-block3" style="display:none">
-      <p class="eyebrow" style="margin-top:26px">Finanças · Comissões de indicação</p>
-      <div class="fin-card">
+  <!-- FINANÇAS — aba própria, só aparece pra admin (botão escondido por padrão, ver recalcularPermissoes) -->
+  <section class="view" id="v-financas">
+    <p class="eyebrow">Finanças · Comissões de indicação</p>
+    <div class="fin-card">
 
-        <div class="fin-intro">Conecte a planilha do Google Sheets com o histórico de vendas feitas através do seu link. Uma vez conectada, os números aqui se atualizam sozinhos.</div>
+      <div class="fin-intro">Conecte a planilha do Google Sheets com o histórico de vendas feitas através do seu link. Uma vez conectada, os números aqui se atualizam sozinhos.</div>
 
-        <div class="fin-connect-row">
-          <input type="url" id="fin-csv-url" class="fin-csv-input" placeholder="Cole aqui o link publicado (.../pub?output=csv)">
-          <button type="button" id="fin-csv-connect" class="fin-connect-btn">Conectar</button>
-        </div>
-        <div id="fin-csv-help" class="fin-csv-help">No Google Sheets: Arquivo → Compartilhar → Publicar na Web → escolha a aba de vendas → formato <b>CSV</b> → Publicar. Cole o link gerado aqui.</div>
-
-        <div id="fin-csv-status" class="fin-csv-status" style="display:none">
-          <span class="fin-csv-dot"></span>
-          <span id="fin-csv-status-txt">Conectado</span>
-          <button type="button" id="fin-csv-refresh" class="fin-mini-btn">Atualizar agora</button>
-          <button type="button" id="fin-csv-disconnect" class="fin-mini-btn ghost">Desconectar</button>
-        </div>
-
-        <div class="fin-divider"><span>ou, pra um teste rápido sem publicar nada</span></div>
-
-        <input type="file" id="fin-file" accept=".xlsx,.xls" style="display:none">
-        <label class="fin-upload" for="fin-file">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-          <span id="fin-upload-txt">Importar um arquivo .xlsx manualmente</span>
-        </label>
-
-        <div id="fin-sheet-picker" class="fin-sheet-picker" style="display:none"></div>
-        <div id="fin-summary" class="fin-summary" style="display:none"></div>
-        <div id="fin-table-wrap" class="fin-table-wrap" style="display:none"></div>
-        <div id="fin-empty" class="fin-empty">Nenhum dado carregado ainda.</div>
-        <div id="fin-error" class="fin-error" style="display:none"></div>
+      <div class="fin-connect-row">
+        <input type="url" id="fin-csv-url" class="fin-csv-input" placeholder="Cole aqui o link publicado (.../pub?output=csv)">
+        <button type="button" id="fin-csv-connect" class="fin-connect-btn">Conectar</button>
       </div>
+      <div id="fin-csv-help" class="fin-csv-help">No Google Sheets: Arquivo → Compartilhar → Publicar na Web → escolha a aba de vendas → formato <b>CSV</b> → Publicar. Cole o link gerado aqui.</div>
+
+      <div id="fin-csv-status" class="fin-csv-status" style="display:none">
+        <span class="fin-csv-dot"></span>
+        <span id="fin-csv-status-txt">Conectado</span>
+        <button type="button" id="fin-csv-refresh" class="fin-mini-btn">Atualizar agora</button>
+        <button type="button" id="fin-csv-disconnect" class="fin-mini-btn ghost">Desconectar</button>
+      </div>
+
+      <div class="fin-divider"><span>ou, pra um teste rápido sem publicar nada</span></div>
+
+      <input type="file" id="fin-file" accept=".xlsx,.xls" style="display:none">
+      <label class="fin-upload" for="fin-file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        <span id="fin-upload-txt">Importar um arquivo .xlsx manualmente</span>
+      </label>
+
+      <div id="fin-sheet-picker" class="fin-sheet-picker" style="display:none"></div>
+      <div id="fin-summary" class="fin-summary" style="display:none"></div>
+      <div id="fin-table-wrap" class="fin-table-wrap" style="display:none"></div>
+      <div id="fin-empty" class="fin-empty">Nenhum dado carregado ainda.</div>
+      <div id="fin-error" class="fin-error" style="display:none"></div>
     </div>
   </section>
+
 
   <!-- ADMIN -->
   <section class="view" id="v-admin">
@@ -2045,6 +2046,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c-1.3.7-2 2-2 3.5 0 1 .4 2 1 2.6-.3.6-.5 1.2-.5 1.9a3.5 3.5 0 0 0 5 3.2A3.5 3.5 0 0 0 17 18c1.9 0 3.5-1.6 3.5-3.5 0-.7-.2-1.3-.5-1.9.6-.6 1-1.6 1-2.6 0-1.5-.7-2.8-2-3.5a4 4 0 0 0-4-4Z"/></svg>
     IA
   </button>
+  <button data-v="financas" id="nav-financas-btn" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    Finanças
+  </button>
 </nav>
 
 <!-- leitor de planilhas .xlsx no navegador (só usado na seção Finanças, admin-only) -->
@@ -2187,9 +2192,11 @@ function recalcularPermissoes(){
   IS_ADS_MANAGER = IS_ADMIN || ROLE_GRANTED === 'ads_manager';
   const btn = document.getElementById("admin-btn");
   if(btn) btn.style.display = (IS_ADMIN || IS_ADS_MANAGER) ? "inline-flex" : "none";
+  const finNavBtn = document.getElementById("nav-financas-btn");
+  if(finNavBtn) finNavBtn.style.display = IS_ADMIN ? "flex" : "none";
   const presencaEl = document.getElementById("tb-presenca");
   if(presencaEl) presencaEl.style.display = IS_ADMIN ? "flex" : "none";
-  document.querySelectorAll("#admin-only-block, #admin-only-block2, #admin-only-block3").forEach(el=>{
+  document.querySelectorAll("#admin-only-block, #admin-only-block2").forEach(el=>{
     el.style.display = IS_ADMIN ? "" : "none";
   });
   const permsBlock = document.getElementById("perms-only-block");
