@@ -960,6 +960,87 @@
   .srt-confetti-piece{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;pointer-events:none;z-index:9999;animation:srtFall linear forwards;}
   @keyframes srtFall{to{transform:translateY(115vh) rotate(720deg);opacity:.2;}}
 
+  /* ===== SORTEIO · opções, roleta, áudio ===== */
+  .srt-opts{border:1px solid var(--border2);border-radius:14px;margin-bottom:14px;background:var(--surface2);overflow:hidden;}
+  .srt-opts-header{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;user-select:none;}
+  .srt-opts-title{flex:1;font-family:var(--display);font-weight:700;font-size:14px;color:var(--text);}
+  .srt-opts-chevron{flex:none;color:var(--muted2);transition:transform .15s ease;}
+  .srt-opts.aberto .srt-opts-chevron{transform:rotate(180deg);}
+  .srt-opts-body{display:none;padding:2px 14px 14px;}
+  .srt-opts.aberto .srt-opts-body{display:block;animation:fade .2s ease;}
+  .srt-opt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);}
+  .srt-opt-row:first-child{border-top:none;}
+  .srt-opt-row input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--primary);}
+  .srt-opt-label{flex:1;font-size:13.5px;color:var(--text);font-weight:500;cursor:pointer;}
+  .srt-opt-sub{display:block;font-size:11.5px;color:var(--muted2);font-weight:400;margin-top:2px;}
+  .srt-opt-hist-link{background:none;border:none;color:var(--muted2);font-size:11px;text-decoration:underline;cursor:pointer;font-family:var(--font);padding:0;flex:none;}
+  .srt-opt-nomes-only.hide-for-mode{display:none;}
+
+  .srt-style-row{display:flex;gap:8px;margin:12px 0 4px;}
+  .srt-style-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:12.5px;padding:9px 8px;border-radius:11px;cursor:pointer;transition:all .15s;}
+  .srt-style-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
+
+  .srt-countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--surface2) 88%, transparent);z-index:5;font-family:var(--display);font-weight:800;font-size:56px;color:var(--primary);animation:srtPop .3s cubic-bezier(.34,1.56,.64,1);}
+
+  .srt-list-wrap{position:relative;}
+  .srt-list-veil{position:absolute;inset:0;border-radius:12px;background:var(--surface2);backdrop-filter:blur(9px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:600;text-align:center;padding:10px;}
+  .srt-list-veil svg{width:22px;height:22px;color:var(--muted2);}
+  .srt-list-wrap.hidden-list .srt-list-veil{display:flex;}
+  .srt-list-wrap.hidden-list.peek .srt-list-veil{display:none;}
+
+  .srt-num-ball.reveal-pending,.srt-nomes-winner.reveal-pending{cursor:pointer;}
+  .srt-num-ball.reveal-pending .srt-ball-real,.srt-nomes-winner.reveal-pending .srt-winner-real{display:none;}
+  .srt-num-ball.reveal-pending .srt-ball-mask{display:flex;}
+  .srt-nomes-winner.reveal-pending .srt-winner-mask{display:block;}
+  .srt-ball-mask{display:none;align-items:center;justify-content:center;width:100%;height:100%;}
+  .srt-winner-mask{display:none;color:var(--muted2);font-weight:600;font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;}
+  .srt-num-ball.revealed,.srt-nomes-winner.revealed{animation:srtPop .35s cubic-bezier(.34,1.56,.64,1);}
+
+  .srt-wheel-wrap{display:none;flex-direction:column;align-items:center;gap:12px;width:100%;}
+  .srt-wheel-wrap.on{display:flex;}
+  .srt-wheel-stage{position:relative;width:min(100%,280px);aspect-ratio:1;margin:6px auto 0;}
+  .srt-wheel-canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);transition:transform 4.6s cubic-bezier(.12,.72,.14,1);will-change:transform;}
+  .srt-wheel-pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid var(--primary);filter:drop-shadow(0 3px 4px rgba(0,0,0,.4));z-index:2;}
+  .srt-wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20%;height:20%;border-radius:50%;background:var(--surface);border:3px solid var(--primary);z-index:2;}
+  .srt-wheel-result{text-align:center;}
+  .srt-wheel-result-k{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);font-weight:700;}
+  .srt-wheel-result-v{font-family:var(--display);font-weight:800;font-size:26px;color:var(--primary);min-height:32px;}
+  .srt-wheel-pickcount{font-size:12px;color:var(--muted2);}
+
+  .srt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--border);}
+  .srt-toggle-row:first-child{border-top:none;}
+  .srt-toggle-row label{font-size:14px;color:var(--text);font-weight:500;cursor:pointer;}
+  .srt-switch{position:relative;display:inline-block;width:44px;height:25px;flex:none;}
+  .srt-switch input{opacity:0;width:0;height:0;position:absolute;}
+  .srt-switch-track{position:absolute;inset:0;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;transition:.2s;cursor:pointer;}
+  .srt-switch-track:before{content:"";position:absolute;left:2px;top:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:.2s;}
+  .srt-switch input:checked + .srt-switch-track{background:var(--primary);border-color:var(--primary);}
+  .srt-switch input:checked + .srt-switch-track:before{transform:translateX(19px);}
+
+  .srt-seg-label{font-size:12.5px;color:var(--muted2);font-weight:600;margin:14px 0 8px;}
+  .srt-seg-row{display:flex;gap:8px;}
+  .srt-seg-btn{flex:1;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:13px;padding:9px 6px;border-radius:11px;cursor:pointer;transition:all .15s;}
+  .srt-seg-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
+
+  .srt-design{border:1px solid var(--border2);border-radius:14px;margin-bottom:14px;background:var(--surface2);overflow:hidden;}
+  .srt-theme-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 4px;}
+  .srt-theme-swatch{flex:none;width:52px;height:52px;border-radius:13px;overflow:hidden;display:flex;cursor:pointer;border:2px solid transparent;padding:0;background:none;}
+  .srt-theme-swatch.sel{border-color:var(--aod);}
+  .srt-theme-swatch span{flex:1;height:100%;}
+  .srt-color-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);}
+  .srt-color-row:first-child{border-top:none;}
+  .srt-color-row label{flex:1;font-size:13.5px;color:var(--text);}
+  .srt-color-input{width:36px;height:36px;border-radius:10px;border:2px solid var(--border2);padding:0;background:none;cursor:pointer;flex:none;-webkit-appearance:none;appearance:none;}
+  .srt-color-input::-webkit-color-swatch-wrapper{padding:0;}
+  .srt-color-input::-webkit-color-swatch{border:none;border-radius:8px;}
+
+  .srt-entry-head{display:flex;align-items:center;gap:8px;margin-top:2px;}
+  .srt-entry-badge{background:color-mix(in srgb, var(--aod) 20%, transparent);color:var(--aod);font-weight:700;font-size:11.5px;padding:2px 9px;border-radius:20px;}
+  .srt-entry-actions{display:flex;gap:8px;margin:10px 0 14px;}
+  .srt-entry-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--surface3);border:1px solid var(--border2);border-radius:12px;padding:9px 6px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);}
+  .srt-entry-btn:active{transform:scale(.96);}
+  .srt-entry-btn svg{width:17px;height:17px;}
+
   /* ---------- bottom nav ---------- */
   .nav{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
@@ -1690,11 +1771,110 @@
         </button>
       </div>
 
+      <!-- ===== OPÇÕES DO SORTEIO ===== -->
+      <div class="srt-opts" id="srt-opts">
+        <div class="srt-opts-header" id="srt-opts-header">
+          <div class="srt-opts-title">⚙️ Opções</div>
+          <svg class="srt-opts-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="srt-opts-body">
+          <div class="srt-toggle-row">
+            <label for="srt-opt-som">Som</label>
+            <span class="srt-switch"><input type="checkbox" id="srt-opt-som" checked><span class="srt-switch-track"></span></span>
+          </div>
+          <div class="srt-toggle-row">
+            <label for="srt-opt-confetti">Confetes ao ganhar</label>
+            <span class="srt-switch"><input type="checkbox" id="srt-opt-confetti" checked><span class="srt-switch-track"></span></span>
+          </div>
+          <div class="srt-toggle-row">
+            <label for="srt-opt-remove-winners">Remover ganhadores
+              <span class="srt-opt-sub" id="srt-hist-count">Não deixa quem já ganhou (nem em sorteios passados) ganhar de novo.</span>
+            </label>
+            <span class="srt-switch"><input type="checkbox" id="srt-opt-remove-winners"><span class="srt-switch-track"></span></span>
+          </div>
+          <button type="button" class="srt-opt-hist-link" id="srt-hist-clear-link" style="margin:-6px 0 8px">Limpar histórico de ganhadores</button>
+
+          <div class="srt-seg-label">Duração do giro</div>
+          <div class="srt-seg-row" id="srt-opt-duration">
+            <button type="button" class="srt-seg-btn on" data-val="5">5s</button>
+            <button type="button" class="srt-seg-btn" data-val="10">10s</button>
+            <button type="button" class="srt-seg-btn" data-val="15">15s</button>
+          </div>
+
+          <div class="srt-seg-label">Multiplicar entradas</div>
+          <div class="srt-seg-row" id="srt-opt-multiplier">
+            <button type="button" class="srt-seg-btn on" data-val="1">1x</button>
+            <button type="button" class="srt-seg-btn" data-val="2">2x</button>
+            <button type="button" class="srt-seg-btn" data-val="3">3x</button>
+            <button type="button" class="srt-seg-btn" data-val="5">5x</button>
+          </div>
+          <div class="srt-opt-sub" style="margin:6px 0 2px">Vale pra quem não tiver seu próprio multiplicador — escreva "Nome x3" numa linha pra dar 3 fichas só pra essa pessoa.</div>
+
+          <div class="srt-opt-row" style="margin-top:10px">
+            <input type="checkbox" id="srt-opt-order">
+            <label class="srt-opt-label" for="srt-opt-order">Ordenar resultados em ordem crescente</label>
+          </div>
+          <div class="srt-opt-row">
+            <input type="checkbox" id="srt-opt-clickreveal">
+            <label class="srt-opt-label" for="srt-opt-clickreveal">Mostrar resultado ao clicar no item</label>
+          </div>
+          <div class="srt-opt-row">
+            <input type="checkbox" id="srt-opt-countdown">
+            <label class="srt-opt-label" for="srt-opt-countdown">Adicionar contagem regressiva (mais emoção)</label>
+          </div>
+          <div class="srt-opt-row srt-opt-nomes-only">
+            <input type="checkbox" id="srt-opt-hidelist">
+            <label class="srt-opt-label" for="srt-opt-hidelist">Esconder lista de participantes
+              <span class="srt-opt-sub">Borra os nomes na tela — bom pra quando você está compartilhando a tela do sorteio ao vivo.</span>
+            </label>
+          </div>
+
+          <div class="srt-style-row">
+            <button type="button" class="srt-style-btn on" data-style="classico" id="srt-style-classico">Rolagem</button>
+            <button type="button" class="srt-style-btn" data-style="roleta" id="srt-style-roleta">🎡 Roleta</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DESIGN DA ROLETA ===== -->
+      <div class="srt-design" id="srt-design">
+        <div class="srt-opts-header" id="srt-design-header">
+          <div class="srt-opts-title">🎨 Design</div>
+          <svg class="srt-opts-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="srt-opts-body">
+          <div class="srt-seg-label" style="margin-top:0">Temas</div>
+          <div class="srt-theme-row" id="srt-theme-row"></div>
+
+          <div class="srt-seg-label">Cores da roleta</div>
+          <div class="srt-color-row"><input type="color" class="srt-color-input" id="srt-color-1"><label for="srt-color-1">Cor 1</label></div>
+          <div class="srt-color-row"><input type="color" class="srt-color-input" id="srt-color-2"><label for="srt-color-2">Cor 2</label></div>
+          <div class="srt-color-row"><input type="color" class="srt-color-input" id="srt-color-3"><label for="srt-color-3">Cor 3</label></div>
+
+          <div class="srt-seg-label">Fundo</div>
+          <div class="srt-color-row"><input type="color" class="srt-color-input" id="srt-color-bg"><label for="srt-color-bg">Cor de fundo</label></div>
+        </div>
+      </div>
+
       <!-- ===== MODO NÚMEROS ===== -->
+
       <div id="srt-panel-numeros" class="srt-panel on">
         <div class="srt-stage" id="srt-num-stage">
           <div class="srt-stage-empty" id="srt-num-empty">Defina o intervalo e toque em sortear</div>
+          <div class="srt-countdown" id="srt-num-countdown" style="display:none"></div>
           <div class="srt-num-results" id="srt-num-results"></div>
+          <div class="srt-wheel-wrap" id="srt-num-wheel-wrap">
+            <div class="srt-wheel-stage">
+              <div class="srt-wheel-pointer"></div>
+              <canvas class="srt-wheel-canvas" id="srt-num-wheel-canvas" width="560" height="560"></canvas>
+              <div class="srt-wheel-hub"></div>
+            </div>
+            <div class="srt-wheel-result">
+              <div class="srt-wheel-result-k">Vencedor</div>
+              <div class="srt-wheel-result-v" id="srt-num-wheel-result"></div>
+            </div>
+            <div class="srt-wheel-pickcount" id="srt-num-wheel-pickcount"></div>
+          </div>
           <button type="button" class="srt-copy-btn" id="srt-num-copy">Copiar resultado</button>
         </div>
 
@@ -1729,24 +1909,57 @@
       <div id="srt-panel-nomes" class="srt-panel">
         <div class="srt-stage" id="srt-nomes-stage">
           <div class="srt-stage-empty" id="srt-nomes-empty">Cole a lista e toque em sortear</div>
+          <div class="srt-countdown" id="srt-nomes-countdown" style="display:none"></div>
           <div class="srt-nomes-results" id="srt-nomes-results"></div>
+          <div class="srt-wheel-wrap" id="srt-nomes-wheel-wrap">
+            <div class="srt-wheel-stage">
+              <div class="srt-wheel-pointer"></div>
+              <canvas class="srt-wheel-canvas" id="srt-nomes-wheel-canvas" width="560" height="560"></canvas>
+              <div class="srt-wheel-hub"></div>
+            </div>
+            <div class="srt-wheel-result">
+              <div class="srt-wheel-result-k">Vencedor</div>
+              <div class="srt-wheel-result-v" id="srt-nomes-wheel-result"></div>
+            </div>
+            <div class="srt-wheel-pickcount" id="srt-nomes-wheel-pickcount"></div>
+          </div>
           <button type="button" class="srt-copy-btn" id="srt-nomes-copy">Copiar resultado</button>
         </div>
 
         <div class="srt-field">
-          <label>Participantes <span id="srt-nomes-count" class="srt-count"></span></label>
-          <textarea id="srt-nomes-list" class="srt-textarea" rows="5" placeholder="Cole ou digite um nome por linha. Ex:
+          <div class="srt-entry-head">
+            <label style="margin:0">🎁 Entradas <span class="srt-entry-badge" id="srt-nomes-count">0</span></label>
+          </div>
+          <div class="srt-list-wrap" id="srt-nomes-list-wrap">
+            <textarea id="srt-nomes-list" class="srt-textarea" rows="5" placeholder="Cole ou digite um nome por linha. Ex:
 Maria
 João
 Ana"></textarea>
+            <div class="srt-list-veil" id="srt-nomes-list-veil">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Lista oculta · toque para ver
+            </div>
+          </div>
+          <div class="srt-entry-actions">
+            <button type="button" class="srt-entry-btn" id="srt-entry-sort">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+              Ordenar
+            </button>
+            <button type="button" class="srt-entry-btn" id="srt-entry-shuffle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              Misturar
+            </button>
+            <button type="button" class="srt-entry-btn" id="srt-entry-clear">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Limpar
+            </button>
+          </div>
         </div>
 
         <div class="srt-field">
           <label>Quantos sortear</label>
           <input type="number" id="srt-nomes-qty" class="srt-input" value="1" min="1" inputmode="numeric">
         </div>
-
-        <label class="check"><input type="checkbox" id="srt-nomes-remove"> Remover sorteados da lista</label>
 
         <button type="button" id="srt-nomes-go" class="srt-go-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -7978,15 +8191,451 @@ setMode("calc");
     }
   }
 
+  /* ================= CONFIGURAÇÕES PERSISTIDAS ================= */
+  var SRT_LS_KEY = "srt-config-v1";
+  var SRT_HIST_KEY = "srt-winners-hist-v1";
+
+  var THEMES = [
+    ["#2CC5C0","#8593F7","#F59158"],
+    ["#2F6FED","#F2994A"],
+    ["#4FC3F7","#D9A441"],
+    ["#F6A6B2","#8CE0B0"],
+    ["#2FE0E0","#B18CF2","#F24E93"],
+    ["#2FC7E0","#F2D144"]
+  ];
+
+  function loadCfg(){
+    var d = {
+      som:true, confetti:true, removeWinners:false,
+      duration:5, multiplier:1,
+      order:false, clickreveal:false, countdown:false, hidelist:false,
+      style:"classico", themeIdx:0,
+      colors:["#2CC5C0","#8593F7","#F59158"], bg:"#1A2532"
+    };
+    try{
+      var s = JSON.parse(localStorage.getItem(SRT_LS_KEY));
+      if(s) for(var k in s){ if(s.hasOwnProperty(k)) d[k]=s[k]; }
+    }catch(e){}
+    return d;
+  }
+  var cfg = loadCfg();
+  function saveCfg(){ try{ localStorage.setItem(SRT_LS_KEY, JSON.stringify(cfg)); }catch(e){} }
+
+  function loadHist(){
+    try{
+      var h = JSON.parse(localStorage.getItem(SRT_HIST_KEY));
+      if(h && h.numeros && h.nomes) return h;
+    }catch(e){}
+    return { numeros:{}, nomes:[] };
+  }
+  var srtHist = loadHist();
+  function saveHist(){ try{ localStorage.setItem(SRT_HIST_KEY, JSON.stringify(srtHist)); }catch(e){} }
+
+  /* ================= ÁUDIO ================= */
+  function srtTick(){
+    if(!cfg.som) return;
+    try{
+      ensureAudio();
+      if(!audioCtx) return;
+      var t = audioCtx.currentTime;
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "square"; o.frequency.value = 1400;
+      o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.12, t+0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+0.05);
+      o.start(t); o.stop(t+0.06);
+    }catch(e){}
+  }
+  function srtFanfare(){
+    if(!cfg.som) return;
+    try{
+      ensureAudio();
+      if(!audioCtx) return;
+      var t = audioCtx.currentTime;
+      var freqs = [660,880,1320];
+      [0,0.12,0.24].forEach(function(off,i){
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "triangle"; o.frequency.value = freqs[i];
+        o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.0001, t+off);
+        g.gain.exponentialRampToValueAtTime(0.3, t+off+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+off+0.3);
+        o.start(t+off); o.stop(t+off+0.32);
+      });
+    }catch(e){}
+  }
+  function srtBeep(){ if(cfg.som) beep(); }
+  function playSpinTicks(durationMs){
+    var start = Date.now();
+    function loop(){
+      var elapsed = Date.now() - start;
+      if(elapsed >= durationMs - 150) return;
+      srtTick();
+      var progress = elapsed / durationMs;
+      var delay = 55 + progress*260;
+      setTimeout(loop, delay);
+    }
+    loop();
+  }
+
+  /* ================= CONTAGEM REGRESSIVA ================= */
+  function runCountdown(elId, cb){
+    if(!cfg.countdown){ cb(); return; }
+    var el = $(elId);
+    el.style.display = "flex";
+    var n = 3;
+    el.textContent = n;
+    srtBeep();
+    var iv = setInterval(function(){
+      n--;
+      if(n <= 0){
+        clearInterval(iv);
+        el.style.display = "none";
+        cb();
+        return;
+      }
+      el.textContent = n;
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+      srtBeep();
+    }, 700);
+  }
+
+  /* ================= ROLETA (canvas) ================= */
+  var wheelState = {};
+  var lastWheelLabels = {};
+
+  function relLuma(hex){
+    hex = String(hex).replace('#','');
+    if(hex.length===3) hex = hex.split('').map(function(c){return c+c;}).join('');
+    if(hex.length!==6) return 1;
+    var r=parseInt(hex.substr(0,2),16)/255, g=parseInt(hex.substr(2,2),16)/255, b=parseInt(hex.substr(4,2),16)/255;
+    function lin(c){ return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+    return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
+  }
+  function textColorFor(hex){ return relLuma(hex) > 0.5 ? "#12303A" : "#FFFFFF"; }
+  function wheelColorFor(i){
+    var colors = (cfg.colors && cfg.colors.length) ? cfg.colors : ["#2CC5C0","#8593F7","#F59158"];
+    return colors[i % colors.length];
+  }
+  function drawWheelSegments(canvas, items){
+    lastWheelLabels[canvas.id] = items.slice();
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width, h = canvas.height;
+    var cx=w/2, cy=h/2, r=w/2-6;
+    ctx.clearRect(0,0,w,h);
+    ctx.beginPath(); ctx.arc(cx,cy,r+5,0,Math.PI*2); ctx.fillStyle = cfg.bg || "#1A2532"; ctx.fill();
+    var n = items.length;
+    if(!n) return;
+    var seg = (Math.PI*2)/n;
+    for(var i=0;i<n;i++){
+      var mid = -Math.PI/2 + i*seg;
+      var a0 = mid - seg/2, a1 = mid + seg/2;
+      var color = wheelColorFor(i);
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,a0,a1);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(mid);
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = textColorFor(color);
+      var fontSize = Math.max(12, Math.min(22, 480/n));
+      ctx.font = "700 " + fontSize + "px Inter, sans-serif";
+      var label = String(items[i]);
+      var maxChars = Math.max(4, Math.floor(18 - n*0.15));
+      if(label.length > maxChars) label = label.slice(0, maxChars-1) + "…";
+      ctx.fillText(label, r-12, 0);
+      ctx.restore();
+    }
+  }
+  function computeSpinRotation(currentDeg, n, winnerIndex){
+    var segAngle = 360/n;
+    var targetMod = (360 - ((winnerIndex*segAngle) % 360)) % 360;
+    var spins = 6 + randInt(0,2);
+    var base = currentDeg - (currentDeg % 360) + spins*360 + targetMod;
+    if(base <= currentDeg) base += 360;
+    return base;
+  }
+  function spinWheel(canvas, items, winnerIndex, durationSec, onDone){
+    var id = canvas.id;
+    var cur = wheelState[id] || 0;
+    var target = computeSpinRotation(cur, items.length, winnerIndex);
+    wheelState[id] = target;
+    canvas.style.transition = "transform " + durationSec + "s cubic-bezier(.12,.72,.14,1)";
+    var fired = false;
+    function finish(){
+      if(fired) return;
+      fired = true;
+      canvas.removeEventListener("transitionend", finish);
+      onDone();
+    }
+    canvas.addEventListener("transitionend", finish);
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        canvas.style.transform = "rotate(" + target + "deg)";
+      });
+    });
+    setTimeout(finish, durationSec*1000 + 500);
+  }
+  function useRoleta(poolLen){
+    return cfg.style === "roleta" && poolLen >= 2 && poolLen <= 40;
+  }
+  function spinSingleModeWheel(prefix, poolLabels, winnerLabels, durationSec, onAllDone){
+    var canvas = $(prefix+"-canvas");
+    var wrap = $(prefix+"-wrap");
+    var resultEl = $(prefix+"-result");
+    var pickCountEl = $(prefix+"-pickcount");
+    var stageId = prefix.replace("-wheel","-stage");
+    wrap.classList.add("on");
+    canvas.style.transition = "none";
+    canvas.style.transform = "rotate(0deg)";
+    wheelState[canvas.id] = 0;
+    var remaining = poolLabels.slice();
+    var results = [];
+    drawWheelSegments(canvas, remaining);
+    function step(i){
+      if(i >= winnerLabels.length){ onAllDone(results); return; }
+      var winnerVal = winnerLabels[i];
+      var idx = remaining.indexOf(winnerVal);
+      if(idx === -1) idx = 0;
+      drawWheelSegments(canvas, remaining);
+      pickCountEl.textContent = winnerLabels.length > 1 ? ("Sorteio "+(i+1)+" de "+winnerLabels.length) : "";
+      resultEl.textContent = "";
+      playSpinTicks(durationSec*1000);
+      spinWheel(canvas, remaining, idx, durationSec, function(){
+        var won = remaining[idx];
+        results.push(won);
+        resultEl.textContent = won;
+        srtFanfare();
+        remaining = remaining.filter(function(v){ return v !== won; });
+        setTimeout(function(){ step(i+1); }, i+1 < winnerLabels.length ? 900 : 0);
+      });
+    }
+    step(0);
+  }
+  function redrawActiveWheel(){
+    ["srt-num-wheel-canvas","srt-nomes-wheel-canvas"].forEach(function(id){
+      var items = lastWheelLabels[id];
+      if(items && items.length) drawWheelSegments($(id), items);
+    });
+  }
+
+  /* ================= OPÇÕES: UI ================= */
+  function wireToggle(id, key){
+    var el = $(id);
+    if(!el) return;
+    el.checked = !!cfg[key];
+    el.onchange = function(){ cfg[key] = el.checked; saveCfg(); };
+  }
+  function wireCheck(id, key, onChange){
+    var el = $(id);
+    if(!el) return;
+    el.checked = !!cfg[key];
+    el.onchange = function(){
+      cfg[key] = el.checked;
+      saveCfg();
+      if(onChange) onChange();
+    };
+  }
+  function wireSeg(rowId, key){
+    var row = $(rowId);
+    if(!row) return;
+    var btns = Array.prototype.slice.call(row.querySelectorAll(".srt-seg-btn"));
+    btns.forEach(function(b){
+      b.classList.toggle("on", parseInt(b.dataset.val,10) === cfg[key]);
+      b.onclick = function(){
+        btns.forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on");
+        cfg[key] = parseInt(b.dataset.val,10);
+        saveCfg();
+      };
+    });
+  }
+
+  wireToggle("srt-opt-som","som");
+  wireToggle("srt-opt-confetti","confetti");
+  wireToggle("srt-opt-remove-winners","removeWinners");
+  wireCheck("srt-opt-order","order");
+  wireCheck("srt-opt-clickreveal","clickreveal");
+  wireCheck("srt-opt-countdown","countdown");
+  wireCheck("srt-opt-hidelist","hidelist", applyHideList);
+  wireSeg("srt-opt-duration","duration");
+  wireSeg("srt-opt-multiplier","multiplier");
+
+  document.querySelectorAll(".srt-style-btn").forEach(function(btn){
+    btn.classList.toggle("on", btn.dataset.style === cfg.style);
+    btn.onclick = function(){
+      document.querySelectorAll(".srt-style-btn").forEach(function(b){ b.classList.remove("on"); });
+      btn.classList.add("on");
+      cfg.style = btn.dataset.style;
+      saveCfg();
+    };
+  });
+
+  [["srt-opts-header","srt-opts"],["srt-design-header","srt-design"]].forEach(function(pair){
+    var head = $(pair[0]), box = $(pair[1]);
+    if(head && box) head.onclick = function(){ box.classList.toggle("aberto"); };
+  });
+
+  function applyHideList(){
+    var wrap = $("srt-nomes-list-wrap");
+    if(!wrap) return;
+    wrap.classList.toggle("hidden-list", cfg.hidelist);
+    wrap.classList.remove("peek");
+  }
+  applyHideList();
+  var nomesVeil = $("srt-nomes-list-veil");
+  if(nomesVeil) nomesVeil.onclick = function(){ $("srt-nomes-list-wrap").classList.add("peek"); };
+  var nomesListEl = $("srt-nomes-list");
+  if(nomesListEl) nomesListEl.addEventListener("blur", function(){
+    var wrap = $("srt-nomes-list-wrap");
+    if(wrap) wrap.classList.remove("peek");
+  });
+
+  function updateHistCountLabel(){
+    var el = $("srt-hist-count");
+    if(!el) return;
+    var n = (srtHist.nomes||[]).length;
+    el.textContent = n
+      ? ("Já tem "+n+" nome"+(n>1?"s":"")+" no histórico — não vão ser sorteados de novo enquanto essa opção estiver ativa.")
+      : "Não deixa quem já ganhou (nem em sorteios passados) ganhar de novo.";
+  }
+  updateHistCountLabel();
+  var histClearLink = $("srt-hist-clear-link");
+  if(histClearLink) histClearLink.onclick = function(){
+    srtHist = { numeros:{}, nomes:[] };
+    saveHist();
+    updateHistCountLabel();
+  };
+
+  /* ================= DESIGN (temas / cores) ================= */
+  function renderThemeRow(){
+    var row = $("srt-theme-row");
+    if(!row) return;
+    row.innerHTML = "";
+    THEMES.forEach(function(colors, idx){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "srt-theme-swatch" + (cfg.themeIdx===idx ? " sel" : "");
+      colors.forEach(function(c){ var s=document.createElement("span"); s.style.background=c; btn.appendChild(s); });
+      btn.onclick = function(){
+        cfg.themeIdx = idx;
+        cfg.colors = colors.slice();
+        saveCfg();
+        renderThemeRow();
+        syncColorInputs();
+        redrawActiveWheel();
+      };
+      row.appendChild(btn);
+    });
+  }
+  function syncColorInputs(){
+    var c = cfg.colors.length ? cfg.colors : ["#2CC5C0","#8593F7","#F59158"];
+    var c1 = $("srt-color-1"), c2 = $("srt-color-2"), c3 = $("srt-color-3"), cb = $("srt-color-bg");
+    if(c1) c1.value = c[0] || "#2CC5C0";
+    if(c2) c2.value = c[1] || c[0] || "#8593F7";
+    if(c3) c3.value = c[2] || c[1] || c[0] || "#F59158";
+    if(cb) cb.value = cfg.bg || "#1A2532";
+  }
+  [["srt-color-1",0],["srt-color-2",1],["srt-color-3",2]].forEach(function(pair){
+    var el = $(pair[0]);
+    if(!el) return;
+    el.oninput = function(){
+      var arr = cfg.colors.slice();
+      while(arr.length <= pair[1]) arr.push("#888888");
+      arr[pair[1]] = el.value;
+      cfg.colors = arr;
+      cfg.themeIdx = -1;
+      saveCfg();
+      renderThemeRow();
+      redrawActiveWheel();
+    };
+  });
+  var bgInput = $("srt-color-bg");
+  if(bgInput) bgInput.oninput = function(){ cfg.bg = bgInput.value; saveCfg(); redrawActiveWheel(); };
+  renderThemeRow();
+  syncColorInputs();
+
   /* ---------- alternância dos modos ---------- */
+  document.querySelectorAll(".srt-opt-nomes-only").forEach(function(el){ el.classList.add("hide-for-mode"); });
   document.querySelectorAll(".srt-mode-tab").forEach(function(btn){
     btn.onclick = function(){
       document.querySelectorAll(".srt-mode-tab").forEach(function(b){ b.classList.remove("on"); });
       document.querySelectorAll(".srt-panel").forEach(function(p){ p.classList.remove("on"); });
       btn.classList.add("on");
       $("srt-panel-"+btn.dataset.smode).classList.add("on");
+      document.querySelectorAll(".srt-opt-nomes-only").forEach(function(el){
+        el.classList.toggle("hide-for-mode", btn.dataset.smode !== "nomes");
+      });
     };
   });
+
+  /* ================= RESULTADOS (render compartilhado) ================= */
+  function renderNumResults(nums){
+    var resWrap = $("srt-num-results");
+    resWrap.innerHTML = "";
+    var ordered = cfg.order ? nums.slice().sort(function(a,b){ return a-b; }) : nums.slice();
+    ordered.forEach(function(n, idx){
+      var b = document.createElement("span");
+      b.className = "srt-num-ball" + (cfg.clickreveal ? " reveal-pending" : "");
+      b.style.animationDelay = (idx*0.08)+"s";
+      var real = document.createElement("span");
+      real.className = "srt-ball-real";
+      real.textContent = n;
+      var mask = document.createElement("span");
+      mask.className = "srt-ball-mask";
+      mask.textContent = "?";
+      b.appendChild(real); b.appendChild(mask);
+      if(cfg.clickreveal){
+        b.onclick = function(){
+          if(b.classList.contains("reveal-pending")){
+            b.classList.remove("reveal-pending");
+            b.classList.add("revealed");
+          }
+        };
+      }
+      resWrap.appendChild(b);
+    });
+    resWrap.classList.add("on");
+    return ordered;
+  }
+  function renderNomesResults(entries){
+    var resWrap = $("srt-nomes-results");
+    resWrap.innerHTML = "";
+    var ordered = cfg.order ? entries.slice().sort(function(a,b){ return a.name.localeCompare(b.name,'pt-BR'); }) : entries.slice();
+    ordered.forEach(function(entry, idx){
+      var card = document.createElement("div");
+      card.className = "srt-nomes-winner" + (cfg.clickreveal ? " reveal-pending" : "");
+      card.style.animationDelay = (idx*0.1)+"s";
+      var b = document.createElement("b");
+      b.textContent = ordered.length>1 ? (idx+1)+"º sorteado" : "Sorteado";
+      var real = document.createElement("span");
+      real.className = "srt-winner-real";
+      real.textContent = entry.name;
+      var mask = document.createElement("span");
+      mask.className = "srt-winner-mask";
+      mask.textContent = "Toque para revelar";
+      card.appendChild(b); card.appendChild(real); card.appendChild(mask);
+      if(cfg.clickreveal){
+        card.onclick = function(){
+          if(card.classList.contains("reveal-pending")){
+            card.classList.remove("reveal-pending");
+            card.classList.add("revealed");
+          }
+        };
+      }
+      resWrap.appendChild(card);
+    });
+    resWrap.classList.add("on");
+    return ordered;
+  }
 
   /* ---------- MODO NÚMEROS ---------- */
   var numHist = [];
@@ -7999,13 +8648,39 @@ setMode("calc");
     if(isNaN(min)) min = 0;
     if(isNaN(max)) max = min;
     if(max < min){ var t=min; min=max; max=t; }
-    var rangeSize = max - min + 1;
+
+    var rangeKey = min+"_"+max;
+    var excluded = cfg.removeWinners ? new Set(srtHist.numeros[rangeKey]||[]) : null;
+    var pool = null;
+    if(excluded){
+      pool = [];
+      for(var v=min; v<=max; v++){ if(!excluded.has(v)) pool.push(v); }
+    }
+    var rangeSize = pool ? pool.length : (max-min+1);
+
+    if(rangeSize <= 0){
+      $("srt-num-empty").style.display = "";
+      $("srt-num-empty").textContent = "Todos os números desse intervalo já foram sorteados. Limpe o histórico ou mude o intervalo.";
+      return;
+    }
     if(unique && qty > rangeSize) qty = rangeSize;
     if(qty < 1) qty = 1;
     if(qty > 200) qty = 200;
 
-    var finalNums = unique ? drawUniqueNums(min, max, qty)
-                            : Array.from({length: qty}, function(){ return randInt(min, max); });
+    var finalNums;
+    if(pool){
+      if(unique){
+        var idxs = shuffleIdx(pool.length).slice(0, qty);
+        finalNums = idxs.map(function(i){ return pool[i]; });
+      } else {
+        finalNums = Array.from({length: qty}, function(){ return pool[randInt(0, pool.length-1)]; });
+      }
+    } else {
+      finalNums = unique ? drawUniqueNums(min, max, qty)
+                          : Array.from({length: qty}, function(){ return randInt(min, max); });
+    }
+
+    var eligiblePool = pool ? pool : (function(){ var arr=[]; for(var vv=min; vv<=max; vv++) arr.push(vv); return arr; })();
 
     numGo.disabled = true;
     numGo.classList.add("rolling");
@@ -8015,36 +8690,47 @@ setMode("calc");
     var resWrap = $("srt-num-results");
     resWrap.classList.remove("on");
     resWrap.innerHTML = "";
+    $("srt-num-wheel-wrap").classList.remove("on");
 
-    var rollEl = document.createElement("div");
-    rollEl.className = "srt-rolling";
-    resWrap.parentElement.insertBefore(rollEl, resWrap);
-
-    var ticks = 0, maxTicks = 14;
-    var timer = setInterval(function(){
-      rollEl.textContent = randInt(min, max);
-      ticks++;
-      if(ticks >= maxTicks){
-        clearInterval(timer);
-        rollEl.remove();
-        finalNums.forEach(function(n, idx){
-          var b = document.createElement("span");
-          b.className = "srt-num-ball";
-          b.style.animationDelay = (idx*0.08)+"s";
-          b.textContent = n;
-          resWrap.appendChild(b);
-        });
-        resWrap.classList.add("on");
-        copyBtn.classList.add("on");
-        copyBtn.onclick = function(){ copyText(copyBtn, finalNums.join(", ")); };
-        confettiBurst($("srt-num-stage"));
-        vibrate([40,40,40]);
-        numGo.disabled = false;
-        numGo.classList.remove("rolling");
-        numHist.unshift({ label: finalNums.join(", "), min: min, max: max });
-        renderNumHist();
+    function finalize(){
+      var ordered = renderNumResults(finalNums);
+      copyBtn.classList.add("on");
+      copyBtn.onclick = function(){ copyText(copyBtn, ordered.join(", ")); };
+      if(cfg.confetti) confettiBurst($("srt-num-stage"));
+      vibrate([40,40,40]);
+      if(cfg.removeWinners){
+        var set = new Set(srtHist.numeros[rangeKey]||[]);
+        finalNums.forEach(function(n){ set.add(n); });
+        srtHist.numeros[rangeKey] = Array.from(set);
+        saveHist();
       }
-    }, 65);
+      numGo.disabled = false;
+      numGo.classList.remove("rolling");
+      numHist.unshift({ label: finalNums.join(", "), min: min, max: max });
+      renderNumHist();
+    }
+
+    function doStyleReveal(){
+      if(useRoleta(eligiblePool.length)){
+        spinSingleModeWheel("srt-num-wheel", eligiblePool, finalNums, cfg.duration, function(){ finalize(); });
+      } else {
+        var rollEl = document.createElement("div");
+        rollEl.className = "srt-rolling";
+        resWrap.parentElement.insertBefore(rollEl, resWrap);
+        var ticks = 0, maxTicks = 14;
+        var timer = setInterval(function(){
+          rollEl.textContent = eligiblePool[randInt(0, eligiblePool.length-1)];
+          ticks++;
+          if(ticks >= maxTicks){
+            clearInterval(timer);
+            rollEl.remove();
+            finalize();
+          }
+        }, 65);
+      }
+    }
+
+    runCountdown("srt-num-countdown", doStyleReveal);
   };
   function renderNumHist(){
     var wrap = $("srt-num-hist");
@@ -8061,26 +8747,85 @@ setMode("calc");
   /* ---------- MODO NOMES ---------- */
   var nomesHist = [];
   var nomesTextarea = $("srt-nomes-list");
-  function parseNomes(){
+  function rawLines(){
+    if(!nomesTextarea) return [];
     return nomesTextarea.value.split(/\r?\n|,/).map(function(s){ return s.trim(); }).filter(Boolean);
   }
+  function parseEntry(raw){
+    var m = raw.match(/^(.*?)\s*[xX]\s*(\d{1,3})$/);
+    if(m && m[1].trim()){
+      return { name:m[1].trim(), weight: Math.max(1, Math.min(50, parseInt(m[2],10)||1)), raw: raw };
+    }
+    return { name: raw, weight: Math.max(1, Math.min(50, cfg.multiplier||1)), raw: raw };
+  }
+  function parseNomesEntries(){ return rawLines().map(parseEntry); }
+  function parseNomes(){ return parseNomesEntries().map(function(e){ return e.name; }); }
+  function expandWeightedNames(entries){
+    var arr = [];
+    entries.forEach(function(e){
+      var w = Math.max(1, Math.min(50, e.weight));
+      for(var i=0;i<w;i++) arr.push(e.name);
+    });
+    if(arr.length > 20000) return entries.map(function(e){ return e.name; });
+    return arr;
+  }
   function updateNomesCount(){
-    var n = parseNomes().length;
-    $("srt-nomes-count").textContent = n ? "· "+n+" participante"+(n>1?"s":"") : "";
+    var badge = $("srt-nomes-count");
+    if(badge) badge.textContent = rawLines().length;
   }
   if(nomesTextarea){ nomesTextarea.addEventListener("input", updateNomesCount); updateNomesCount(); }
 
+  var entrySort = $("srt-entry-sort");
+  if(entrySort) entrySort.onclick = function(){
+    var lines = rawLines();
+    lines.sort(function(a,b){ return parseEntry(a).name.localeCompare(parseEntry(b).name, 'pt-BR', {sensitivity:'base'}); });
+    nomesTextarea.value = lines.join("\n");
+    updateNomesCount();
+  };
+  var entryShuffle = $("srt-entry-shuffle");
+  if(entryShuffle) entryShuffle.onclick = function(){
+    var lines = rawLines();
+    var order = shuffleIdx(lines.length);
+    nomesTextarea.value = order.map(function(i){ return lines[i]; }).join("\n");
+    updateNomesCount();
+  };
+  var entryClear = $("srt-entry-clear");
+  if(entryClear) entryClear.onclick = function(){
+    if(!rawLines().length) return;
+    if(confirm("Limpar todos os participantes da lista?")){
+      nomesTextarea.value = "";
+      updateNomesCount();
+    }
+  };
+
   var nomesGo = $("srt-nomes-go");
   if(nomesGo) nomesGo.onclick = function(){
-    var list = parseNomes();
-    if(!list.length){ nomesTextarea.focus(); return; }
+    var entries = parseNomesEntries();
+    if(!entries.length){ nomesTextarea.focus(); return; }
     var qty = parseInt($("srt-nomes-qty").value, 10) || 1;
-    if(qty > list.length) qty = list.length;
-    if(qty < 1) qty = 1;
-    var remove = $("srt-nomes-remove").checked;
 
-    var winnerIdx = shuffleIdx(list.length).slice(0, qty);
-    var winners = winnerIdx.map(function(i){ return list[i]; });
+    var eligible = entries;
+    if(cfg.removeWinners){
+      var histSet = new Set(srtHist.nomes||[]);
+      eligible = entries.filter(function(e){ return !histSet.has(e.name.trim().toLowerCase()); });
+    }
+    if(!eligible.length){
+      $("srt-nomes-empty").style.display = "";
+      $("srt-nomes-empty").textContent = "Todo mundo dessa lista já ganhou antes. Limpe o histórico ou adicione novos nomes.";
+      return;
+    }
+    if(qty > eligible.length) qty = eligible.length;
+    if(qty < 1) qty = 1;
+
+    var pool = expandWeightedNames(eligible);
+    var poolCopy = pool.slice();
+    var winners = [];
+    for(var i=0;i<qty;i++){
+      if(!poolCopy.length) break;
+      var pick = poolCopy[randInt(0, poolCopy.length-1)];
+      winners.push(pick);
+      poolCopy = poolCopy.filter(function(x){ return x!==pick; });
+    }
 
     nomesGo.disabled = true;
     nomesGo.classList.add("rolling");
@@ -8090,41 +8835,62 @@ setMode("calc");
     var resWrap = $("srt-nomes-results");
     resWrap.classList.remove("on");
     resWrap.innerHTML = "";
+    $("srt-nomes-wheel-wrap").classList.remove("on");
 
-    var rollEl = document.createElement("div");
-    rollEl.className = "srt-rolling-name";
-    resWrap.parentElement.insertBefore(rollEl, resWrap);
-
-    var ticks = 0, maxTicks = 16;
-    var timer = setInterval(function(){
-      rollEl.textContent = list[randInt(0, list.length-1)];
-      ticks++;
-      if(ticks >= maxTicks){
-        clearInterval(timer);
-        rollEl.remove();
-        winners.forEach(function(name, idx){
-          var card = document.createElement("div");
-          card.className = "srt-nomes-winner";
-          card.style.animationDelay = (idx*0.1)+"s";
-          card.innerHTML = '<b>'+(winners.length>1 ? (idx+1)+"º sorteado" : "Sorteado")+'</b>'+name;
-          resWrap.appendChild(card);
+    function finalize(){
+      var entryObjs = winners.map(function(name){ return {name:name}; });
+      var ordered = renderNomesResults(entryObjs);
+      copyBtn.classList.add("on");
+      copyBtn.onclick = function(){ copyText(copyBtn, ordered.map(function(e){ return e.name; }).join(", ")); };
+      if(cfg.confetti) confettiBurst($("srt-nomes-stage"));
+      vibrate([40,40,40]);
+      if(cfg.removeWinners){
+        var set = new Set(srtHist.nomes||[]);
+        winners.forEach(function(n){ set.add(n.trim().toLowerCase()); });
+        srtHist.nomes = Array.from(set);
+        saveHist();
+        updateHistCountLabel();
+        var lines = rawLines();
+        var winnersLower = winners.map(function(n){ return n.trim().toLowerCase(); });
+        var remainLines = lines.filter(function(line){
+          var nm = parseEntry(line).name.trim().toLowerCase();
+          var wi = winnersLower.indexOf(nm);
+          if(wi === -1) return true;
+          winnersLower.splice(wi,1);
+          return false;
         });
-        resWrap.classList.add("on");
-        copyBtn.classList.add("on");
-        copyBtn.onclick = function(){ copyText(copyBtn, winners.join(", ")); };
-        confettiBurst($("srt-nomes-stage"));
-        vibrate([40,40,40]);
-        if(remove){
-          var remaining = list.filter(function(_, i){ return winnerIdx.indexOf(i) === -1; });
-          nomesTextarea.value = remaining.join("\n");
-          updateNomesCount();
-        }
-        nomesGo.disabled = false;
-        nomesGo.classList.remove("rolling");
-        nomesHist.unshift({ label: winners.join(", ") });
-        renderNomesHist();
+        nomesTextarea.value = remainLines.join("\n");
+        updateNomesCount();
       }
-    }, 70);
+      nomesGo.disabled = false;
+      nomesGo.classList.remove("rolling");
+      nomesHist.unshift({ label: winners.join(", ") });
+      renderNomesHist();
+    }
+
+    function doStyleReveal(){
+      var poolNames = expandWeightedNames(eligible);
+      if(useRoleta(poolNames.length)){
+        spinSingleModeWheel("srt-nomes-wheel", poolNames, winners, cfg.duration, function(){ finalize(); });
+      } else {
+        var list = eligible.map(function(e){ return e.name; });
+        var rollEl = document.createElement("div");
+        rollEl.className = "srt-rolling-name";
+        resWrap.parentElement.insertBefore(rollEl, resWrap);
+        var ticks = 0, maxTicks = 16;
+        var timer = setInterval(function(){
+          rollEl.textContent = list[randInt(0, list.length-1)];
+          ticks++;
+          if(ticks >= maxTicks){
+            clearInterval(timer);
+            rollEl.remove();
+            finalize();
+          }
+        }, 70);
+      }
+    }
+
+    runCountdown("srt-nomes-countdown", doStyleReveal);
   };
   function renderNomesHist(){
     var wrap = $("srt-nomes-hist");
