@@ -910,6 +910,56 @@
   .fin-empty{color:var(--muted2);font-size:12.5px;text-align:center;padding:10px 0 0;}
   .fin-error{margin-top:12px;font-size:12.5px;padding:10px 12px;border-radius:10px;background:#2A1518;color:#F3969E;border:1px solid #5A2830;}
 
+  /* ===== SORTEIO ===== */
+  .srt-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px;}
+  .srt-mode-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .srt-mode-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:13.5px;padding:11px 10px;border-radius:13px;cursor:pointer;transition:all .15s;}
+  .srt-mode-tab svg{width:17px;height:17px;flex:none;}
+  .srt-mode-tab.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
+  .srt-panel{display:none;}
+  .srt-panel.on{display:block;animation:fade .25s ease;}
+
+  .srt-stage{position:relative;min-height:150px;border-radius:16px;background:radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--primary) 14%, var(--surface2)), var(--surface2));border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:22px 14px;margin-bottom:16px;overflow:hidden;}
+  .srt-stage-empty{color:var(--muted2);font-size:13px;text-align:center;}
+  .srt-num-results{display:none;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .srt-num-results.on{display:flex;}
+  .srt-num-ball{font-family:var(--display);font-weight:800;font-size:24px;color:#06201f;background:linear-gradient(160deg,var(--primary),var(--motsc));min-width:60px;height:60px;padding:0 8px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -8px rgba(44,197,192,.55);animation:srtPop .45s cubic-bezier(.34,1.56,.64,1) backwards;}
+  .srt-nomes-results{display:none;flex-direction:column;gap:8px;width:100%;}
+  .srt-nomes-results.on{display:flex;}
+  .srt-nomes-winner{font-family:var(--display);font-weight:700;font-size:18px;color:var(--text);background:var(--surface);border:1.5px solid var(--primary);border-radius:14px;padding:12px 16px;text-align:center;animation:srtPop .4s cubic-bezier(.34,1.56,.64,1) backwards;box-shadow:0 8px 22px -10px rgba(44,197,192,.4);}
+  .srt-nomes-winner b{color:var(--primary);font-size:11px;display:block;font-family:var(--font);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+  @keyframes srtPop{0%{opacity:0;transform:scale(.4);}100%{opacity:1;transform:scale(1);}}
+
+  .srt-rolling{font-family:var(--display);font-weight:800;font-size:32px;color:var(--text);letter-spacing:1px;}
+  .srt-rolling-name{font-family:var(--display);font-weight:700;font-size:19px;color:var(--text);text-align:center;padding:0 10px;}
+
+  .srt-field{flex:1;margin-bottom:12px;}
+  .srt-field label{display:block;font-size:11.5px;color:var(--muted2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+  .srt-field-row{display:flex;align-items:flex-end;gap:10px;}
+  .srt-field-sep{color:var(--muted);font-size:13px;padding-bottom:22px;flex:none;}
+  .srt-input{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:11px 13px;font-family:var(--font);font-size:14px;text-align:center;}
+  .srt-textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:11px 13px;font-family:var(--font);font-size:13.5px;resize:vertical;line-height:1.5;}
+  .srt-count{color:var(--muted2);font-weight:600;text-transform:none;letter-spacing:0;}
+  .srt-go-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);border:none;color:#06201f;font-family:var(--font);font-weight:800;font-size:15px;padding:14px;border-radius:14px;cursor:pointer;margin-top:6px;transition:transform .12s;}
+  .srt-go-btn:active{transform:scale(.97);}
+  .srt-go-btn svg{width:19px;height:19px;}
+  .srt-go-btn[disabled]{opacity:.6;pointer-events:none;}
+  .srt-go-btn.rolling svg{animation:srtSpin .6s linear infinite;}
+  @keyframes srtSpin{to{transform:rotate(360deg);}}
+
+  .srt-copy-btn{display:none;margin-top:2px;background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:10px;cursor:pointer;}
+  .srt-copy-btn.on{display:inline-block;}
+
+  .srt-hist{margin-top:16px;}
+  .srt-hist:empty{display:none;}
+  .srt-hist-title{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:700;margin-bottom:8px;}
+  .srt-hist-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding:7px 0;border-top:1px solid var(--border);}
+  .srt-hist-item b{color:var(--text);font-family:var(--display);}
+  .srt-hist-clear{background:none;border:none;color:var(--muted2);font-size:11.5px;text-decoration:underline;cursor:pointer;margin-top:4px;font-family:var(--font);padding:0;}
+
+  .srt-confetti-piece{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;pointer-events:none;z-index:9999;animation:srtFall linear forwards;}
+  @keyframes srtFall{to{transform:translateY(115vh) rotate(720deg);opacity:.2;}}
+
   /* ---------- bottom nav ---------- */
   .nav{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
@@ -1624,6 +1674,90 @@
     </div>
   </section>
 
+  <!-- SORTEIO -->
+  <section class="view" id="v-sorteio">
+    <p class="eyebrow">Sorteio · Números e nomes</p>
+
+    <div class="srt-card">
+      <div class="srt-mode-tabs">
+        <button type="button" class="srt-mode-tab on" data-smode="numeros">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+          Números
+        </button>
+        <button type="button" class="srt-mode-tab" data-smode="nomes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Nomes
+        </button>
+      </div>
+
+      <!-- ===== MODO NÚMEROS ===== -->
+      <div id="srt-panel-numeros" class="srt-panel on">
+        <div class="srt-stage" id="srt-num-stage">
+          <div class="srt-stage-empty" id="srt-num-empty">Defina o intervalo e toque em sortear</div>
+          <div class="srt-num-results" id="srt-num-results"></div>
+          <button type="button" class="srt-copy-btn" id="srt-num-copy">Copiar resultado</button>
+        </div>
+
+        <div class="srt-field-row">
+          <div class="srt-field">
+            <label>De</label>
+            <input type="number" id="srt-num-min" class="srt-input" value="1" inputmode="numeric">
+          </div>
+          <div class="srt-field-sep">até</div>
+          <div class="srt-field">
+            <label>Até</label>
+            <input type="number" id="srt-num-max" class="srt-input" value="100" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="srt-field">
+          <label>Quantos números sortear</label>
+          <input type="number" id="srt-num-qty" class="srt-input" value="1" min="1" inputmode="numeric">
+        </div>
+
+        <label class="check"><input type="checkbox" id="srt-num-unique" checked> Não repetir números</label>
+
+        <button type="button" id="srt-num-go" class="srt-go-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>
+          Sortear agora!
+        </button>
+
+        <div class="srt-hist" id="srt-num-hist"></div>
+      </div>
+
+      <!-- ===== MODO NOMES ===== -->
+      <div id="srt-panel-nomes" class="srt-panel">
+        <div class="srt-stage" id="srt-nomes-stage">
+          <div class="srt-stage-empty" id="srt-nomes-empty">Cole a lista e toque em sortear</div>
+          <div class="srt-nomes-results" id="srt-nomes-results"></div>
+          <button type="button" class="srt-copy-btn" id="srt-nomes-copy">Copiar resultado</button>
+        </div>
+
+        <div class="srt-field">
+          <label>Participantes <span id="srt-nomes-count" class="srt-count"></span></label>
+          <textarea id="srt-nomes-list" class="srt-textarea" rows="5" placeholder="Cole ou digite um nome por linha. Ex:
+Maria
+João
+Ana"></textarea>
+        </div>
+
+        <div class="srt-field">
+          <label>Quantos sortear</label>
+          <input type="number" id="srt-nomes-qty" class="srt-input" value="1" min="1" inputmode="numeric">
+        </div>
+
+        <label class="check"><input type="checkbox" id="srt-nomes-remove"> Remover sorteados da lista</label>
+
+        <button type="button" id="srt-nomes-go" class="srt-go-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Sortear agora!
+        </button>
+
+        <div class="srt-hist" id="srt-nomes-hist"></div>
+      </div>
+    </div>
+  </section>
+
 
   <!-- ADMIN -->
   <section class="view" id="v-admin">
@@ -1644,7 +1778,7 @@
 
     <div id="perms-only-block" style="display:none">
       <p class="eyebrow" style="margin-top:22px">Permissões de administrador</p>
-      <div class="ad-note" style="margin-bottom:12px">🔑 Conceda a outra pessoa acesso <b>total de admin</b> (vê tudo, igual você), ou só permissão pra <b>gerenciar anúncios</b> (mexe em Anúncios/Parcerias e Cliques em Atendentes, sem ver contas, backup ou recados).</div>
+      <div class="ad-note" style="margin-bottom:12px">🔑 Conceda a outra pessoa acesso <b>total de admin</b> (vê tudo, igual você), só permissão pra <b>gerenciar anúncios</b> (mexe em Anúncios/Parcerias e Cliques em Atendentes, sem ver contas, backup ou recados), ou só permissão pra usar a aba de <b>Sorteio</b> (não vê mais nada do painel admin).</div>
       <div class="panel">
         <div class="fld2" style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:10px">
           <div class="fld"><label>E-mail</label><input class="txt" id="perm-email-input" placeholder="pessoa@gmail.com" style="margin-top:5px"></div>
@@ -1652,6 +1786,7 @@
             <select id="perm-role-select" style="margin-top:5px;width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);color:var(--text)">
               <option value="admin">Admin total</option>
               <option value="ads_manager">Gerente de anúncios</option>
+              <option value="sorteio">Acesso ao Sorteio</option>
             </select>
           </div>
         </div>
@@ -1939,6 +2074,24 @@
   </div>
 </div>
 
+<div class="modal" id="welcome-apelido-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">Bem-vindo(a)! 👋</div>
+    </div>
+    <div class="sheet-body">
+      <p class="nf-note" style="margin-top:0">Como você quer ser chamado(a)? Esse apelido aparece no lugar do seu e-mail dentro do app.</p>
+      <div class="form">
+        <div class="fld"><label>Seu apelido</label><input class="txt" id="welcome-apelido-input" placeholder="Ex.: Marina" maxlength="40" autocomplete="off"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="welcome-apelido-skip">Agora não</button>
+      <button class="btn-primary" id="welcome-apelido-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="vial-modal">
   <div class="sheet">
     <div class="sheet-head">
@@ -2083,6 +2236,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
     Finanças
   </button>
+  <button data-v="sorteio" id="nav-sorteio-btn" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>
+    Sorteio
+  </button>
 </nav>
 
 <!-- leitor de planilhas .xlsx no navegador (só usado na seção Finanças, admin-only) -->
@@ -2180,8 +2337,9 @@ let contouNovaConta = false;   // evita contar a mesma conta nova mais de uma ve
 let currentUser = null;
 let IS_ADMIN = false;
 let IS_ADS_MANAGER = false;   // admin total já conta como true aqui também
+let IS_SORTEIO_ACCESS = false; // admin total também conta como true aqui
 let IS_SUPER_ADMIN = false;   // só o dono original (e-mail fixo) — só ele concede permissões
-let ROLE_GRANTED = "";        // 'admin' | 'ads_manager' | "" — o que foi concedido ao e-mail atual
+let ROLE_GRANTED = "";        // 'admin' | 'ads_manager' | 'sorteio' | "" — o que foi concedido ao e-mail atual
 let rolesUnsub = null;        // observa o PRÓPRIO papel concedido (todo mundo pode ler o seu)
 let rolesListUnsub = null;    // observa a LISTA de todos os papéis concedidos (só o dono original)
 let PAPEIS_CONCEDIDOS = [];   // cache local da lista acima, pra renderizar
@@ -2223,10 +2381,13 @@ function atualizarInscricoesPorPermissao(){
 function recalcularPermissoes(){
   IS_ADMIN = IS_SUPER_ADMIN || ROLE_GRANTED === 'admin';
   IS_ADS_MANAGER = IS_ADMIN || ROLE_GRANTED === 'ads_manager';
+  IS_SORTEIO_ACCESS = IS_ADMIN || ROLE_GRANTED === 'sorteio';
   const btn = document.getElementById("admin-btn");
   if(btn) btn.style.display = (IS_ADMIN || IS_ADS_MANAGER) ? "inline-flex" : "none";
   const finNavBtn = document.getElementById("nav-financas-btn");
   if(finNavBtn) finNavBtn.style.display = IS_ADMIN ? "flex" : "none";
+  const sortNavBtn = document.getElementById("nav-sorteio-btn");
+  if(sortNavBtn) sortNavBtn.style.display = IS_SORTEIO_ACCESS ? "flex" : "none";
   const presencaEl = document.getElementById("tb-presenca");
   if(presencaEl) presencaEl.style.display = IS_ADMIN ? "flex" : "none";
   document.querySelectorAll("#admin-only-block, #admin-only-block2").forEach(el=>{
@@ -4165,7 +4326,7 @@ function renderListaPermissoes(){
     wrap.innerHTML = '<div class="empty-note">Nenhuma permissão concedida ainda.</div>';
     return;
   }
-  const rotulo = r => r==='admin' ? 'Admin total' : (r==='ads_manager' ? 'Gerente de anúncios' : (r||'—'));
+  const rotulo = r => r==='admin' ? 'Admin total' : (r==='ads_manager' ? 'Gerente de anúncios' : (r==='sorteio' ? 'Acesso ao Sorteio' : (r||'—')));
   wrap.innerHTML = [...PAPEIS_CONCEDIDOS].sort((a,b)=>a.email.localeCompare(b.email)).map(p=>`
     <div class="mb-row">
       <div class="mb-info">
@@ -4519,6 +4680,10 @@ async function showApp(user){
   const _nav=document.querySelector(".nav"); if(_nav) _nav.style.visibility="visible";
   try{ NICKNAME = localStorage.getItem("apelido-"+user.uid) || ""; }catch(e){ NICKNAME = ""; }
   renderAcctName();
+  // conta recém-criada agora mesmo (1º login = mesmo instante da criação, segundo o
+  // próprio Firebase Auth) — pede o apelido antes de qualquer outra coisa
+  const contaAcabouDeSerCriada = !!(user.metadata && user.metadata.creationTime && user.metadata.creationTime === user.metadata.lastSignInTime);
+  if(contaAcabouDeSerCriada && !NICKNAME) abrirModalApelidoInicial();
   document.getElementById("acct-row").style.display = "flex";
   // se a pessoa já tinha permitido notificação antes, garante que o token do aparelho
   // atual está salvo (o token pode mudar entre sessões/reinstalações)
@@ -4618,6 +4783,7 @@ function showAuth(){
   currentUser = null;
   IS_ADMIN = false;
   IS_ADS_MANAGER = false;
+  IS_SORTEIO_ACCESS = false;
   IS_SUPER_ADMIN = false;
   ROLE_GRANTED = "";
   PAPEIS_CONCEDIDOS = [];
@@ -4807,6 +4973,35 @@ document.getElementById("profile-save-name-btn").onclick=()=>{
   if(st) st.textContent = "✓ Nome salvo!";
   try{ setDoc(doc(db,'users',currentUser.uid), {nickname:nome}, {merge:true}).catch(e=>console.warn('nick',e)); }catch(e){}
 };
+
+/* ---- box de boas-vindas: pede o apelido logo após criar a conta (só na 1ª vez) ---- */
+function abrirModalApelidoInicial(){
+  const modal = document.getElementById("welcome-apelido-modal");
+  if(!modal) return;
+  const inp = document.getElementById("welcome-apelido-input");
+  if(inp) inp.value = "";
+  modal.classList.add("on");
+  setTimeout(()=>{ if(inp) inp.focus(); }, 300);
+}
+function fecharModalApelidoInicial(){
+  const modal = document.getElementById("welcome-apelido-modal");
+  if(modal) modal.classList.remove("on");
+}
+document.getElementById("welcome-apelido-skip").onclick = fecharModalApelidoInicial;
+document.getElementById("welcome-apelido-save").onclick = ()=>{
+  const inp = document.getElementById("welcome-apelido-input");
+  const nome = (inp ? inp.value : "").trim();
+  if(!nome){ fecharModalApelidoInicial(); return; }
+  if(!currentUser){ fecharModalApelidoInicial(); return; }
+  NICKNAME = nome;
+  try{ localStorage.setItem("apelido-"+currentUser.uid, nome); }catch(e){}
+  renderAcctName();
+  try{ setDoc(doc(db,'users',currentUser.uid), {nickname:nome}, {merge:true}).catch(e=>console.warn('nick-welcome',e)); }catch(e){}
+  fecharModalApelidoInicial();
+};
+document.getElementById("welcome-apelido-input").addEventListener("keydown", e=>{
+  if(e.key==='Enter') document.getElementById("welcome-apelido-save").click();
+});
 
 /* foto de perfil: envia do PC/celular pro Storage, em uma pasta que só o próprio usuário
    pode escrever (avatars/{uid}/...), e salva o link em users/{uid}.photoURL */
@@ -7717,5 +7912,232 @@ setMode("calc");
 })();
 </script>
 <!-- ============ FIM DO BLOCO ============ -->
+
+<!-- ============ SORTEIO (números e nomes) ============ -->
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function randInt(min, max){
+    var range = max - min + 1;
+    if(range <= 0) return min;
+    var buf = new Uint32Array(1);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    return min + (buf[0] % range);
+  }
+  function shuffleIdx(n){
+    var a = []; for(var i=0;i<n;i++) a.push(i);
+    for(var i=n-1;i>0;i--){ var j = randInt(0,i); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function drawUniqueNums(min, max, qty){
+    var rangeSize = max - min + 1;
+    if(rangeSize <= 5000){
+      var idx = shuffleIdx(rangeSize).slice(0, qty);
+      return idx.map(function(i){ return min + i; });
+    }
+    var set = new Set();
+    while(set.size < qty) set.add(randInt(min, max));
+    return Array.from(set);
+  }
+  function vibrate(pattern){
+    try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  }
+  function confettiBurst(container){
+    var colors = ["#2CC5C0","#2FD8AC","#F59158","#8593F7","#D89A5C"];
+    var rect = container.getBoundingClientRect();
+    for(var i=0;i<24;i++){
+      (function(i){
+        var p = document.createElement("div");
+        p.className = "srt-confetti-piece";
+        p.style.left = (rect.left + Math.random()*rect.width) + "px";
+        p.style.background = colors[i % colors.length];
+        p.style.animationDuration = (1.1 + Math.random()*0.9) + "s";
+        p.style.animationDelay = (Math.random()*0.25) + "s";
+        document.body.appendChild(p);
+        p.addEventListener("animationend", function(){ p.remove(); });
+      })(i);
+    }
+  }
+  function copyText(btn, text){
+    function done(ok){
+      var old = btn.textContent;
+      btn.textContent = ok ? "Copiado! ✓" : "Não foi possível copiar";
+      setTimeout(function(){ btn.textContent = old; }, 1600);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(false); });
+    } else {
+      try{
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); ta.remove();
+        done(true);
+      }catch(e){ done(false); }
+    }
+  }
+
+  /* ---------- alternância dos modos ---------- */
+  document.querySelectorAll(".srt-mode-tab").forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll(".srt-mode-tab").forEach(function(b){ b.classList.remove("on"); });
+      document.querySelectorAll(".srt-panel").forEach(function(p){ p.classList.remove("on"); });
+      btn.classList.add("on");
+      $("srt-panel-"+btn.dataset.smode).classList.add("on");
+    };
+  });
+
+  /* ---------- MODO NÚMEROS ---------- */
+  var numHist = [];
+  var numGo = $("srt-num-go");
+  if(numGo) numGo.onclick = function(){
+    var min = parseInt($("srt-num-min").value, 10);
+    var max = parseInt($("srt-num-max").value, 10);
+    var qty = parseInt($("srt-num-qty").value, 10) || 1;
+    var unique = $("srt-num-unique").checked;
+    if(isNaN(min)) min = 0;
+    if(isNaN(max)) max = min;
+    if(max < min){ var t=min; min=max; max=t; }
+    var rangeSize = max - min + 1;
+    if(unique && qty > rangeSize) qty = rangeSize;
+    if(qty < 1) qty = 1;
+    if(qty > 200) qty = 200;
+
+    var finalNums = unique ? drawUniqueNums(min, max, qty)
+                            : Array.from({length: qty}, function(){ return randInt(min, max); });
+
+    numGo.disabled = true;
+    numGo.classList.add("rolling");
+    $("srt-num-empty").style.display = "none";
+    var copyBtn = $("srt-num-copy");
+    copyBtn.classList.remove("on");
+    var resWrap = $("srt-num-results");
+    resWrap.classList.remove("on");
+    resWrap.innerHTML = "";
+
+    var rollEl = document.createElement("div");
+    rollEl.className = "srt-rolling";
+    resWrap.parentElement.insertBefore(rollEl, resWrap);
+
+    var ticks = 0, maxTicks = 14;
+    var timer = setInterval(function(){
+      rollEl.textContent = randInt(min, max);
+      ticks++;
+      if(ticks >= maxTicks){
+        clearInterval(timer);
+        rollEl.remove();
+        finalNums.forEach(function(n, idx){
+          var b = document.createElement("span");
+          b.className = "srt-num-ball";
+          b.style.animationDelay = (idx*0.08)+"s";
+          b.textContent = n;
+          resWrap.appendChild(b);
+        });
+        resWrap.classList.add("on");
+        copyBtn.classList.add("on");
+        copyBtn.onclick = function(){ copyText(copyBtn, finalNums.join(", ")); };
+        confettiBurst($("srt-num-stage"));
+        vibrate([40,40,40]);
+        numGo.disabled = false;
+        numGo.classList.remove("rolling");
+        numHist.unshift({ label: finalNums.join(", "), min: min, max: max });
+        renderNumHist();
+      }
+    }, 65);
+  };
+  function renderNumHist(){
+    var wrap = $("srt-num-hist");
+    if(!numHist.length){ wrap.innerHTML=""; return; }
+    var html = '<div class="srt-hist-title">Últimos sorteios</div>';
+    numHist.slice(0,8).forEach(function(h){
+      html += '<div class="srt-hist-item">🎲 <b>'+h.label+'</b> · intervalo '+h.min+'–'+h.max+'</div>';
+    });
+    html += '<button type="button" class="srt-hist-clear" id="srt-num-hist-clear">Limpar histórico</button>';
+    wrap.innerHTML = html;
+    $("srt-num-hist-clear").onclick = function(){ numHist.length=0; renderNumHist(); };
+  }
+
+  /* ---------- MODO NOMES ---------- */
+  var nomesHist = [];
+  var nomesTextarea = $("srt-nomes-list");
+  function parseNomes(){
+    return nomesTextarea.value.split(/\r?\n|,/).map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+  function updateNomesCount(){
+    var n = parseNomes().length;
+    $("srt-nomes-count").textContent = n ? "· "+n+" participante"+(n>1?"s":"") : "";
+  }
+  if(nomesTextarea){ nomesTextarea.addEventListener("input", updateNomesCount); updateNomesCount(); }
+
+  var nomesGo = $("srt-nomes-go");
+  if(nomesGo) nomesGo.onclick = function(){
+    var list = parseNomes();
+    if(!list.length){ nomesTextarea.focus(); return; }
+    var qty = parseInt($("srt-nomes-qty").value, 10) || 1;
+    if(qty > list.length) qty = list.length;
+    if(qty < 1) qty = 1;
+    var remove = $("srt-nomes-remove").checked;
+
+    var winnerIdx = shuffleIdx(list.length).slice(0, qty);
+    var winners = winnerIdx.map(function(i){ return list[i]; });
+
+    nomesGo.disabled = true;
+    nomesGo.classList.add("rolling");
+    $("srt-nomes-empty").style.display = "none";
+    var copyBtn = $("srt-nomes-copy");
+    copyBtn.classList.remove("on");
+    var resWrap = $("srt-nomes-results");
+    resWrap.classList.remove("on");
+    resWrap.innerHTML = "";
+
+    var rollEl = document.createElement("div");
+    rollEl.className = "srt-rolling-name";
+    resWrap.parentElement.insertBefore(rollEl, resWrap);
+
+    var ticks = 0, maxTicks = 16;
+    var timer = setInterval(function(){
+      rollEl.textContent = list[randInt(0, list.length-1)];
+      ticks++;
+      if(ticks >= maxTicks){
+        clearInterval(timer);
+        rollEl.remove();
+        winners.forEach(function(name, idx){
+          var card = document.createElement("div");
+          card.className = "srt-nomes-winner";
+          card.style.animationDelay = (idx*0.1)+"s";
+          card.innerHTML = '<b>'+(winners.length>1 ? (idx+1)+"º sorteado" : "Sorteado")+'</b>'+name;
+          resWrap.appendChild(card);
+        });
+        resWrap.classList.add("on");
+        copyBtn.classList.add("on");
+        copyBtn.onclick = function(){ copyText(copyBtn, winners.join(", ")); };
+        confettiBurst($("srt-nomes-stage"));
+        vibrate([40,40,40]);
+        if(remove){
+          var remaining = list.filter(function(_, i){ return winnerIdx.indexOf(i) === -1; });
+          nomesTextarea.value = remaining.join("\n");
+          updateNomesCount();
+        }
+        nomesGo.disabled = false;
+        nomesGo.classList.remove("rolling");
+        nomesHist.unshift({ label: winners.join(", ") });
+        renderNomesHist();
+      }
+    }, 70);
+  };
+  function renderNomesHist(){
+    var wrap = $("srt-nomes-hist");
+    if(!nomesHist.length){ wrap.innerHTML=""; return; }
+    var html = '<div class="srt-hist-title">Últimos sorteios</div>';
+    nomesHist.slice(0,8).forEach(function(h){
+      html += '<div class="srt-hist-item">🏷️ <b>'+h.label+'</b></div>';
+    });
+    html += '<button type="button" class="srt-hist-clear" id="srt-nomes-hist-clear">Limpar histórico</button>';
+    wrap.innerHTML = html;
+    $("srt-nomes-hist-clear").onclick = function(){ nomesHist.length=0; renderNomesHist(); };
+  }
+})();
+</script>
 </body>
 </html>
