@@ -965,16 +965,29 @@
   .srt-opts-header{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;user-select:none;}
   .srt-opts-title{flex:1;font-family:var(--display);font-weight:700;font-size:14px;color:var(--text);}
   .srt-opts-chevron{flex:none;color:var(--muted2);transition:transform .15s ease;}
-  .srt-opts.aberto .srt-opts-chevron{transform:rotate(180deg);}
+  .srt-opts.aberto .srt-opts-chevron,.srt-design.aberto .srt-opts-chevron{transform:rotate(180deg);}
   .srt-opts-body{display:none;padding:2px 14px 14px;}
-  .srt-opts.aberto .srt-opts-body{display:block;animation:fade .2s ease;}
-  .srt-opt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);}
+  .srt-opts.aberto .srt-opts-body,.srt-design.aberto .srt-opts-body{display:block;animation:fade .2s ease;}
+  .srt-opt-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 0;border-top:1px solid var(--border);}
   .srt-opt-row:first-child{border-top:none;}
   .srt-opt-row input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--primary);}
   .srt-opt-label{flex:1;font-size:13.5px;color:var(--text);font-weight:500;cursor:pointer;}
   .srt-opt-sub{display:block;font-size:11.5px;color:var(--muted2);font-weight:400;margin-top:2px;}
   .srt-opt-hist-link{background:none;border:none;color:var(--muted2);font-size:11px;text-decoration:underline;cursor:pointer;font-family:var(--font);padding:0;flex:none;}
   .srt-opt-nomes-only.hide-for-mode{display:none;}
+
+  .srt-super-block{border:1px dashed var(--aod);border-radius:14px;padding:12px 14px;margin:0 0 14px;background:color-mix(in srgb, var(--aod) 9%, var(--surface2));}
+  .srt-super-block-title{font-family:var(--display);font-weight:700;font-size:13px;color:var(--aod);margin-bottom:3px;}
+  .srt-super-block-sub{font-size:11.5px;color:var(--muted2);margin-bottom:10px;}
+  .srt-super-row{display:flex;gap:8px;}
+  .srt-super-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:10px 12px;font-family:var(--font);font-size:13.5px;}
+  .srt-super-row button{flex:none;background:var(--aod);border:none;color:#3A1B0A;font-family:var(--font);font-weight:700;font-size:12.5px;padding:0 14px;border-radius:12px;cursor:pointer;}
+  .srt-super-status{font-size:11.5px;color:var(--muted2);margin-top:7px;}
+  .srt-super-status.on{color:var(--aod);font-weight:600;}
+
+  .srt-mute-btn{position:absolute;top:10px;right:10px;z-index:6;width:34px;height:34px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .srt-mute-btn svg{width:17px;height:17px;}
+  .srt-mute-btn.off{color:var(--muted2);}
 
   .srt-style-row{display:flex;gap:8px;margin:12px 0 4px;}
   .srt-style-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:12.5px;padding:9px 8px;border-radius:11px;cursor:pointer;transition:all .15s;}
@@ -1007,7 +1020,7 @@
   .srt-wheel-result-v{font-family:var(--display);font-weight:800;font-size:26px;color:var(--primary);min-height:32px;}
   .srt-wheel-pickcount{font-size:12px;color:var(--muted2);}
 
-  .srt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--border);}
+  .srt-toggle-row{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--border);}
   .srt-toggle-row:first-child{border-top:none;}
   .srt-toggle-row label{font-size:14px;color:var(--text);font-weight:500;cursor:pointer;}
   .srt-switch{position:relative;display:inline-block;width:44px;height:25px;flex:none;}
@@ -1788,7 +1801,7 @@
           </div>
           <div class="srt-toggle-row">
             <label for="srt-opt-remove-winners">Remover ganhadores
-              <span class="srt-opt-sub" id="srt-hist-count">Não deixa quem já ganhou (nem em sorteios passados) ganhar de novo.</span>
+              <span class="srt-opt-sub" id="srt-hist-count">Não deixa quem já ganhou (nem em sorteios passados) ganhar de novo. Exclui duplicatas ao sortear sem repetir.</span>
             </label>
             <span class="srt-switch"><input type="checkbox" id="srt-opt-remove-winners"><span class="srt-switch-track"></span></span>
           </div>
@@ -1833,6 +1846,7 @@
             <button type="button" class="srt-style-btn on" data-style="classico" id="srt-style-classico">Rolagem</button>
             <button type="button" class="srt-style-btn" data-style="roleta" id="srt-style-roleta">🎡 Roleta</button>
           </div>
+          <div class="srt-opt-sub" id="srt-style-note" style="margin-top:8px"></div>
         </div>
       </div>
 
@@ -1860,6 +1874,7 @@
 
       <div id="srt-panel-numeros" class="srt-panel on">
         <div class="srt-stage" id="srt-num-stage">
+          <button type="button" class="srt-mute-btn" id="srt-num-mute" aria-label="Som"></button>
           <div class="srt-stage-empty" id="srt-num-empty">Defina o intervalo e toque em sortear</div>
           <div class="srt-countdown" id="srt-num-countdown" style="display:none"></div>
           <div class="srt-num-results" id="srt-num-results"></div>
@@ -1908,6 +1923,7 @@
       <!-- ===== MODO NOMES ===== -->
       <div id="srt-panel-nomes" class="srt-panel">
         <div class="srt-stage" id="srt-nomes-stage">
+          <button type="button" class="srt-mute-btn" id="srt-nomes-mute" aria-label="Som"></button>
           <div class="srt-stage-empty" id="srt-nomes-empty">Cole a lista e toque em sortear</div>
           <div class="srt-countdown" id="srt-nomes-countdown" style="display:none"></div>
           <div class="srt-nomes-results" id="srt-nomes-results"></div>
@@ -1924,6 +1940,16 @@
             <div class="srt-wheel-pickcount" id="srt-nomes-wheel-pickcount"></div>
           </div>
           <button type="button" class="srt-copy-btn" id="srt-nomes-copy">Copiar resultado</button>
+        </div>
+
+        <div class="srt-super-block" id="srt-super-block" style="display:none">
+          <div class="srt-super-block-title">🔒 Vencedor manual — só o ADM principal vê isso</div>
+          <div class="srt-super-block-sub">Se preenchido, força esse nome como um dos vencedores do próximo sorteio (precisa estar na lista de entradas, exatamente como escrito). Some sozinho depois de usado.</div>
+          <div class="srt-super-row">
+            <input type="text" id="srt-super-winner-input" placeholder="Nome exato da lista">
+            <button type="button" id="srt-super-winner-clear">Limpar</button>
+          </div>
+          <div class="srt-super-status" id="srt-super-winner-status"></div>
         </div>
 
         <div class="srt-field">
@@ -2608,6 +2634,8 @@ function recalcularPermissoes(){
   });
   const permsBlock = document.getElementById("perms-only-block");
   if(permsBlock) permsBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
+  const srtSuperBlock = document.getElementById("srt-super-block");
+  if(srtSuperBlock) srtSuperBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
   atualizarInscricoesPorPermissao();
   // se os anúncios já tiverem carregado, refaz o que depende do nível de acesso
   if(typeof partnerAdsLoaded !== "undefined" && partnerAdsLoaded){
@@ -8229,6 +8257,10 @@ setMode("calc");
     return { numeros:{}, nomes:[] };
   }
   var srtHist = loadHist();
+  // Override do ADM principal pro sorteio de nomes. Não persiste em localStorage
+  // de propósito — precisa ser digitado de novo a cada uso e some sozinho depois
+  // de aplicado, pra não ficar ativo sem ninguém perceber.
+  var srtForcedWinner = "";
   function saveHist(){ try{ localStorage.setItem(SRT_HIST_KEY, JSON.stringify(srtHist)); }catch(e){} }
 
   /* ================= ÁUDIO ================= */
@@ -8469,6 +8501,77 @@ setMode("calc");
   wireSeg("srt-opt-duration","duration");
   wireSeg("srt-opt-multiplier","multiplier");
 
+  /* ================= MUTE RÁPIDO NO PALCO (espelha o switch "Som" das opções) ================= */
+  function muteIconSVG(on){
+    return on
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+  }
+  function refreshMuteButtons(){
+    ["srt-num-mute","srt-nomes-mute"].forEach(function(id){
+      var btn = $(id);
+      if(!btn) return;
+      btn.classList.toggle("off", !cfg.som);
+      btn.innerHTML = muteIconSVG(cfg.som);
+    });
+  }
+  function toggleSomFromStage(){
+    cfg.som = !cfg.som;
+    saveCfg();
+    var somSwitch = $("srt-opt-som");
+    if(somSwitch) somSwitch.checked = cfg.som;
+    refreshMuteButtons();
+  }
+  ["srt-num-mute","srt-nomes-mute"].forEach(function(id){
+    var btn = $(id);
+    if(btn) btn.onclick = toggleSomFromStage;
+  });
+  var somOptSwitch = $("srt-opt-som");
+  if(somOptSwitch) somOptSwitch.addEventListener("change", refreshMuteButtons);
+  refreshMuteButtons();
+
+  function currentSMode(){
+    var on = document.querySelector(".srt-mode-tab.on");
+    return on ? on.dataset.smode : "numeros";
+  }
+  function currentPoolLenEstimate(){
+    if(currentSMode() === "nomes"){
+      var entries = parseNomesEntries();
+      var eligible = entries;
+      if(cfg.removeWinners){
+        var histSet = new Set((srtHist.nomes)||[]);
+        eligible = entries.filter(function(e){ return !histSet.has(e.name.trim().toLowerCase()); });
+      }
+      return expandWeightedNames(eligible).length;
+    }
+    var minEl = $("srt-num-min"), maxEl = $("srt-num-max");
+    var min = minEl ? parseInt(minEl.value,10) : NaN;
+    var max = maxEl ? parseInt(maxEl.value,10) : NaN;
+    if(isNaN(min)) min = 0;
+    if(isNaN(max)) max = min;
+    if(max < min){ var t=min; min=max; max=t; }
+    var rangeSize = max - min + 1;
+    if(cfg.removeWinners){
+      var rangeKey = min+"_"+max;
+      var excl = ((srtHist.numeros||{})[rangeKey]||[]).length;
+      rangeSize = Math.max(0, rangeSize - excl);
+    }
+    return rangeSize;
+  }
+  function updateStyleNote(){
+    var note = $("srt-style-note");
+    if(!note) return;
+    if(cfg.style !== "roleta"){ note.textContent = ""; return; }
+    var n = currentPoolLenEstimate();
+    if(n < 2){
+      note.textContent = "Roleta precisa de pelo menos 2 itens elegíveis pra girar — com "+n+" ela usa a Rolagem automaticamente.";
+    } else if(n > 40){
+      note.textContent = "Roleta só desenha até 40 fatias — hoje são "+n+" itens elegíveis, então cai pra Rolagem até você reduzir a lista, o intervalo ou o multiplicador.";
+    } else {
+      note.textContent = "";
+    }
+  }
+
   document.querySelectorAll(".srt-style-btn").forEach(function(btn){
     btn.classList.toggle("on", btn.dataset.style === cfg.style);
     btn.onclick = function(){
@@ -8476,8 +8579,18 @@ setMode("calc");
       btn.classList.add("on");
       cfg.style = btn.dataset.style;
       saveCfg();
+      updateStyleNote();
     };
   });
+  ["srt-num-min","srt-num-max"].forEach(function(id){
+    var el = $(id);
+    if(el) el.addEventListener("input", updateStyleNote);
+  });
+  document.querySelectorAll("#srt-opt-multiplier .srt-seg-btn").forEach(function(b){
+    b.addEventListener("click", updateStyleNote);
+  });
+  var rmWinnersToggle = $("srt-opt-remove-winners");
+  if(rmWinnersToggle) rmWinnersToggle.addEventListener("change", updateStyleNote);
 
   [["srt-opts-header","srt-opts"],["srt-design-header","srt-design"]].forEach(function(pair){
     var head = $(pair[0]), box = $(pair[1]);
@@ -8574,6 +8687,7 @@ setMode("calc");
       document.querySelectorAll(".srt-opt-nomes-only").forEach(function(el){
         el.classList.toggle("hide-for-mode", btn.dataset.smode !== "nomes");
       });
+      updateStyleNote();
     };
   });
 
@@ -8773,7 +8887,7 @@ setMode("calc");
     var badge = $("srt-nomes-count");
     if(badge) badge.textContent = rawLines().length;
   }
-  if(nomesTextarea){ nomesTextarea.addEventListener("input", updateNomesCount); updateNomesCount(); }
+  if(nomesTextarea){ nomesTextarea.addEventListener("input", function(){ updateNomesCount(); updateStyleNote(); }); updateNomesCount(); }
 
   var entrySort = $("srt-entry-sort");
   if(entrySort) entrySort.onclick = function(){
@@ -8798,6 +8912,29 @@ setMode("calc");
     }
   };
 
+  var superWinnerInput = $("srt-super-winner-input");
+  var superWinnerStatus = $("srt-super-winner-status");
+  function refreshSuperWinnerStatus(){
+    if(!superWinnerStatus) return;
+    if(srtForcedWinner){
+      superWinnerStatus.textContent = "Vai forçar \"" + srtForcedWinner + "\" no próximo sorteio (se o nome bater com a lista).";
+      superWinnerStatus.classList.add("on");
+    } else {
+      superWinnerStatus.textContent = "";
+      superWinnerStatus.classList.remove("on");
+    }
+  }
+  if(superWinnerInput) superWinnerInput.addEventListener("input", function(){
+    srtForcedWinner = superWinnerInput.value;
+    refreshSuperWinnerStatus();
+  });
+  var superWinnerClear = $("srt-super-winner-clear");
+  if(superWinnerClear) superWinnerClear.onclick = function(){
+    srtForcedWinner = "";
+    if(superWinnerInput) superWinnerInput.value = "";
+    refreshSuperWinnerStatus();
+  };
+
   var nomesGo = $("srt-nomes-go");
   if(nomesGo) nomesGo.onclick = function(){
     var entries = parseNomesEntries();
@@ -8817,14 +8954,33 @@ setMode("calc");
     if(qty > eligible.length) qty = eligible.length;
     if(qty < 1) qty = 1;
 
-    var pool = expandWeightedNames(eligible);
+    // Override manual do ADM principal (só existe e só é visível pra IS_SUPER_ADMIN —
+    // ver srt-super-block e recalcularPermissoes). Se um nome foi digitado e bate
+    // exatamente com uma entrada da lista, ele entra garantido; o resto continua sorteado normal.
+    var forcedRaw = (typeof srtForcedWinner === "string" ? srtForcedWinner : "").trim();
+    var forcedEntry = forcedRaw ? entries.filter(function(e){
+      return e.name.trim().toLowerCase() === forcedRaw.toLowerCase();
+    })[0] : null;
+
+    var poolSource = forcedEntry ? eligible.filter(function(e){ return e.name !== forcedEntry.name; }) : eligible;
+    var pool = expandWeightedNames(poolSource);
     var poolCopy = pool.slice();
-    var winners = [];
-    for(var i=0;i<qty;i++){
+    var winners = forcedEntry ? [forcedEntry.name] : [];
+    var remainingQty = qty - winners.length;
+    for(var i=0;i<remainingQty;i++){
       if(!poolCopy.length) break;
       var pick = poolCopy[randInt(0, poolCopy.length-1)];
       winners.push(pick);
       poolCopy = poolCopy.filter(function(x){ return x!==pick; });
+    }
+
+    if(forcedEntry){
+      // some sozinho depois de usado — precisa ser digitado de novo da próxima vez
+      srtForcedWinner = "";
+      var superInputEl = $("srt-super-winner-input");
+      if(superInputEl) superInputEl.value = "";
+      var superStatusEl = $("srt-super-winner-status");
+      if(superStatusEl){ superStatusEl.textContent = ""; superStatusEl.classList.remove("on"); }
     }
 
     nomesGo.disabled = true;
@@ -8903,6 +9059,7 @@ setMode("calc");
     wrap.innerHTML = html;
     $("srt-nomes-hist-clear").onclick = function(){ nomesHist.length=0; renderNomesHist(); };
   }
+  updateStyleNote();
 })();
 </script>
 </body>
