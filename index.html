@@ -989,6 +989,8 @@
   .srt-mute-btn svg{width:17px;height:17px;}
   .srt-mute-btn.off{color:var(--muted2);}
 
+  .srt-roleta-alert{position:absolute;top:52px;left:50%;transform:translateX(-50%);max-width:86%;background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);font-size:12.5px;font-weight:600;text-align:center;line-height:1.4;padding:9px 14px;border-radius:12px;z-index:7;animation:fade .2s ease;}
+
   .srt-style-row{display:flex;gap:8px;margin:12px 0 4px;}
   .srt-style-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:12.5px;padding:9px 8px;border-radius:11px;cursor:pointer;transition:all .15s;}
   .srt-style-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
@@ -1011,8 +1013,9 @@
 
   .srt-wheel-wrap{display:none;flex-direction:column;align-items:center;gap:12px;width:100%;}
   .srt-wheel-wrap.on{display:flex;}
-  .srt-wheel-stage{position:relative;width:min(100%,280px);aspect-ratio:1;margin:6px auto 0;}
-  .srt-wheel-canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);transition:transform 4.6s cubic-bezier(.12,.72,.14,1);will-change:transform;}
+  .srt-wheel-stage{position:relative;width:min(100%,280px);margin:6px auto 0;}
+  .srt-wheel-stage::before{content:"";display:block;padding-top:100%;}
+  .srt-wheel-canvas{position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);transition:transform 4.6s cubic-bezier(.12,.72,.14,1);will-change:transform;}
   .srt-wheel-pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid var(--primary);filter:drop-shadow(0 3px 4px rgba(0,0,0,.4));z-index:2;}
   .srt-wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20%;height:20%;border-radius:50%;background:var(--surface);border:3px solid var(--primary);z-index:2;}
   .srt-wheel-result{text-align:center;}
@@ -1875,6 +1878,7 @@
       <div id="srt-panel-numeros" class="srt-panel on">
         <div class="srt-stage" id="srt-num-stage">
           <button type="button" class="srt-mute-btn" id="srt-num-mute" aria-label="Som"></button>
+          <div class="srt-roleta-alert" id="srt-num-roleta-alert" style="display:none"></div>
           <div class="srt-stage-empty" id="srt-num-empty">Defina o intervalo e toque em sortear</div>
           <div class="srt-countdown" id="srt-num-countdown" style="display:none"></div>
           <div class="srt-num-results" id="srt-num-results"></div>
@@ -1924,6 +1928,7 @@
       <div id="srt-panel-nomes" class="srt-panel">
         <div class="srt-stage" id="srt-nomes-stage">
           <button type="button" class="srt-mute-btn" id="srt-nomes-mute" aria-label="Som"></button>
+          <div class="srt-roleta-alert" id="srt-nomes-roleta-alert" style="display:none"></div>
           <div class="srt-stage-empty" id="srt-nomes-empty">Cole a lista e toque em sortear</div>
           <div class="srt-countdown" id="srt-nomes-countdown" style="display:none"></div>
           <div class="srt-nomes-results" id="srt-nomes-results"></div>
@@ -8416,8 +8421,9 @@ setMode("calc");
     });
     setTimeout(finish, durationSec*1000 + 500);
   }
-  function useRoleta(poolLen){
-    return cfg.style === "roleta" && poolLen >= 2 && poolLen <= 40;
+  function useRoleta(poolLen, maxSlices){
+    maxSlices = maxSlices || 40;
+    return cfg.style === "roleta" && poolLen >= 2 && poolLen <= maxSlices;
   }
   function spinSingleModeWheel(prefix, poolLabels, winnerLabels, durationSec, onAllDone){
     var canvas = $(prefix+"-canvas");
@@ -8530,6 +8536,18 @@ setMode("calc");
   if(somOptSwitch) somOptSwitch.addEventListener("change", refreshMuteButtons);
   refreshMuteButtons();
 
+  function flashRoletaAlert(elId, msg){
+    var el = $(elId);
+    if(!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el._t);
+    el._t = setTimeout(function(){ el.style.display = "none"; }, 4200);
+  }
+
+  var NUM_ROLETA_MAX = 100; // números são curtos (poucos dígitos), então a roleta aguenta mais fatias que em nomes
+  var NOMES_ROLETA_MAX = 40;
+
   function currentSMode(){
     var on = document.querySelector(".srt-mode-tab.on");
     return on ? on.dataset.smode : "numeros";
@@ -8562,11 +8580,13 @@ setMode("calc");
     var note = $("srt-style-note");
     if(!note) return;
     if(cfg.style !== "roleta"){ note.textContent = ""; return; }
+    var mode = currentSMode();
+    var cap = mode === "nomes" ? NOMES_ROLETA_MAX : NUM_ROLETA_MAX;
     var n = currentPoolLenEstimate();
     if(n < 2){
       note.textContent = "Roleta precisa de pelo menos 2 itens elegíveis pra girar — com "+n+" ela usa a Rolagem automaticamente.";
-    } else if(n > 40){
-      note.textContent = "Roleta só desenha até 40 fatias — hoje são "+n+" itens elegíveis, então cai pra Rolagem até você reduzir a lista, o intervalo ou o multiplicador.";
+    } else if(n > cap){
+      note.textContent = "Roleta só desenha até "+cap+" fatias nesse modo — hoje são "+n+" itens elegíveis, então cai pra Rolagem até você reduzir "+(mode==="nomes" ? "a lista ou o multiplicador" : "o intervalo")+".";
     } else {
       note.textContent = "";
     }
@@ -8825,9 +8845,14 @@ setMode("calc");
     }
 
     function doStyleReveal(){
-      if(useRoleta(eligiblePool.length)){
+      if(useRoleta(eligiblePool.length, NUM_ROLETA_MAX)){
         spinSingleModeWheel("srt-num-wheel", eligiblePool, finalNums, cfg.duration, function(){ finalize(); });
       } else {
+        if(cfg.style === "roleta"){
+          flashRoletaAlert("srt-num-roleta-alert", eligiblePool.length < 2
+            ? "Roleta precisa de pelo menos 2 números elegíveis pra girar."
+            : "Roleta permite no máximo "+NUM_ROLETA_MAX+" números por sorteio — esse intervalo tem "+eligiblePool.length+". Use um intervalo menor ou troque pra Rolagem.");
+        }
         var rollEl = document.createElement("div");
         rollEl.className = "srt-rolling";
         resWrap.parentElement.insertBefore(rollEl, resWrap);
@@ -9026,9 +9051,14 @@ setMode("calc");
 
     function doStyleReveal(){
       var poolNames = expandWeightedNames(eligible);
-      if(useRoleta(poolNames.length)){
+      if(useRoleta(poolNames.length, NOMES_ROLETA_MAX)){
         spinSingleModeWheel("srt-nomes-wheel", poolNames, winners, cfg.duration, function(){ finalize(); });
       } else {
+        if(cfg.style === "roleta"){
+          flashRoletaAlert("srt-nomes-roleta-alert", poolNames.length < 2
+            ? "Roleta precisa de pelo menos 2 nomes elegíveis pra girar."
+            : "Roleta permite no máximo "+NOMES_ROLETA_MAX+" entradas (contando multiplicador) — esse sorteio tem "+poolNames.length+". Reduza a lista/multiplicador ou troque pra Rolagem.");
+        }
         var list = eligible.map(function(e){ return e.name; });
         var rollEl = document.createElement("div");
         rollEl.className = "srt-rolling-name";
