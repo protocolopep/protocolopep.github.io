@@ -995,7 +995,7 @@
   .srt-style-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:12.5px;padding:9px 8px;border-radius:11px;cursor:pointer;transition:all .15s;}
   .srt-style-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
-  .srt-countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--surface2) 88%, transparent);z-index:5;font-family:var(--display);font-weight:800;font-size:56px;color:var(--primary);animation:srtPop .3s cubic-bezier(.34,1.56,.64,1);}
+  .srt-countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface2);background:color-mix(in srgb, var(--surface2) 88%, transparent);z-index:5;font-family:var(--display);font-weight:800;font-size:56px;color:var(--primary);animation:srtPop .3s cubic-bezier(.34,1.56,.64,1);}
 
   .srt-list-wrap{position:relative;}
   .srt-list-veil{position:absolute;inset:0;border-radius:12px;background:var(--surface2);backdrop-filter:blur(9px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:600;text-align:center;padding:10px;}
@@ -8228,8 +8228,19 @@ setMode("calc");
   var SRT_LS_KEY = "srt-config-v1";
   var SRT_HIST_KEY = "srt-winners-hist-v1";
 
+  // Duas cores principais do site (lidas ao vivo do CSS, então respeitam modo claro/escuro)
+  function siteThemeColors(){
+    try{
+      var cs = getComputedStyle(document.documentElement);
+      var p = (cs.getPropertyValue("--primary")||"").trim() || "#2CC5C0";
+      var m = (cs.getPropertyValue("--motsc")||"").trim() || "#2FD8AC";
+      return [p, m];
+    }catch(e){ return ["#2CC5C0","#2FD8AC"]; }
+  }
+  var SITE_THEME_COLORS = siteThemeColors();
+
   var THEMES = [
-    ["#2CC5C0","#8593F7","#F59158"],
+    SITE_THEME_COLORS,
     ["#2F6FED","#F2994A"],
     ["#4FC3F7","#D9A441"],
     ["#F6A6B2","#8CE0B0"],
@@ -8243,7 +8254,7 @@ setMode("calc");
       duration:5, multiplier:1,
       order:false, clickreveal:false, countdown:false, hidelist:false,
       style:"classico", themeIdx:0,
-      colors:["#2CC5C0","#8593F7","#F59158"], bg:"#1A2532"
+      colors:SITE_THEME_COLORS.slice(), bg:"#1A2532"
     };
     try{
       var s = JSON.parse(localStorage.getItem(SRT_LS_KEY));
@@ -8252,6 +8263,18 @@ setMode("calc");
     return d;
   }
   var cfg = loadCfg();
+  // migração: quem nunca mexeu no Design (ficou com a paleta antiga de 3 cores no
+  // tema 1) passa a usar as duas cores do site automaticamente. Quem já customizou
+  // não é mexido.
+  (function migrateToSiteColors(){
+    var OLD_DEFAULT = ["#2CC5C0","#8593F7","#F59158"];
+    var isOldDefault = cfg.colors && cfg.colors.length===3
+      && cfg.colors[0]===OLD_DEFAULT[0] && cfg.colors[1]===OLD_DEFAULT[1] && cfg.colors[2]===OLD_DEFAULT[2];
+    if(isOldDefault && cfg.themeIdx === 0){
+      cfg.colors = SITE_THEME_COLORS.slice();
+      saveCfg();
+    }
+  })();
   function saveCfg(){ try{ localStorage.setItem(SRT_LS_KEY, JSON.stringify(cfg)); }catch(e){} }
 
   function loadHist(){
