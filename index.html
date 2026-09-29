@@ -8325,7 +8325,7 @@ setMode("calc");
       });
     }catch(e){}
   }
-  function srtBeep(){ if(cfg.som) beep(); }
+  function srtBeep(){ if(cfg.som){ try{ beep(); }catch(e){} } }
   function playSpinTicks(durationMs){
     var start = Date.now();
     function loop(){
@@ -8343,24 +8343,35 @@ setMode("calc");
   function runCountdown(elId, cb){
     if(!cfg.countdown){ cb(); return; }
     var el = $(elId);
-    el.style.display = "flex";
+    if(!el){ cb(); return; }
     var n = 3;
+    var done = false;
+    var iv, failsafe;
+    function finish(){
+      if(done) return;
+      done = true;
+      clearInterval(iv);
+      clearTimeout(failsafe);
+      el.style.display = "none";
+      cb();
+    }
+    el.style.display = "flex";
     el.textContent = n;
     srtBeep();
-    var iv = setInterval(function(){
-      n--;
-      if(n <= 0){
-        clearInterval(iv);
-        el.style.display = "none";
-        cb();
-        return;
-      }
-      el.textContent = n;
-      el.style.animation = "none";
-      void el.offsetWidth;
-      el.style.animation = "";
-      srtBeep();
+    iv = setInterval(function(){
+      try{
+        n--;
+        if(n <= 0){ finish(); return; }
+        el.textContent = n;
+        el.style.animation = "none";
+        void el.offsetWidth;
+        el.style.animation = "";
+        srtBeep();
+      }catch(e){ finish(); }
     }, 700);
+    // trava de segurança: nunca deixa o sorteio preso na contagem — se por qualquer
+    // motivo o intervalo acima não avançar, isso força o sorteio a continuar sozinho.
+    failsafe = setTimeout(finish, 4200);
   }
 
   /* ================= ROLETA (canvas) ================= */
