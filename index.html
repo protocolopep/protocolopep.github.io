@@ -216,6 +216,60 @@
   .cell.empty.tap:hover{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, var(--surface3));}
   .week-hint{font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.4;}
 
+  /* ---------- visão do mês (aba Semana) ---------- */
+  .wm-toggle{margin-bottom:14px;}
+  .mo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .mo-nav{width:36px;height:36px;flex:none;border-radius:11px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:18px;line-height:1;cursor:pointer;font-family:var(--font);transition:all .15s ease;}
+  .mo-nav:hover:not(:disabled){border-color:var(--primary);color:var(--primary);}
+  .mo-nav:disabled{opacity:.3;cursor:default;}
+  .mo-titlebox{text-align:center;flex:1;min-width:0;}
+  .mo-title{font-family:var(--display);font-weight:700;font-size:16px;}
+  .mo-back{display:none;background:none;border:none;color:var(--primary);font-family:var(--font);font-size:11.5px;cursor:pointer;text-decoration:underline;padding:2px 0 0;}
+  .mo-back.show{display:inline-block;}
+  .mo-summary{display:flex;gap:8px;margin-bottom:14px;}
+  .mo-stat{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:9px 4px;text-align:center;}
+  .mo-stat .v{font-family:var(--display);font-size:17px;font-weight:700;}
+  .mo-stat .l{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .mo-dow,.mo-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+  .mo-dow span{text-align:center;font-size:10.5px;color:var(--muted2);font-weight:600;padding-bottom:5px;}
+  .mo-blank{min-height:54px;}
+  .mo-day{
+    min-height:54px;border-radius:10px;background:var(--surface2);
+    border:1px solid transparent;color:var(--text);font-family:var(--font);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:5px 2px 4px;cursor:pointer;transition:transform .12s ease,border-color .15s ease,background .15s ease;
+  }
+  .mo-day:hover{border-color:var(--border2);}
+  .mo-day:active{transform:scale(.94);}
+  .mo-day .mo-n{font-size:12px;font-weight:600;line-height:1.2;}
+  .mo-day.future{opacity:.5;}
+  .mo-day.full{background:color-mix(in srgb, var(--primary) 11%, var(--surface2));border-color:color-mix(in srgb, var(--primary) 45%, transparent);}
+  .mo-day.miss{border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
+  .mo-day.today .mo-n{color:var(--primary);}
+  .mo-day.today{box-shadow:0 0 0 1px var(--primary);}
+  .mo-day.sel{background:var(--surface3);border-color:var(--text);}
+  .mo-dots{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:4px;max-width:100%;}
+  .mo-dots i{width:6px;height:6px;border-radius:50%;background:var(--c);box-sizing:border-box;display:block;}
+  .mo-dots i.pend{background:transparent;border:1px solid var(--c);}
+  .mo-dots b{font-size:8.5px;font-weight:700;color:var(--muted);line-height:6px;}
+  .mo-detail,.mo-peps{margin-top:12px;}
+  .mo-dtitle{font-family:var(--display);font-weight:700;font-size:14px;margin-bottom:10px;text-transform:capitalize;}
+  .mo-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface3);border:1px solid var(--border);margin-bottom:8px;}
+  .mo-row:last-child{margin-bottom:0;}
+  .mo-row .mo-dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;}
+  .mo-row .mo-info{flex:1;min-width:0;}
+  .mo-row .mo-nm{font-size:13.5px;font-weight:700;}
+  .mo-row .mo-sub{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .mo-row .mo-act{flex:none;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 11px;cursor:pointer;}
+  .mo-row .mo-act.ok{background:var(--c);border-color:var(--c);color:#0B1017;}
+  .mo-row .mo-act:disabled{opacity:.4;cursor:default;}
+  .mo-empty{color:var(--muted);font-size:12.5px;text-align:center;padding:6px 0;}
+  .mo-pep{display:flex;align-items:center;gap:10px;padding:8px 2px;}
+  .mo-pep .mo-pn{width:38%;font-family:var(--display);font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mo-pep .mo-bar{flex:1;height:7px;border-radius:5px;background:var(--surface3);overflow:hidden;}
+  .mo-pep .mo-bar i{display:block;height:100%;background:var(--c);border-radius:5px;}
+  .mo-pep .mo-pv{width:64px;text-align:right;font-size:11.5px;color:var(--muted);flex:none;}
+
   /* ---------- marcar dose passada ---------- */
   .btn-retro{
     display:flex;align-items:center;gap:8px;width:100%;
@@ -1095,6 +1149,7 @@
     position:relative;z-index:1;
   }
   .nav button svg{width:22px;height:22px;transition:transform .32s cubic-bezier(.34,1.56,.64,1);}
+  .nav button[data-v="semana"]{font-size:10px;white-space:nowrap;letter-spacing:-.1px;} /* rótulo mais longo: Semana/Mês */
   .nav button:active svg{transform:scale(.88);}
   .nav button.on{color:var(--primary);}
   .nav button.on svg{transform:translateY(-2px) scale(1.12);}
@@ -1584,16 +1639,46 @@
 
   <!-- SEMANA -->
   <section class="view" id="v-semana">
-    <p class="eyebrow">Visão da semana</p>
-    <p class="week-hint">💡 Esqueceu de marcar? Toque em qualquer dia para registrar ou corrigir uma dose.</p>
-    <div class="panel">
-      <table id="week-table"></table>
-      <div class="legend">
-        <span><i style="background:var(--primary)"></i> Tomado</span>
-        <span><i style="background:var(--surface3)"></i> Pendente</span>
-        <span><i style="background:transparent;border:1px solid var(--muted2)"></i> Não agendado</span>
+    <div class="segbtns wm-toggle" id="wm-toggle"><button data-m="semana" class="on">Semana</button><button data-m="mes">Mês</button></div>
+
+    <div id="wm-semana">
+      <p class="eyebrow">Visão da semana</p>
+      <p class="week-hint">💡 Esqueceu de marcar? Toque em qualquer dia para registrar ou corrigir uma dose.</p>
+      <div class="panel">
+        <table id="week-table"></table>
+        <div class="legend">
+          <span><i style="background:var(--primary)"></i> Tomado</span>
+          <span><i style="background:var(--surface3)"></i> Pendente</span>
+          <span><i style="background:transparent;border:1px solid var(--muted2)"></i> Não agendado</span>
+        </div>
       </div>
     </div>
+
+    <div id="wm-mes" style="display:none">
+      <p class="eyebrow">Visão do mês</p>
+      <p class="week-hint">💡 Toque em um dia para ver, registrar ou corrigir as doses dele. Use as setas para voltar no histórico.</p>
+      <div class="panel">
+        <div class="mo-head">
+          <button class="mo-nav" id="mo-prev" aria-label="Mês anterior">‹</button>
+          <div class="mo-titlebox">
+            <div class="mo-title" id="mo-title"></div>
+            <button class="mo-back" id="mo-back">voltar ao mês atual</button>
+          </div>
+          <button class="mo-nav" id="mo-next" aria-label="Próximo mês">›</button>
+        </div>
+        <div class="mo-summary" id="mo-summary"></div>
+        <div class="mo-dow" id="mo-dow"></div>
+        <div class="mo-grid" id="mo-grid"></div>
+        <div class="legend">
+          <span><i style="background:var(--primary);border-radius:50%;width:8px;height:8px"></i> Tomado</span>
+          <span><i style="background:transparent;border:1px solid var(--primary);border-radius:50%;width:8px;height:8px"></i> Esquecido</span>
+          <span><i style="background:color-mix(in srgb, var(--primary) 11%, var(--surface2));border:1px solid color-mix(in srgb, var(--primary) 45%, transparent)"></i> Dia completo</span>
+        </div>
+      </div>
+      <div class="panel mo-detail" id="mo-detail"></div>
+      <div class="panel mo-peps" id="mo-peps"></div>
+    </div>
+
     <button class="reset" id="reset-btn">Limpar todo o histórico</button>
   </section>
 
@@ -2462,7 +2547,7 @@ Ana"></textarea>
   </button>
   <button data-v="semana">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
-    Semana
+    Semana/Mês
   </button>
   <button data-v="hist">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -3640,7 +3725,147 @@ function renderWeek(){
   document.querySelectorAll("#week-table .cell.tap").forEach(c=>{
     c.onclick=()=>toggleOnDate(c.dataset.id, c.dataset.date);
   });
+  try{ renderMonth(); }catch(e){ console.error("renderMonth:", e); }
 }
+
+/* ---------- visão do mês (aba Semana → Mês) ---------- */
+var MO_Y=null, MO_M=null, MO_SEL=null;
+const MESES_PT=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const MO_MAX_DOTS=8;
+const moKey = (y,m) => y*12+m;
+function moFirstLogKey(){
+  let first=null;
+  for(const k in LOGS){
+    const rec=LOGS[k]||{};
+    if(!Object.keys(rec).some(id=>!id.startsWith('_t_') && rec[id])) continue;
+    if(!first || k<first) first=k;
+  }
+  return first;
+}
+// a partir de quando cada peptídeo "conta": 1ª dose registrada dele; sem registro, usa o início do ciclo ou hoje
+function moTrackFrom(){
+  const from={};
+  PEPTIDES.forEach(p=>{
+    let f=null;
+    for(const k in LOGS){
+      if(dosesTaken(LOGS[k]||{}, p.id)>0 && (!f || k<f)) f=k;
+    }
+    if(!f) f=(p.start && p.start<=todayKey) ? p.start : todayKey;
+    from[p.id]=f;
+  });
+  return from;
+}
+function moGoto(y,m){
+  MO_Y=y; MO_M=m;
+  MO_SEL = (y===now.getFullYear() && m===now.getMonth()) ? todayKey : dateKey(new Date(y,m,1));
+  renderMonth();
+}
+function renderMonth(){
+  const grid=document.getElementById("mo-grid"); if(!grid) return;
+  if(MO_Y==null){ MO_Y=now.getFullYear(); MO_M=now.getMonth(); MO_SEL=todayKey; }
+  const nDays=new Date(MO_Y,MO_M+1,0).getDate();
+  const lead=new Date(MO_Y,MO_M,1).getDay();
+  const from=moTrackFrom();
+  const curKey=moKey(now.getFullYear(), now.getMonth());
+  const firstLog=moFirstLogKey();
+  const minKey=firstLog ? moKey(+firstLog.slice(0,4), +firstLog.slice(5,7)-1) : curKey;
+
+  document.getElementById("mo-title").textContent = `${MESES_PT[MO_M]} ${MO_Y}`;
+  document.getElementById("mo-back").classList.toggle("show", moKey(MO_Y,MO_M)!==curKey);
+  document.getElementById("mo-prev").disabled = moKey(MO_Y,MO_M) <= minKey;
+  document.getElementById("mo-next").disabled = moKey(MO_Y,MO_M) >= curKey;
+  document.getElementById("mo-dow").innerHTML = DAY_FULL.map(n=>`<span>${n}</span>`).join("");
+
+  let totDoses=0, totSched=0, totDone=0, fullDays=0;
+  const per={}; PEPTIDES.forEach(p=>per[p.id]={doses:0,sched:0,done:0});
+  let h="";
+  for(let i=0;i<lead;i++) h+='<div class="mo-blank"></div>';
+  for(let d=1; d<=nDays; d++){
+    const dt=new Date(MO_Y,MO_M,d), k=dateKey(dt), rec=LOGS[k]||{};
+    const futuro=k>todayKey;
+    const dots=[]; let dayS=0, dayD=0, dayDoses=0;
+    PEPTIDES.forEach(p=>{
+      const n=dosesTaken(rec,p.id);
+      const conta=!futuro && k>=from[p.id] && isSchedOn(p,dt);
+      if(n>0){ dots.push({c:p.accent,ok:true}); totDoses+=n; dayDoses+=n; per[p.id].doses+=n; }
+      else if(conta){ dots.push({c:p.accent,ok:false}); }
+      if(conta){ totSched++; per[p.id].sched++; dayS++; if(n>0){ totDone++; per[p.id].done++; dayD++; } }
+    });
+    const full = dayS>0 && dayD===dayS;
+    if(full) fullDays++;
+    const miss = k<todayKey && dayS>dayD;
+    const shown=dots.slice(0,MO_MAX_DOTS), extra=dots.length-shown.length;
+    const cls=["mo-day", futuro?"future":"", full?"full":"", miss?"miss":"", k===todayKey?"today":"", k===MO_SEL?"sel":""].filter(Boolean).join(" ");
+    h+=`<button class="${cls}" data-k="${k}" aria-label="${d} de ${MESES_PT[MO_M]}: ${dayDoses} dose${dayDoses===1?'':'s'}">
+      <span class="mo-n">${d}</span>
+      <span class="mo-dots">${shown.map(x=>`<i class="${x.ok?'':'pend'}" style="--c:${x.c}"></i>`).join("")}${extra>0?`<b>+${extra}</b>`:""}</span>
+    </button>`;
+  }
+  grid.innerHTML=h;
+  grid.querySelectorAll(".mo-day").forEach(b=>{
+    b.onclick=()=>{ MO_SEL=b.dataset.k; renderMonth(); };
+  });
+
+  const adesao = totSched ? Math.round(totDone/totSched*100)+"%" : "—";
+  document.getElementById("mo-summary").innerHTML=`
+    <div class="mo-stat"><div class="v">${totDoses}</div><div class="l">doses no mês</div></div>
+    <div class="mo-stat"><div class="v">${adesao}</div><div class="l">adesão</div></div>
+    <div class="mo-stat"><div class="v">${fullDays}</div><div class="l">dias completos</div></div>`;
+
+  renderMonthDetail();
+
+  const pepBox=document.getElementById("mo-peps");
+  const rows=PEPTIDES.filter(p=>per[p.id].doses>0 || per[p.id].sched>0).map(p=>{
+    const s=per[p.id], pct=s.sched? Math.min(100,Math.round(s.done/s.sched*100)) : (s.doses?100:0);
+    return `<div class="mo-pep" style="--c:${p.accent}">
+      <span class="mo-pn" style="color:${p.accent}">${esc(p.name)}</span>
+      <span class="mo-bar"><i style="width:${pct}%"></i></span>
+      <span class="mo-pv">${s.doses} dose${s.doses===1?'':'s'}${s.sched?` · ${pct}%`:''}</span>
+    </div>`;
+  }).join("");
+  pepBox.style.display = rows ? "" : "none";
+  pepBox.innerHTML = rows ? `<div class="mo-dtitle">Por peptídeo no mês</div>${rows}` : "";
+}
+function renderMonthDetail(){
+  const box=document.getElementById("mo-detail"); if(!box) return;
+  const k=MO_SEL, rec=LOGS[k]||{};
+  const [Y,M,D]=k.split('-').map(Number); const dt=new Date(Y,M-1,D);
+  const futuro=k>todayKey;
+  const itens=PEPTIDES.filter(p=>dosesTaken(rec,p.id)>0 || isSchedOn(p,dt));
+  let h=`<div class="mo-dtitle">${fmtDateLabel(k)}</div>`;
+  if(!itens.length){
+    h+='<div class="mo-empty">Nada agendado nesse dia.</div>';
+  } else {
+    itens.forEach(p=>{
+      const n=dosesTaken(rec,p.id), ok=n>0;
+      const horas=doseTimes(rec,p.id).filter(Boolean).join(" · ");
+      const dose=p.dose?`${esc(p.dose)}${p.per?'/'+esc(p.per):''}`:'';
+      const sub=ok ? [dose, horas||"registrado manualmente"].filter(Boolean).join(" · ")
+                   : [dose, futuro?"agendado":"não registrado"].filter(Boolean).join(" · ");
+      h+=`<div class="mo-row" style="--c:${p.accent}">
+        <span class="mo-dot"></span>
+        <div class="mo-info"><div class="mo-nm">${esc(p.name)}</div><div class="mo-sub">${sub}</div></div>
+        <button class="mo-act ${ok?'ok':''}" data-id="${p.id}" data-date="${k}" ${futuro?'disabled':''}>${ok?'✓ Tomado':'Marcar'}</button>
+      </div>`;
+    });
+  }
+  box.innerHTML=h;
+  box.querySelectorAll(".mo-act:not([disabled])").forEach(b=>{
+    b.onclick=()=>toggleOnDate(b.dataset.id, b.dataset.date);
+  });
+}
+document.getElementById("mo-prev").onclick=()=>{ const m=MO_M-1; m<0 ? moGoto(MO_Y-1,11) : moGoto(MO_Y,m); };
+document.getElementById("mo-next").onclick=()=>{ const m=MO_M+1; m>11 ? moGoto(MO_Y+1,0) : moGoto(MO_Y,m); };
+document.getElementById("mo-back").onclick=()=>moGoto(now.getFullYear(), now.getMonth());
+document.querySelectorAll("#wm-toggle button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("#wm-toggle button").forEach(x=>x.classList.toggle("on", x===b));
+    const mes=b.dataset.m==="mes";
+    document.getElementById("wm-semana").style.display = mes ? "none" : "";
+    document.getElementById("wm-mes").style.display = mes ? "" : "none";
+    if(mes) renderMonth();
+  };
+});
 
 /* histórico de doses aplicadas */
 function fmtBR(s){ if(!s) return ''; const p=String(s).split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s; }
