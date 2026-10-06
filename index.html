@@ -1165,8 +1165,13 @@
   }
   .nav button{padding-left:2px;padding-right:2px;font-size:10.5px;}
   .nav button svg{width:21px;height:21px;}
+  .nav button .nav-ico{display:block;font-size:20px;line-height:22px;height:22px;
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+    transition:transform .32s cubic-bezier(.34,1.56,.64,1);}
+  .nav button:active .nav-ico{transform:scale(.88);}
+  .nav button.on .nav-ico{transform:translateY(-2px) scale(1.12);}
   @media (prefers-reduced-motion: reduce){
-    .nav-ind,.nav button svg{transition:none;}
+    .nav-ind,.nav button svg,.nav button .nav-ico{transition:none;}
     .nav button.on::before{animation:none;}
   }
 
@@ -2542,31 +2547,31 @@ Ana"></textarea>
 <nav class="nav">
   <span class="nav-ind" id="nav-ind"></span>
   <button data-v="hoje" class="on">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v0a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v0a1 1 0 0 1 1-1z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8.5 12h7M8.5 16h5"/></svg>
+    <span class="nav-ico" aria-hidden="true">📋</span>
     Protocolo
   </button>
   <button data-v="semana">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+    <span class="nav-ico" aria-hidden="true">📅</span>
     Semana/Mês
   </button>
   <button data-v="hist">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <span class="nav-ico" aria-hidden="true">🕐</span>
     Histórico
   </button>
   <button data-v="calc">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h.01M8 14h2M12 14h2M16 14h.01M8 18h6"/></svg>
+    <span class="nav-ico" aria-hidden="true">🧮</span>
     Calcular
   </button>
   <button data-v="ia">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c-1.3.7-2 2-2 3.5 0 1 .4 2 1 2.6-.3.6-.5 1.2-.5 1.9a3.5 3.5 0 0 0 5 3.2A3.5 3.5 0 0 0 17 18c1.9 0 3.5-1.6 3.5-3.5 0-.7-.2-1.3-.5-1.9.6-.6 1-1.6 1-2.6 0-1.5-.7-2.8-2-3.5a4 4 0 0 0-4-4Z"/></svg>
+    <span class="nav-ico" aria-hidden="true">🔷</span>
     IA
   </button>
   <button data-v="financas" id="nav-financas-btn" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    <span class="nav-ico" aria-hidden="true">💰</span>
     Finanças
   </button>
   <button data-v="sorteio" id="nav-sorteio-btn" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>
+    <span class="nav-ico" aria-hidden="true">🎲</span>
     Sorteio
   </button>
 </nav>
