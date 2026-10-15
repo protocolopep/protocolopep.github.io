@@ -96,7 +96,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-lite.js";
+import { getFirestore, doc, getDoc, setDoc, writeBatch, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-lite.js";
 
 // mesma config do app principal (a apiKey do Firebase é pública por natureza —
 // a proteção de verdade vem das Regras do Firestore, não do sigilo dela)
@@ -115,6 +115,7 @@ const params = new URLSearchParams(location.search);
 const adId = params.get("ad") || "";
 const n = params.get("n") || "";
 const token = params.get("t") || "";
+const slotId = adId + "_" + n;
 
 const telaCarregando = document.getElementById("tela-carregando");
 const telaErro = document.getElementById("tela-erro");
@@ -125,11 +126,15 @@ const badgeTexto = document.getElementById("badge-texto");
 const btn = document.getElementById("btn-toggle");
 const hint = document.getElementById("hint");
 
-function mostrarErro(){
+function mostrarErro(titulo, texto){
   telaCarregando.classList.add("oculto");
   telaStatus.classList.add("oculto");
+  if(titulo) document.querySelector("#tela-erro .erro-titulo").textContent = titulo;
+  if(texto) document.querySelector("#tela-erro .erro-texto").textContent = texto;
   telaErro.classList.remove("oculto");
 }
+const ERRO_LINK = ["Link inválido", "Esse link de status não existe mais ou foi trocado por um novo. Peça um link atualizado a quem administra o anúncio."];
+const ERRO_REDE = ["Sem conexão", "Não consegui falar com o servidor agora. Confira sua internet e abra o link de novo."];
 
 function pintarEstado(online){
   badge.className = "badge " + (online ? "on" : "off");
@@ -141,16 +146,26 @@ function pintarEstado(online){
 let onlineAtual = true;
 let logAbertoAtual = "";
 let adTitleAtual = "";
+const adRef = doc(db, "partnerAds", adId || "_");
+
+// PROVA de que quem abriu o link conhece o código: o servidor só aceita este documento se o código bater com o
+// do atendente (as regras conferem — o código nunca é lido de volta). Vai junto, no mesmo lote, de cada troca de status.
+const gravarProva = (lote) => lote.set(doc(db, "statusProof", slotId), { tok: token, ts: serverTimestamp() });
 
 async function carregar(){
-  if(!adId || !["1","2","3","4","5","6","7","8"].includes(n) || !token){ mostrarErro(); return; }
-  let snap;
+  if(!adId || !["1","2","3","4","5","6","7","8"].includes(n) || !token){ mostrarErro(...ERRO_LINK); return; }
+  // 1) valida o link: se o código não bater (ou foi trocado), o servidor recusa
   try{
-    snap = await getDoc(doc(db, "partnerAds", adId));
-  }catch(e){ mostrarErro(); return; }
-  if(!snap.exists()){ mostrarErro(); return; }
+    await setDoc(doc(db, "statusProof", slotId), { tok: token, ts: serverTimestamp() });
+  }catch(e){
+    if(e && e.code === "permission-denied") mostrarErro(...ERRO_LINK); else mostrarErro(...ERRO_REDE);
+    return;
+  }
+  // 2) dados públicos do anúncio (nome do atendente, status atual)
+  let snap;
+  try{ snap = await getDoc(adRef); }catch(e){ mostrarErro(...ERRO_REDE); return; }
+  if(!snap.exists()){ mostrarErro(...ERRO_LINK); return; }
   const d = snap.data();
-  if(!d["tok"+n] || d["tok"+n] !== token){ mostrarErro(); return; }
 
   txtNome.textContent = (d["n"+n] || "").trim() || ("Atendente " + n);
   adTitleAtual = d.title || "";
@@ -168,31 +183,47 @@ btn.addEventListener("click", async ()=>{
   const textoAnterior = hint.textContent;
   hint.textContent = "Salvando...";
   try{
-    const campo = {}; campo["online"+n] = novoValor;
-    if(novoValor){
-      // ficou online: abre um novo registro de ponto (fica "em andamento" até desligar)
-      const logRef = doc(collection(db,"attendantLogs"));
-      await setDoc(logRef, {
-        adId, adTitle: adTitleAtual, n:Number(n),
-        nome: txtNome.textContent,
-        onlineAt: Date.now(), offlineAt: null
-      });
-      campo["logAberto"+n] = logRef.id;
-      logAbertoAtual = logRef.id;
-    } else {
-      // ficou offline: fecha o registro de ponto que estava aberto (se houver)
-      if(logAbertoAtual){
-        await updateDoc(doc(db,"attendantLogs",logAbertoAtual), { offlineAt: Date.now() }).catch(()=>{});
-      }
-      campo["logAberto"+n] = "";
-      logAbertoAtual = "";
+    // o status pode ter mudado em outro aparelho: relê antes de gravar
+    const atual = (await getDoc(adRef)).data() || {};
+    if((atual["online"+n] !== false) === novoValor){
+      onlineAtual = novoValor; logAbertoAtual = atual["logAberto"+n] || "";
+      pintarEstado(onlineAtual); hint.textContent = textoAnterior; return;
     }
-    await setDoc(doc(db, "partnerAds", adId), campo, {merge:true});
+    logAbertoAtual = atual["logAberto"+n] || "";
+
+    const montar = (fecharPonto) => {
+      const lote = writeBatch(db);
+      gravarProva(lote);
+      const campo = {}; campo["online"+n] = novoValor;
+      let novoLogId = "";
+      if(novoValor){
+        // ficou online: abre um novo registro de ponto (fica "em andamento" até desligar)
+        const logRef = doc(collection(db, "attendantLogs"));
+        lote.set(logRef, { adId, adTitle: adTitleAtual, n: Number(n), nome: txtNome.textContent, onlineAt: Date.now(), offlineAt: null });
+        campo["logAberto"+n] = logRef.id; novoLogId = logRef.id;
+      } else {
+        // ficou offline: fecha o registro de ponto que estava aberto (se houver)
+        if(fecharPonto && logAbertoAtual) lote.update(doc(db, "attendantLogs", logAbertoAtual), { offlineAt: Date.now() });
+        campo["logAberto"+n] = "";
+      }
+      lote.set(adRef, campo, { merge: true });
+      return { lote, novoLogId };
+    };
+
+    let r = montar(true);
+    try{ await r.lote.commit(); }
+    catch(e){
+      // se só o fechamento do ponto falhou (registro apagado/antigo), grava o status mesmo assim
+      if(!novoValor && logAbertoAtual){ r = montar(false); await r.lote.commit(); } else { throw e; }
+    }
+    logAbertoAtual = novoValor ? r.novoLogId : "";
     onlineAtual = novoValor;
     pintarEstado(onlineAtual);
     hint.textContent = textoAnterior;
   }catch(e){
-    hint.textContent = "Não consegui salvar agora. Confira sua internet e tente de novo.";
+    hint.textContent = (e && e.code === "permission-denied")
+      ? "Esse link não vale mais (foi trocado). Peça um link novo a quem administra o anúncio."
+      : "Não consegui salvar agora. Confira sua internet e tente de novo.";
   }finally{
     btn.disabled = false;
   }
