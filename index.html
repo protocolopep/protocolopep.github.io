@@ -5442,15 +5442,17 @@ function renderPartnerClicks(){
       brk.innerHTML = '';
     } else {
       brk.innerHTML = ads.map(ad=>{
-        const counts={1:0,2:0,3:0,4:0};
+        const counts={1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0};
         let grupoCount=0;
         adminPartnerClicks.forEach(c=>{
           if(c.adId!==ad.id) return;
           if(c.tipo==='grupo'){ grupoCount++; return; }
           const n=Number(c.atendente)||0; if(counts[n]!=null) counts[n]++;
         });
-        const cards=[1,2,3,4]
-          .filter(n=>(ad["w"+n]||"").trim()) // só mostra card dos atendentes que existem nesse anúncio
+        // um card por atendente que existe no anúncio (até 8): aparece assim que o atendente é criado, mesmo com 0 cliques;
+        // também mantém o card de quem já tem cliques registrados, caso o atendente tenha sido removido depois
+        const cards=[1,2,3,4,5,6,7,8]
+          .filter(n=>(ad["w"+n]||ad["n"+n]||"").trim() || counts[n]>0)
           .map(n=>`<div class="ad-stat"><div class="ad-v">${counts[n]}</div><div class="ad-k">Atendente ${n}${ad["n"+n]?(" ("+esc(ad["n"+n])+")"):""}</div></div>`)
           .join('');
         const cardGrupo = (ad.glink||"").trim()
