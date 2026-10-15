@@ -1340,6 +1340,14 @@
   .ponto-tl-txt.on{color:var(--text);}
   .ponto-tl-dur{font-size:11px;color:var(--muted2);padding:2px 0 14px;}
   .ponto-tl-node:last-child .ponto-tl-dur{padding-bottom:2px;}
+
+  /* gerente de anúncios restrito: só vê/edita atendentes dos anúncios liberados */
+  .pt-editor .ad-scoped-note{display:none;}
+  .pt-editor.pt-scoped .ad-scoped-note{display:block;}
+  .pt-editor.pt-scoped .ad-content-fields,
+  .pt-editor.pt-scoped .pt-ad-remove{display:none !important;}
+  .perm-ad-row{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 2px;cursor:pointer;}
+  .perm-ad-row input{width:16px;height:16px;flex:none;}
 </style>
 </head>
 <body>
@@ -2112,7 +2120,7 @@ Ana"></textarea>
 
     <div id="perms-only-block" style="display:none">
       <p class="eyebrow" style="margin-top:22px">Permissões de administrador</p>
-      <div class="ad-note" style="margin-bottom:12px">🔑 Conceda a outra pessoa acesso <b>total de admin</b> (vê tudo, igual você), só permissão pra <b>gerenciar anúncios</b> (mexe em Anúncios/Parcerias e Cliques em Atendentes, sem ver contas, backup ou recados), ou só permissão pra usar a aba de <b>Sorteio</b> (não vê mais nada do painel admin).</div>
+      <div class="ad-note" style="margin-bottom:12px">🔑 Conceda a outra pessoa acesso <b>total de admin</b> (vê tudo, igual você), <b>Gerente de anúncios</b> (você escolhe quais anúncios ele acessa — nesses, ele adiciona/edita atendentes, copia o link de status e vê o ponto; não cria nem remove anúncios e não mexe no conteúdo deles, nem vê contas, backup ou recados), ou só permissão pra usar a aba de <b>Sorteio</b> (não vê mais nada do painel admin).</div>
       <div class="panel">
         <div class="fld2" style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:10px">
           <div class="fld"><label>E-mail</label><input class="txt" id="perm-email-input" placeholder="pessoa@gmail.com" style="margin-top:5px"></div>
@@ -2123,6 +2131,10 @@ Ana"></textarea>
               <option value="sorteio">Acesso ao Sorteio</option>
             </select>
           </div>
+        </div>
+        <div id="perm-ads-pick" style="display:none;margin-bottom:12px">
+          <label style="font-size:12.5px;color:var(--muted);font-weight:600">Anúncios que este gerente pode acessar</label>
+          <div id="perm-ads-list" style="margin-top:4px"></div>
         </div>
         <button class="btn-primary" id="perm-grant-btn" style="width:100%">Conceder permissão</button>
         <div id="perm-status" class="ad-note" style="min-height:1em;margin-top:8px"></div>
@@ -2674,6 +2686,24 @@ let IS_ADS_MANAGER = false;   // admin total já conta como true aqui também
 let IS_SORTEIO_ACCESS = false; // admin total também conta como true aqui
 let IS_SUPER_ADMIN = false;   // só o dono original (e-mail fixo) — só ele concede permissões
 let ROLE_GRANTED = "";        // 'admin' | 'ads_manager' | 'sorteio' | "" — o que foi concedido ao e-mail atual
+let ROLE_ADIDS = [];          // ids dos anúncios liberados pro gerente de anúncios (roles/{email}.adIds)
+let IS_ADS_SCOPED = false;    // gerente de anúncios (não-admin): só mexe nos anúncios de ROLE_ADIDS
+let ADS_SUB_KEY = null;       // controla quando refazer as assinaturas de cliques/ponto
+function adPermitido(id){ return IS_ADMIN || (IS_ADS_MANAGER && ROLE_ADIDS.indexOf(id)>=0); }
+function anunciosGerenciaveis(){ return IS_ADMIN ? PARTNER_ADS : PARTNER_ADS.filter(a=>ROLE_ADIDS.indexOf(a.id)>=0); }
+// admin lê a coleção inteira; gerente restrito abre 1 consulta por anúncio liberado
+// (where adId == id) — é o formato que as regras do Firestore conseguem validar.
+// Devolve a função que cancela todas as assinaturas de uma vez.
+function assinarPorAnuncios(nome, aoMudar){
+  const mapear = snap => snap.docs.map(d=>({...d.data(), id:d.id}));
+  if(IS_ADMIN) return onSnapshot(collection(db,nome), snap=>aoMudar(mapear(snap)), e=>console.warn(nome,e));
+  const porAnuncio = {};
+  const cancelar = ROLE_ADIDS.map(adId=>onSnapshot(query(collection(db,nome), where('adId','==',adId)), snap=>{
+    porAnuncio[adId] = mapear(snap);
+    aoMudar([].concat(...Object.values(porAnuncio)));
+  }, e=>console.warn(nome,e)));
+  return ()=>cancelar.forEach(u=>u());
+}
 let rolesUnsub = null;        // observa o PRÓPRIO papel concedido (todo mundo pode ler o seu)
 let rolesListUnsub = null;    // observa a LISTA de todos os papéis concedidos (só o dono original)
 let PAPEIS_CONCEDIDOS = [];   // cache local da lista acima, pra renderizar
@@ -2694,14 +2724,23 @@ function atualizarInscricoesPorPermissao(){
     membersUnsub(); membersUnsub=null;
     if(profilesUnsub){ profilesUnsub(); profilesUnsub=null; }
   }
-  if(IS_ADS_MANAGER && !partnerClicksUnsub){
-    partnerClicksUnsub = onSnapshot(collection(db,'partnerClicks'), snap=>{ adminPartnerClicks = snap.docs.map(d=>({...d.data(), id:d.id})); renderPartnerClicks(); }, e=>console.warn('partner-clicks',e));
-  } else if(!IS_ADS_MANAGER && partnerClicksUnsub){
+  // cliques e ponto: se a lista de anúncios liberados mudou, refaz as assinaturas
+  const chaveAds = IS_ADMIN ? "*" : (IS_ADS_MANAGER ? ROLE_ADIDS.slice().sort().join(",") : "");
+  if(chaveAds !== ADS_SUB_KEY){
+    ADS_SUB_KEY = chaveAds;
+    if(partnerClicksUnsub){ partnerClicksUnsub(); partnerClicksUnsub=null; }
+    if(attendantLogsUnsub){ attendantLogsUnsub(); attendantLogsUnsub=null; }
+    if(!IS_ADMIN){ adminPartnerClicks=[]; adminAttendantLogs=[]; if(typeof renderPartnerClicks==="function") renderPartnerClicks(); }
+  }
+  const podeLerAds = IS_ADS_MANAGER && (IS_ADMIN || ROLE_ADIDS.length>0);
+  if(podeLerAds && !partnerClicksUnsub){
+    partnerClicksUnsub = assinarPorAnuncios('partnerClicks', lista=>{ adminPartnerClicks = lista; renderPartnerClicks(); });
+  } else if(!podeLerAds && partnerClicksUnsub){
     partnerClicksUnsub(); partnerClicksUnsub=null;
   }
-  if(IS_ADS_MANAGER && !attendantLogsUnsub){
-    attendantLogsUnsub = onSnapshot(collection(db,'attendantLogs'), snap=>{ adminAttendantLogs = snap.docs.map(d=>({...d.data(), id:d.id})); renderPontoAtendente(); }, e=>console.warn('attendant-logs',e));
-  } else if(!IS_ADS_MANAGER && attendantLogsUnsub){
+  if(podeLerAds && !attendantLogsUnsub){
+    attendantLogsUnsub = assinarPorAnuncios('attendantLogs', lista=>{ adminAttendantLogs = lista; renderPontoAtendente(); });
+  } else if(!podeLerAds && attendantLogsUnsub){
     attendantLogsUnsub(); attendantLogsUnsub=null;
   }
   if(IS_SUPER_ADMIN && !rolesListUnsub){
@@ -2715,6 +2754,7 @@ function atualizarInscricoesPorPermissao(){
 function recalcularPermissoes(){
   IS_ADMIN = IS_SUPER_ADMIN || ROLE_GRANTED === 'admin';
   IS_ADS_MANAGER = IS_ADMIN || ROLE_GRANTED === 'ads_manager';
+  IS_ADS_SCOPED = !IS_ADMIN && ROLE_GRANTED === 'ads_manager';
   IS_SORTEIO_ACCESS = IS_ADMIN || ROLE_GRANTED === 'sorteio';
   const btn = document.getElementById("admin-btn");
   if(btn) btn.style.display = (IS_ADMIN || IS_ADS_MANAGER) ? "inline-flex" : "none";
@@ -2731,10 +2771,13 @@ function recalcularPermissoes(){
   if(permsBlock) permsBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
   const srtSuperBlock = document.getElementById("srt-super-block");
   if(srtSuperBlock) srtSuperBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
+  const addAdBtn = document.getElementById("pt-ad-add");
+  if(addAdBtn) addAdBtn.style.display = IS_ADS_SCOPED ? "none" : "";
   atualizarInscricoesPorPermissao();
   // se os anúncios já tiverem carregado, refaz o que depende do nível de acesso
   if(typeof partnerAdsLoaded !== "undefined" && partnerAdsLoaded){
     if(IS_ADS_MANAGER){ syncAdsEditorDOM(); renderPartnerClicks(); }
+    else { const ed=document.getElementById("pt-ads-editor"); if(ed) ed.innerHTML=""; }
   }
 }
 let NICKNAME = "";
@@ -4795,6 +4838,28 @@ function memberRowHtml(m){
 }
 
 /* ---- permissões: só o dono original (IS_SUPER_ADMIN) vê e mexe nisso ---- */
+const PERM_ADS_MARCADOS = new Set(); // anúncios marcados no formulário de permissões
+function nomeAnuncioPerm(a){ return ((a.apelido||"").trim() || (a.title||"").trim() || "Anúncio sem nome"); }
+function renderPermAdsPicker(){
+  const box = document.getElementById("perm-ads-list");
+  if(!box) return;
+  const ads = [...PARTNER_ADS].filter(a=>a.active!==false).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  box.innerHTML = ads.length
+    ? ads.map(a=>`<label class="perm-ad-row"><input type="checkbox" class="perm-ad-chk" value="${esc(a.id)}"${PERM_ADS_MARCADOS.has(a.id)?' checked':''}><span>${esc(nomeAnuncioPerm(a))}</span></label>`).join('')
+    : '<div class="empty-note">Nenhum anúncio publicado ainda.</div>';
+}
+function atualizarVisibilidadePermAds(){
+  const pick = document.getElementById("perm-ads-pick");
+  const role = document.getElementById("perm-role-select").value;
+  if(pick) pick.style.display = role==='ads_manager' ? "block" : "none";
+  if(role==='ads_manager') renderPermAdsPicker();
+}
+document.getElementById("perm-role-select").addEventListener("change", atualizarVisibilidadePermAds);
+document.getElementById("perm-ads-list").addEventListener("change", (e)=>{
+  const c = e.target.closest && e.target.closest(".perm-ad-chk");
+  if(!c) return;
+  if(c.checked) PERM_ADS_MARCADOS.add(c.value); else PERM_ADS_MARCADOS.delete(c.value);
+});
 function renderListaPermissoes(){
   const wrap = document.getElementById("perm-list");
   if(!wrap) return;
@@ -4803,13 +4868,23 @@ function renderListaPermissoes(){
     return;
   }
   const rotulo = r => r==='admin' ? 'Admin total' : (r==='ads_manager' ? 'Gerente de anúncios' : (r==='sorteio' ? 'Acesso ao Sorteio' : (r||'—')));
+  const detalhe = p => {
+    if(p.role!=='ads_manager') return '';
+    const ids = Array.isArray(p.adIds) ? p.adIds : [];
+    if(!ids.length) return ' · <span style="color:var(--danger)">nenhum anúncio liberado</span>';
+    const nomes = ids.map(id=>{ const a=PARTNER_ADS.find(x=>x.id===id); return a ? nomeAnuncioPerm(a) : "(anúncio removido)"; });
+    return ' · '+esc(nomes.join(", "));
+  };
   wrap.innerHTML = [...PAPEIS_CONCEDIDOS].sort((a,b)=>a.email.localeCompare(b.email)).map(p=>`
     <div class="mb-row">
       <div class="mb-info">
         <span class="mb-email">${esc(p.email)}</span>
-        <span class="mb-date">${esc(rotulo(p.role))}</span>
+        <span class="mb-date">${esc(rotulo(p.role))}${detalhe(p)}</span>
       </div>
-      <div class="mb-actions"><button type="button" class="mb-susp-btn perm-revoke-btn" data-email="${esc(p.email)}">Revogar</button></div>
+      <div class="mb-actions">
+        ${p.role==='ads_manager' ? `<button type="button" class="mb-susp-btn perm-edit-ads-btn" data-email="${esc(p.email)}">Editar anúncios</button>` : ''}
+        <button type="button" class="mb-susp-btn perm-revoke-btn" data-email="${esc(p.email)}">Revogar</button>
+      </div>
     </div>`).join('');
 }
 document.getElementById("perm-grant-btn").onclick=()=>{
@@ -4825,16 +4900,43 @@ document.getElementById("perm-grant-btn").onclick=()=>{
     if(st){ st.textContent = "Esse já é o dono original — não precisa conceder nada a ele."; st.style.color = ""; }
     return;
   }
-  setDoc(doc(db,'roles',email), {role, grantedAt:Date.now(), grantedBy:currentUser?.email||""})
+  const dados = {role, grantedAt:Date.now(), grantedBy:currentUser?.email||""};
+  if(role==='ads_manager'){
+    const existentes = new Set(PARTNER_ADS.map(a=>a.id));
+    const adIds = [...PERM_ADS_MARCADOS].filter(id=>existentes.has(id));
+    if(!adIds.length){
+      if(st){ st.textContent = "⚠️ Marque pelo menos um anúncio para o gerente."; st.style.color = "var(--danger)"; }
+      return;
+    }
+    dados.adIds = adIds;
+  }
+  setDoc(doc(db,'roles',email), dados)
     .then(()=>{
       if(st){ st.textContent = "✓ Permissão concedida a "+email; st.style.color = "var(--primary)"; }
       emailInput.value = "";
+      PERM_ADS_MARCADOS.clear();
+      renderPermAdsPicker();
     })
     .catch(err=>{
       console.warn('grant-role', err);
       if(st){ st.textContent = "⚠️ Não consegui conceder. Tente de novo."; st.style.color = "var(--danger)"; }
     });
 };
+// "Editar anúncios": carrega o e-mail e os anúncios atuais no formulário; é só ajustar e conceder de novo
+document.getElementById("perm-list").addEventListener("click", (e)=>{
+  const btn = e.target.closest(".perm-edit-ads-btn");
+  if(!btn) return;
+  const p = PAPEIS_CONCEDIDOS.find(x=>x.email===btn.dataset.email);
+  if(!p) return;
+  document.getElementById("perm-email-input").value = p.email;
+  document.getElementById("perm-role-select").value = "ads_manager";
+  PERM_ADS_MARCADOS.clear();
+  (Array.isArray(p.adIds)?p.adIds:[]).forEach(id=>PERM_ADS_MARCADOS.add(id));
+  atualizarVisibilidadePermAds();
+  const st = document.getElementById("perm-status");
+  if(st){ st.textContent = "Ajuste os anúncios marcados e toque em Conceder permissão para salvar."; st.style.color = ""; }
+  document.getElementById("perm-email-input").scrollIntoView({behavior:"smooth", block:"center"});
+});
 document.getElementById("perm-list").addEventListener("click", (e)=>{
   const btn = e.target.closest(".perm-revoke-btn");
   if(!btn) return;
@@ -5016,7 +5118,7 @@ function renderPartnerClicks(){
 
   // um grupo de cards por anúncio: contagem dos atendentes preenchidos + grupo (se houver)
   if(brk){
-    const ads = [...PARTNER_ADS].sort((a,b)=>(a.ts||0)-(b.ts||0));
+    const ads = [...anunciosGerenciaveis()].sort((a,b)=>(a.ts||0)-(b.ts||0));
     if(!ads.length){
       brk.innerHTML = '';
     } else {
@@ -5165,13 +5267,14 @@ async function showApp(user){
   // atual está salvo (o token pode mudar entre sessões/reinstalações)
   if(notifCfg.enabled && ("Notification" in window) && Notification.permission==="granted") registerPushToken();
   IS_SUPER_ADMIN = (user.email||"").toLowerCase() === ADMIN_EMAIL;
-  ROLE_GRANTED = "";
+  ROLE_GRANTED = ""; ROLE_ADIDS = [];
   recalcularPermissoes(); // já libera na hora pro dono original, sem esperar a leitura do papel
   if(rolesUnsub){ rolesUnsub(); rolesUnsub=null; }
   // observa em tempo real o papel concedido a este e-mail — se o dono original conceder
   // ou revogar uma permissão enquanto a pessoa está com o app aberto, atualiza na hora
   rolesUnsub = onSnapshot(doc(db,'roles',(user.email||"").toLowerCase()), s=>{
     ROLE_GRANTED = s.exists() ? (s.data().role||"") : "";
+    ROLE_ADIDS = (s.exists() && Array.isArray(s.data().adIds)) ? s.data().adIds.filter(x=>typeof x==="string") : [];
     recalcularPermissoes();
   }, e=>console.warn('roles-watch', e));
   try{
@@ -5207,6 +5310,7 @@ async function showApp(user){
     renderMeuStatusAtendente();
     atualizarSeletorAoVivoSeAberto();
     if(IS_ADS_MANAGER){ syncAdsEditorDOM(); renderPartnerClicks(); }
+    if(IS_SUPER_ADMIN){ renderPermAdsPicker(); renderListaPermissoes(); }
     tentarMigrarAnuncioAntigo();
     maybeShowPartnerPop();
   }, e=>console.warn('partner-ads',e));
@@ -5259,9 +5363,10 @@ function showAuth(){
   currentUser = null;
   IS_ADMIN = false;
   IS_ADS_MANAGER = false;
+  IS_ADS_SCOPED = false;
   IS_SORTEIO_ACCESS = false;
   IS_SUPER_ADMIN = false;
-  ROLE_GRANTED = "";
+  ROLE_GRANTED = ""; ROLE_ADIDS = [];
   PAPEIS_CONCEDIDOS = [];
   dataLoaded = false;
   contouNovaConta = false;
@@ -6789,6 +6894,8 @@ function adEditorHTML(d){
       <div class="pt-editor-chevron">▾</div>
     </div>
     <div class="pt-editor-body">
+    <div class="ad-note ad-scoped-note" style="margin:0 0 12px">🔒 Neste anúncio você pode adicionar e editar atendentes, copiar o link de status e ver o ponto. O conteúdo do anúncio (título, texto, banner, grupo, pop-up) é gerenciado pelo administrador.</div>
+    <div class="ad-content-fields">
     <div class="fld" style="margin-bottom:10px"><label>Nome interno <span class="desc">(só pra você identificar aqui no painel — os usuários não veem isso)</span></label><input class="txt f-apelido" placeholder="Ex.: Academia Bairro Norte" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Título</label><input class="txt f-title" placeholder="Ex.: Nome da empresa" style="margin-top:5px"></div>
     <div class="fld" style="margin-bottom:10px"><label>Texto</label><textarea class="txt area f-text" rows="3" placeholder="Descreva o que a empresa oferece" style="margin-top:5px"></textarea></div>
@@ -6805,6 +6912,7 @@ function adEditorHTML(d){
     <div class="ad-note" style="margin:0 0 12px">🎬 Se preencher o vídeo, ele toca automaticamente (sem som) e entra em loop infinito assim que termina.</div>
     <div class="fld" style="margin-bottom:10px"><label>Mensagem pronta do WhatsApp <span class="desc">(usada em todos os atendentes abaixo)</span></label><input class="txt f-msg" placeholder="Ex.: Olá! {nome}👋 Vim através do aplicativo Protocolo (https://protocolopep.github.io) e gostaria de mais informações, por favor." style="margin-top:5px"></div>
     <div class="ad-note" style="margin:0 0 12px">💬 Use <b>{nome}</b> em qualquer parte da mensagem — é trocado automaticamente pelo nome do atendente clicado.</div>
+    </div>
     <div class="atd-lista">
       ${blocoAtendenteHTML(1,"Guilherme")}
       ${blocoAtendenteHTML(2,"Paulo")}
@@ -6819,18 +6927,22 @@ function adEditorHTML(d){
     <div class="ad-note" style="margin:0 0 10px">Deixe em branco os atendentes que não forem usar (até 8 por anúncio). Cada um pode ser um número de WhatsApp ou uma URL própria. Toque no cabeçalho de cada um pra abrir e editar. Ao tocar no anúncio, a pessoa verá a foto e o nome de cada atendente pra escolher com quem falar.</div>
     <div class="ad-note" style="margin:0 0 10px">🟢 Se preencher o <b>e-mail de login</b> de um atendente, ele mesmo passa a controlar se está online/offline (aparece um painelzinho pra ele quando entra no app com esse e-mail) — sem ter acesso a mais nada do painel admin. Enquanto offline, quem tentar falar com ele na caixinha vê um aviso e não consegue enviar mensagem. Sem e-mail preenchido, o atendente fica sempre disponível, como já era antes.</div>
     <div class="ad-note" style="margin:0 0 10px">🔗 Com o e-mail preenchido, aparece também um botão pra copiar um <b>link de status</b> — o atendente abre esse link (ex.: salvo como mensagem fixada pra ele mesmo no WhatsApp) e liga/desliga o próprio status com um toque, sem precisar abrir o app nem fazer login. O link é único e secreto por atendente; se ele perder ou repassar sem querer, gere um novo pra invalidar o antigo.</div>
+    <div class="ad-content-fields">
     <div class="ad-note" style="margin:14px 0 8px">👥 <b>Link de grupo (opcional)</b> — aparece como mais uma opção na mesma caixinha, ao lado dos atendentes.</div>
     <div class="fld2" style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-bottom:6px">
       <div class="fld"><label>Nome do grupo</label><input class="txt f-gnome" placeholder="Ex.: Grupo de ofertas" style="margin-top:5px"></div>
       <div class="fld"><label>Link do grupo</label><input class="txt f-glink" placeholder="https://chat.whatsapp.com/..." style="margin-top:5px"></div>
     </div>
     ${campoImagemHTML("Foto/ícone do grupo","(opcional, sem foto usa um ícone padrão)","f-gfoto","https://...","grupo")}
+    </div>
     <div class="pt-status" style="font-size:11.5px;color:var(--muted);margin:4px 0 8px;min-height:1em"></div>
+    <div class="ad-content-fields">
     <label class="check" style="margin:6px 0"><input type="checkbox" class="f-pop"> Mostrar também como pop-up ao abrir o app</label>
     <div class="inrow" style="align-items:center">
       <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Repetir a cada</label>
       <input class="txt f-popdays" type="number" min="1" max="365" step="1" value="7" style="flex:none;width:90px;text-align:center">
       <span style="color:var(--muted);font-size:13px">dias</span>
+    </div>
     </div>
     <div class="inrow" style="margin-top:10px">
       <button class="btn-primary pt-ad-publish" style="flex:2">Publicar anúncio</button>
@@ -6890,9 +7002,9 @@ function preencherBlocoAnuncio(el, d, forcar){
 function syncAdsEditorDOM(){
   const wrap=document.getElementById("pt-ads-editor");
   if(!wrap) return;
-  const publicados=[...PARTNER_ADS].sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const publicados=[...anunciosGerenciaveis()].sort((a,b)=>(a.ts||0)-(b.ts||0));
   const idsPublicados=new Set(publicados.map(d=>d.id));
-  localDraftAds = localDraftAds.filter(r=>!idsPublicados.has(r.id)); // já publicado: descarta o rascunho
+  localDraftAds = IS_ADS_SCOPED ? [] : localDraftAds.filter(r=>!idsPublicados.has(r.id)); // já publicado: descarta o rascunho (gerente restrito nunca tem rascunho)
   const todos=[...publicados, ...localDraftAds];
   const idsAtuais=new Set(todos.map(d=>d.id));
   wrap.querySelectorAll(".pt-editor").forEach(el=>{ if(!idsAtuais.has(el.dataset.id)) el.remove(); });
@@ -6904,10 +7016,12 @@ function syncAdsEditorDOM(){
       aplicarEstadoInicialAtendentes(el, d);
       if(d._rascunho) el.classList.add("aberto"); // rascunho novo já abre pra preencher; anúncio existente começa recolhido
     }
+    el.classList.toggle("pt-scoped", IS_ADS_SCOPED);
     preencherBlocoAnuncio(el, d);
   });
 }
 function novoRascunhoAnuncio(){
+  if(IS_ADS_SCOPED) return; // gerente de anúncios não cria anúncio novo
   const apelido = (prompt("Dê um nome pra identificar esse anúncio aqui no painel (só você vê isso — os usuários não veem):", "") || "").trim();
   const id = doc(collection(db,'partnerAds')).id; // gera o id já de vez (mesmo antes de salvar)
   localDraftAds.push({id, _rascunho:true, apelido});
@@ -7519,6 +7633,8 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
   const el=(pubBtn||undoBtn||remBtn).closest(".pt-editor");
   if(!el) return;
   const id=el.dataset.id;
+  if(!adPermitido(id)){ alert("Você não tem permissão para este anúncio."); return; }
+  if(remBtn && IS_ADS_SCOPED) return; // gerente restrito não remove anúncio
   const g=(sel)=>{ const i=el.querySelector(sel); return i ? i.value.trim() : ""; };
 
   if(undoBtn){
@@ -7548,6 +7664,24 @@ document.getElementById("pt-ads-editor").addEventListener("click", function(e){
     const popDays=Math.min(365, Math.max(1, parseInt(popDaysInput && popDaysInput.value)||7));
     for(const [rot,num] of [["1",w1],["2",w2],["3",w3],["4",w4],["5",w5],["6",w6],["7",w7],["8",w8]]){
       if(num && !partnerHref(num, msg)){ alert("O Atendente "+rot+" não parece válido. Use uma URL começando com https:// ou um número de telefone."); return; }
+    }
+    if(IS_ADS_SCOPED){
+      // gerente restrito: grava SÓ os campos de atendente do anúncio dele (nada de conteúdo/ativo/ts)
+      if(!PARTNER_ADS.find(x=>x.id===id)){ alert("Anúncio não encontrado."); return; }
+      setDoc(doc(db,'partnerAds',id), {
+        w1, w2, w3, w4, w5, w6, w7, w8,
+        n1, n2, n3, n4, n5, n6, n7, n8,
+        f1, f2, f3, f4, f5, f6, f7, f8,
+        email1, email2, email3, email4, email5, email6, email7, email8,
+        supervisor1, supervisor2, supervisor3, supervisor4, supervisor5, supervisor6, supervisor7, supervisor8
+      }, {merge:true})
+        .then(()=>alert("Atendentes salvos!"))
+        .catch(err=>{
+          const cod=(err && err.code) || "";
+          alert(cod.indexOf("permission")>=0 ? "O Firestore bloqueou o salvamento. As regras de segurança precisam liberar o gerente de anúncios nesse anúncio." : "Não consegui salvar.\n\nErro: "+(cod || (err && err.message) || "desconhecido"));
+          console.warn("partner-ad-atendentes", err);
+        });
+      return;
     }
     if(glink && !/^https?:\/\//i.test(glink)){ alert("O link do grupo precisa começar com http:// ou https://"); return; }
     const jaExistente = PARTNER_ADS.find(x=>x.id===id);
