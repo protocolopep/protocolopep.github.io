@@ -1168,6 +1168,7 @@
   .nav button .nav-ico{display:block;font-size:20px;line-height:22px;height:22px;
     font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
     transition:transform .32s cubic-bezier(.34,1.56,.64,1);}
+  .nav button .nav-ico svg{width:25px;height:25px;display:block;margin:-1.5px auto 0;transform:none !important;transition:none !important;}
   .nav button:active .nav-ico{transform:scale(.88);}
   .nav button.on .nav-ico{transform:translateY(-2px) scale(1.12);}
   @media (prefers-reduced-motion: reduce){
@@ -1358,6 +1359,41 @@
   #bio-raw{margin-top:6px;font-size:12px;color:var(--muted);}
   #bio-raw pre{white-space:pre-wrap;font-size:11px;max-height:150px;overflow:auto;background:var(--surface2);border-radius:10px;padding:8px;margin:6px 0 0;}
   #ev-modal .bio-filled{border-color:var(--primary) !important;box-shadow:0 0 0 1px var(--primary);}
+
+  /* ===== animações dos ícones do menu (só no item selecionado; desligam com "reduzir movimento") ===== */
+  .nav .ni{display:inline-block;transform-origin:50% 55%;}
+  .nav .svg-proto{overflow:visible;} /* a folha sai dos limites do ícone ao se soltar */
+  .nav .pf-sheet{transform-box:fill-box;transform-origin:30% 85%;}
+  .nav .ck-h,.nav .ck-m{transform-box:view-box;transform-origin:12px 12px;}
+  .nav .ck-h{transform:rotate(300deg);}
+  .nav .ck-m{transform:rotate(50deg);}
+  .nav .cc-k,.nav .cc-eq{transform-box:fill-box;transform-origin:center;}
+  @media (prefers-reduced-motion: no-preference){
+    .nav button.on .pf-sheet{animation:pfDetach 3.2s cubic-bezier(.45,0,.25,1) infinite;}
+    .nav button.on .ni-semana{animation:niFlip 3s ease-in-out infinite;}
+    .nav button.on .ck-m{animation:ckM 3s linear infinite;}
+    .nav button.on .ck-h{animation:ckH 36s linear infinite;}
+    .nav button.on .cc-k{animation:ccKey 2.2s ease-in-out infinite;animation-delay:calc(var(--i)*.22s);}
+    .nav button.on .cc-eq{animation:ccEq 2.2s ease-in-out infinite;animation-delay:1.76s;}
+    .nav button.on .cc-disp{animation:ccDisp 2.2s ease-in-out infinite;}
+    .nav button.on .ni-ia{animation:niSpin3d 2.4s linear infinite;filter:drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent));}
+    .nav button.on .ni-fin{animation:niHop 1.6s ease-in-out infinite;}
+    .nav button.on .ni-sort{animation:niRoll 2.2s ease-in-out infinite;}
+  }
+  @keyframes pfDetach{
+    0%,10%{transform:translate(0,0) rotate(0);filter:none}
+    26%{transform:translate(1.2px,-3.8px) rotate(5deg);filter:drop-shadow(0 1.5px 1.2px rgba(0,0,0,.5))}
+    42%,64%{transform:translate(5.4px,-6.2px) rotate(19deg);filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.55))}
+    86%,100%{transform:translate(0,0) rotate(0);filter:none}
+  }
+  @keyframes ckM{from{transform:rotate(50deg)}to{transform:rotate(410deg)}}
+  @keyframes ckH{from{transform:rotate(300deg)}to{transform:rotate(660deg)}}
+  @keyframes ccKey{0%,60%,100%{fill:#EAF0F6;transform:scale(1)}30%{fill:#8FE3C0;transform:scale(.78)}}
+  @keyframes ccEq{0%,60%,100%{fill:#F59158;transform:scale(1)}30%{fill:#FFC78F;transform:scale(.78)}}
+  @keyframes ccDisp{0%,100%{fill:#8FE3C0}50%{fill:#C6F7E1}}
+  @keyframes niSpin3d{from{transform:perspective(90px) rotateY(0)}to{transform:perspective(90px) rotateY(360deg)}}
+  @keyframes niHop{0%,100%{transform:translateY(0) scale(1,1)}35%{transform:translateY(-4px) scale(.94,1.08)}55%{transform:translateY(0) scale(1.1,.9)}70%{transform:translateY(-1.5px) scale(1,1)}}
+  @keyframes niRoll{0%{transform:perspective(90px) rotate3d(1,1,0,0)}60%,100%{transform:perspective(90px) rotate3d(1,1,0,360deg)}}
 </style>
 </head>
 <body>
@@ -2590,31 +2626,31 @@ Ana"></textarea>
 <nav class="nav">
   <span class="nav-ind" id="nav-ind"></span>
   <button data-v="hoje" class="on">
-    <span class="nav-ico" aria-hidden="true">📋</span>
+    <span class="nav-ico" aria-hidden="true"><svg class="svg-proto" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.6" width="17" height="19.8" rx="3" fill="#B9803F"/><g class="pf-back"><rect x="6" y="4.4" width="12" height="16" rx="1.5" fill="#D5DCE3"/><g fill="#A9B4C0"><rect x="8" y="8.7" width="8" height="1.2" rx=".6"/><rect x="8" y="12.2" width="8" height="1.2" rx=".6"/><rect x="8" y="15.7" width="5" height="1.2" rx=".6"/></g></g><g class="pf-sheet"><rect x="6" y="4.4" width="12" height="16" rx="1.5" fill="#F7F9FB"/><rect x="7.2" y="8.1" width="9.6" height="2.5" rx=".9" fill="#FFD84D"/><g fill="#8A97A6"><rect x="8" y="8.7" width="8" height="1.3" rx=".65"/><rect x="8" y="12.2" width="8" height="1.3" rx=".65"/><rect x="8" y="15.7" width="5" height="1.3" rx=".65"/></g></g><rect x="8" y="1" width="8" height="4.4" rx="1.6" fill="#7A8794"/><rect x="10" y="2.3" width="4" height="1.4" rx=".7" fill="#4E5A66"/></svg></span>
     Protocolo
   </button>
   <button data-v="semana">
-    <span class="nav-ico" aria-hidden="true">📅</span>
+    <span class="nav-ico" aria-hidden="true"><span class="ni ni-semana">📅</span></span>
     Semana/Mês
   </button>
   <button data-v="hist">
-    <span class="nav-ico" aria-hidden="true">🕐</span>
+    <span class="nav-ico" aria-hidden="true"><svg class="svg-clock" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10.4" fill="#F4F6F8" stroke="#5B6B7C" stroke-width="1.7"/><path d="M12 3.4v1.7M12 18.9v1.7M3.4 12h1.7M18.9 12h1.7" stroke="#8A97A6" stroke-width="1.3" stroke-linecap="round"/><line class="ck-h" x1="12" y1="12" x2="12" y2="7.3" stroke="#1F2A36" stroke-width="2" stroke-linecap="round"/><line class="ck-m" x1="12" y1="12" x2="12" y2="4.9" stroke="#1F2A36" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="1.3" fill="#E5484D"/></svg></span>
     Histórico
   </button>
   <button data-v="calc">
-    <span class="nav-ico" aria-hidden="true">🧮</span>
+    <span class="nav-ico" aria-hidden="true"><svg class="svg-calc" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="1.5" width="17" height="21" rx="3.2" fill="#56677A"/><rect class="cc-disp" x="6" y="4" width="12" height="4.6" rx="1.3" fill="#8FE3C0"/><g fill="#EAF0F6"><rect class="cc-k" style="--i:0" x="6" y="10.6" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:1" x="10.5" y="10.6" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:2" x="15" y="10.6" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:5" x="6" y="14.4" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:4" x="10.5" y="14.4" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:3" x="15" y="14.4" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:6" x="6" y="18.2" width="3" height="2.7" rx=".9"/><rect class="cc-k" style="--i:7" x="10.5" y="18.2" width="3" height="2.7" rx=".9"/></g><rect class="cc-eq" x="15" y="18.2" width="3" height="2.7" rx=".9" fill="#F59158"/></svg></span>
     Calcular
   </button>
   <button data-v="ia">
-    <span class="nav-ico" aria-hidden="true">🔷</span>
+    <span class="nav-ico" aria-hidden="true"><span class="ni ni-ia">🧠</span></span>
     IA
   </button>
   <button data-v="financas" id="nav-financas-btn" style="display:none">
-    <span class="nav-ico" aria-hidden="true">💰</span>
+    <span class="nav-ico" aria-hidden="true"><span class="ni ni-fin">💰</span></span>
     Finanças
   </button>
   <button data-v="sorteio" id="nav-sorteio-btn" style="display:none">
-    <span class="nav-ico" aria-hidden="true">🎲</span>
+    <span class="nav-ico" aria-hidden="true"><span class="ni ni-sort">🎲</span></span>
     Sorteio
   </button>
 </nav>
@@ -4568,6 +4604,16 @@ document.querySelectorAll(".nav button").forEach(b=>{
   };
 });
 window.addEventListener("load",()=>moveNavInd(document.querySelector(".nav button.on")));
+// o indicador era medido só 1x; Finanças/Sorteio aparecem depois do login e mudam a largura de todos os
+// botões, deixando o destaque torto — re-mede sempre que algum botão (ou o menu) mudar de tamanho
+if(typeof ResizeObserver!=="undefined"){
+  const _navEl=document.querySelector(".nav");
+  if(_navEl){
+    const _ro=new ResizeObserver(()=>moveNavInd(document.querySelector(".nav button.on")));
+    _ro.observe(_navEl);
+    _navEl.querySelectorAll("button").forEach(b=>_ro.observe(b));
+  }
+}
 window.addEventListener("resize",()=>moveNavInd(document.querySelector(".nav button.on")));
 // posiciona já (caso a página tenha carregado antes deste script rodar)
 if(document.readyState==="complete") moveNavInd(document.querySelector(".nav button.on"));
