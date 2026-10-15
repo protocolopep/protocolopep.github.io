@@ -2214,7 +2214,7 @@ Ana"></textarea>
     <p class="eyebrow" style="margin-top:22px">Anúncios / Parcerias <span style="font-weight:400;text-transform:none;letter-spacing:0">(aparecem na aba Protocolo, um abaixo do outro)</span></p>
     <div class="ad-note" style="margin-bottom:12px">💡 Cada anúncio aparece identificado como <b>Parceria</b> para os usuários. Você pode publicar quantos quiser — cada novo entra abaixo dos anteriores, com seu próprio vídeo/imagem, mensagem e até 8 atendentes.</div>
     <div id="pt-ads-editor"></div>
-    <button type="button" class="add-pep" id="pt-ad-add" style="margin-bottom:22px"><span>＋</span> Adicionar novo anúncio</button>
+    <button type="button" class="add-pep" id="pt-ad-add" style="margin-bottom:22px;display:none"><span>＋</span> Adicionar novo anúncio</button>
 
     <div id="pc-section">
     <p class="eyebrow">Cliques em Atendentes <span style="font-weight:400;text-transform:none;letter-spacing:0">(quem entrou em contato pelos botões dos anúncios)</span></p>
@@ -2804,8 +2804,10 @@ function recalcularPermissoes(){
   if(srtSuperBlock) srtSuperBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
   const pcSection = document.getElementById("pc-section");
   if(pcSection) pcSection.style.display = IS_ADMIN ? "" : "none"; // cliques (e-mails de quem clicou): só admin total
+  const abaAtiva = document.querySelector(".view.on");
+  if(abaAtiva && ((abaAtiva.id==="v-admin" && !IS_ADS_MANAGER) || (abaAtiva.id==="v-financas" && !IS_ADMIN) || (abaAtiva.id==="v-sorteio" && !IS_SORTEIO_ACCESS))) voltarParaAbaInicial();
   const addAdBtn = document.getElementById("pt-ad-add");
-  if(addAdBtn) addAdBtn.style.display = IS_ADS_SCOPED ? "none" : "";
+  if(addAdBtn) addAdBtn.style.display = IS_ADMIN ? "" : "none"; // criar anúncio: só admin total (qualquer outro caso fica escondido)
   atualizarInscricoesPorPermissao();
   // se os anúncios já tiverem carregado, refaz o que depende do nível de acesso
   if(typeof partnerAdsLoaded !== "undefined" && partnerAdsLoaded){
@@ -5609,6 +5611,17 @@ async function showApp(user){
     alert("Não consegui carregar seu protocolo da nuvem.\n\nErro: "+((err&&err.code)||(err&&err.message)||"desconhecido")+"\n\nPara sua segurança, o app não vai salvar nada até conseguir carregar. Feche e abra novamente; se continuar, me avise antes de mexer no protocolo.");
   });
 }
+// volta pra aba "Protocolo" e fecha janelas abertas — usada ao sair da conta (a tela anterior
+// não pode "vazar" pra próxima conta: a aba Admin/Finanças/Sorteio ficava aberta pra quem entrasse depois)
+function voltarParaAbaInicial(){
+  document.querySelectorAll(".modal.on").forEach(m=>m.classList.remove("on"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
+  const v = document.getElementById("v-hoje"); if(v) v.classList.add("on");
+  const b = document.querySelector('.nav button[data-v="hoje"]');
+  if(b){ b.classList.add("on"); try{ moveNavInd(b); }catch(e){} }
+  try{ window.scrollTo(0,0); }catch(e){}
+}
 function showAuth(){
   if(SHARE_MODE) return;
   currentUser = null;
@@ -5650,6 +5663,7 @@ function showAuth(){
   { const s=document.getElementById("pc-search"); if(s) s.value=""; }
   NICKNAME="";
   PHOTO_URL="";
+  voltarParaAbaInicial();
   authScreen.classList.add("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="hidden";
   const _nav=document.querySelector(".nav"); if(_nav) _nav.style.visibility="hidden";
@@ -7272,7 +7286,7 @@ function syncAdsEditorDOM(){
   });
 }
 function novoRascunhoAnuncio(){
-  if(IS_ADS_SCOPED) return; // gerente de anúncios não cria anúncio novo
+  if(!IS_ADMIN) return; // só admin total cria anúncio novo
   const apelido = (prompt("Dê um nome pra identificar esse anúncio aqui no painel (só você vê isso — os usuários não veem):", "") || "").trim();
   const id = doc(collection(db,'partnerAds')).id; // gera o id já de vez (mesmo antes de salvar)
   localDraftAds.push({id, _rascunho:true, apelido});
