@@ -1368,24 +1368,23 @@
   .nav .ck-h{transform:rotate(300deg);}
   .nav .ck-m{transform:rotate(50deg);}
   .nav .cc-k,.nav .cc-eq{transform-box:fill-box;transform-origin:center;}
-  @media (prefers-reduced-motion: no-preference){
-    .nav button.on .pf-sheet{animation:pfDetach 3.2s cubic-bezier(.45,0,.25,1) infinite;}
-    .nav button.on .ni-semana{animation:niFlip 3s ease-in-out infinite;}
-    .nav button.on .ck-m{animation:ckM 3s linear infinite;}
-    .nav button.on .ck-h{animation:ckH 36s linear infinite;}
-    .nav button.on .cc-k{animation:ccKey 2.2s ease-in-out infinite;animation-delay:calc(var(--i)*.22s);}
-    .nav button.on .cc-eq{animation:ccEq 2.2s ease-in-out infinite;animation-delay:1.76s;}
-    .nav button.on .cc-disp{animation:ccDisp 2.2s ease-in-out infinite;}
-    .nav button.on .ni-ia{animation:niSpin3d 2.4s linear infinite;filter:drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent));}
-    .nav button.on .ni-fin{animation:niHop 1.6s ease-in-out infinite;}
-    .nav button.on .ni-sort{animation:niRoll 2.2s ease-in-out infinite;}
-  }
+  body:not(.nav-anim-off) .nav button.on .pf-sheet{animation:pfDetach 3.2s cubic-bezier(.45,0,.25,1) infinite;}
+  body:not(.nav-anim-off) .nav button.on .ni-semana{animation:niFlip 3s ease-in-out infinite;}
+  body:not(.nav-anim-off) .nav button.on .ck-m{animation:ckM 3s linear infinite;}
+  body:not(.nav-anim-off) .nav button.on .ck-h{animation:ckH 36s linear infinite;}
+  body:not(.nav-anim-off) .nav button.on .cc-k{animation:ccKey 2.2s ease-in-out infinite;animation-delay:calc(var(--i)*.22s);}
+  body:not(.nav-anim-off) .nav button.on .cc-eq{animation:ccEq 2.2s ease-in-out infinite;animation-delay:1.76s;}
+  body:not(.nav-anim-off) .nav button.on .cc-disp{animation:ccDisp 2.2s ease-in-out infinite;}
+  body:not(.nav-anim-off) .nav button.on .ni-ia{animation:niSpin3d 2.4s linear infinite;filter:drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 70%, transparent));}
+  body:not(.nav-anim-off) .nav button.on .ni-fin{animation:niHop 1.6s ease-in-out infinite;}
+  body:not(.nav-anim-off) .nav button.on .ni-sort{animation:niRoll 2.2s ease-in-out infinite;}
   @keyframes pfDetach{
     0%,10%{transform:translate(0,0) rotate(0);filter:none}
     26%{transform:translate(1.2px,-3.8px) rotate(5deg);filter:drop-shadow(0 1.5px 1.2px rgba(0,0,0,.5))}
     42%,64%{transform:translate(5.4px,-6.2px) rotate(19deg);filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.55))}
     86%,100%{transform:translate(0,0) rotate(0);filter:none}
   }
+  @keyframes niFlip{0%,55%{transform:perspective(90px) rotateX(0)}100%{transform:perspective(90px) rotateX(360deg)}}
   @keyframes ckM{from{transform:rotate(50deg)}to{transform:rotate(410deg)}}
   @keyframes ckH{from{transform:rotate(300deg)}to{transform:rotate(660deg)}}
   @keyframes ccKey{0%,60%,100%{fill:#EAF0F6;transform:scale(1)}30%{fill:#8FE3C0;transform:scale(.78)}}
@@ -2459,6 +2458,8 @@ Ana"></textarea>
       <div class="ad-note" style="margin-bottom:6px">💾 Backup de anúncios, cliques, contas e protocolos de todo mundo.</div>
       <button class="btn-ghost" id="profile-backup-btn" style="width:100%;padding:9px 0">💾 Baixar backup (JSON)</button>
     </div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="nav-anim-chk" style="width:16px;height:16px;flex:none"><span>✨ Animar os ícones do menu</span></label>
 
     <button class="logout" id="profile-logout-btn" style="width:100%;margin-top:10px;padding:9px 0">Sair</button>
   </div>
@@ -6241,6 +6242,20 @@ function sendProto(id){
 /* =========================================================
    PWA — instalação e service worker
    ========================================================= */
+/* animações dos ícones do menu: ligadas por padrão (como o fundo de moléculas, não seguem o "reduzir
+   movimento" do aparelho); quem preferir desliga na chave do menu da conta — a escolha fica neste aparelho */
+try{
+  const _chk = document.getElementById("nav-anim-chk");
+  const _off = localStorage.getItem("pt-nav-anim") === "0";
+  document.body.classList.toggle("nav-anim-off", _off);
+  if(_chk){
+    _chk.checked = !_off;
+    _chk.onchange = ()=>{
+      document.body.classList.toggle("nav-anim-off", !_chk.checked);
+      try{ localStorage.setItem("pt-nav-anim", _chk.checked ? "1" : "0"); }catch(e){}
+    };
+  }
+}catch(e){}
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./sw.js').then(function(reg){
