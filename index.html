@@ -2206,6 +2206,7 @@ Ana"></textarea>
     <div id="pt-ads-editor"></div>
     <button type="button" class="add-pep" id="pt-ad-add" style="margin-bottom:22px"><span>＋</span> Adicionar novo anúncio</button>
 
+    <div id="pc-section">
     <p class="eyebrow">Cliques em Atendentes <span style="font-weight:400;text-transform:none;letter-spacing:0">(quem entrou em contato pelos botões dos anúncios)</span></p>
     <div class="ad-grid" style="grid-template-columns:1fr;margin-bottom:10px">
       <div class="ad-stat"><div class="ad-v" id="pc-total">0</div><div class="ad-k">Total de cliques (todos os anúncios)</div></div>
@@ -2215,6 +2216,7 @@ Ana"></textarea>
       <input class="txt" id="pc-search" type="text" placeholder="🔎 Pesquisar por e-mail..." style="margin-bottom:10px">
       <div id="pc-list"></div>
     </div>
+    </div><!-- /pc-section (só admin total) -->
 
     <div id="admin-only-block2">
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
@@ -2733,9 +2735,9 @@ function atualizarInscricoesPorPermissao(){
     if(!IS_ADMIN){ adminPartnerClicks=[]; adminAttendantLogs=[]; if(typeof renderPartnerClicks==="function") renderPartnerClicks(); }
   }
   const podeLerAds = IS_ADS_MANAGER && (IS_ADMIN || ROLE_ADIDS.length>0);
-  if(podeLerAds && !partnerClicksUnsub){
+  if(IS_ADMIN && !partnerClicksUnsub){
     partnerClicksUnsub = assinarPorAnuncios('partnerClicks', lista=>{ adminPartnerClicks = lista; renderPartnerClicks(); });
-  } else if(!podeLerAds && partnerClicksUnsub){
+  } else if(!IS_ADMIN && partnerClicksUnsub){
     partnerClicksUnsub(); partnerClicksUnsub=null;
   }
   if(podeLerAds && !attendantLogsUnsub){
@@ -2771,6 +2773,8 @@ function recalcularPermissoes(){
   if(permsBlock) permsBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
   const srtSuperBlock = document.getElementById("srt-super-block");
   if(srtSuperBlock) srtSuperBlock.style.display = IS_SUPER_ADMIN ? "block" : "none";
+  const pcSection = document.getElementById("pc-section");
+  if(pcSection) pcSection.style.display = IS_ADMIN ? "" : "none"; // cliques (e-mails de quem clicou): só admin total
   const addAdBtn = document.getElementById("pt-ad-add");
   if(addAdBtn) addAdBtn.style.display = IS_ADS_SCOPED ? "none" : "";
   atualizarInscricoesPorPermissao();
