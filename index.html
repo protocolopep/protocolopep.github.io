@@ -1348,6 +1348,16 @@
   .pt-editor.pt-scoped .pt-ad-remove{display:none !important;}
   .perm-ad-row{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 2px;cursor:pointer;}
   .perm-ad-row input{width:16px;height:16px;flex:none;}
+
+  /* importar bioimpedância (PDF/foto) no modal de medidas */
+  .bio-import{margin-bottom:14px;}
+  .bio-status{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45;min-height:0;}
+  .bio-status.ok{color:var(--primary);}
+  .bio-status.err{color:var(--danger);}
+  .bio-hint{font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.4;}
+  #bio-raw{margin-top:6px;font-size:12px;color:var(--muted);}
+  #bio-raw pre{white-space:pre-wrap;font-size:11px;max-height:150px;overflow:auto;background:var(--surface2);border-radius:10px;padding:8px;margin:6px 0 0;}
+  #ev-modal .bio-filled{border-color:var(--primary) !important;box-shadow:0 0 0 1px var(--primary);}
 </style>
 </head>
 <body>
@@ -2338,6 +2348,13 @@ Ana"></textarea>
       <button class="sheet-x" id="ev-close">✕</button>
     </div>
     <div class="sheet-body">
+      <div class="bio-import">
+        <button type="button" class="btn-ghost" id="bio-btn" style="width:100%">📄 Importar de bioimpedância (PDF ou foto)</button>
+        <input type="file" id="bio-file" accept="application/pdf,image/*" style="display:none">
+        <div class="bio-status" id="bio-status"></div>
+        <details id="bio-raw" style="display:none"><summary>Ver texto lido</summary><pre id="bio-raw-txt"></pre></details>
+        <div class="bio-hint">Lido no seu aparelho — o arquivo não é enviado a ninguém. Os valores só preenchem os campos abaixo; nada é salvo até você tocar em Salvar.</div>
+      </div>
       <div class="fld"><label>Data</label><input class="txt" id="ev-date" type="date"></div>
       <p class="nf-note" style="margin-top:0">Preencha só o que quiser acompanhar — os campos em branco são ignorados. Peso em kg, medidas em cm.</p>
       <div class="fld2">
@@ -2355,6 +2372,18 @@ Ana"></textarea>
       <div class="fld2">
         <div class="fld"><label>Abdômen superior (cm)</label><input class="num" id="ev-abdsuperior" inputmode="decimal" placeholder="Ex.: 90"></div>
         <div class="fld"><label>Abdômen inferior (cm)</label><input class="num" id="ev-abdinferior" inputmode="decimal" placeholder="Ex.: 94"></div>
+      </div>
+      <p class="nf-note" style="margin:14px 0 8px"><b>Composição corporal</b> (da bioimpedância — opcional)</p>
+      <div class="fld2">
+        <div class="fld"><label>% Gordura corporal</label><input class="num" id="ev-gordura" inputmode="decimal" placeholder="Ex.: 21,3"></div>
+        <div class="fld"><label>Massa muscular (kg)</label><input class="num" id="ev-massamusc" inputmode="decimal" placeholder="Ex.: 35,1"></div>
+      </div>
+      <div class="fld2">
+        <div class="fld"><label>Massa magra (kg)</label><input class="num" id="ev-massamagra" inputmode="decimal" placeholder="Ex.: 64,9"></div>
+        <div class="fld"><label>Gordura visceral (nível)</label><input class="num" id="ev-gordvisc" inputmode="decimal" placeholder="Ex.: 9"></div>
+      </div>
+      <div class="fld2">
+        <div class="fld"><label>Água corporal (%)</label><input class="num" id="ev-agua" inputmode="decimal" placeholder="Ex.: 55,2"></div>
       </div>
       <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="ev-note" rows="2" placeholder="Ex.: medido em jejum, de manhã"></textarea></div>
     </div>
@@ -2675,7 +2704,7 @@ function unitLabel(p){
 }
 let LOGS = {};
 let PATIENTS = [];
-let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, abdsuperior, abdinferior, note}]
+let METRICS = [];   // medidas corporais: [{date:"YYYY-MM-DD", peso, cintura, braco, peito, quadril, coxa, abdsuperior, abdinferior, gordura, massamusc, massamagra, gordvisc, agua, note}]
 let GOALS = {altura:null, pesoMeta:null};   // altura (cm) e meta de peso (kg) — usados no IMC e no card "Para a meta"
 // TRAVA DE SEGURANÇA: só grava na nuvem depois de ter recebido os dados de lá.
 // Sem isso, qualquer gravação feita antes do primeiro carregamento escreveria
@@ -3983,6 +4012,11 @@ const EV_FIELDS=[
   {k:"coxa",    label:"Coxa",    unit:"cm"},
   {k:"abdsuperior", label:"Abd. superior", unit:"cm"},
   {k:"abdinferior", label:"Abd. inferior", unit:"cm"},
+  {k:"gordura",    label:"% Gordura",      unit:"%"},
+  {k:"massamusc",  label:"Massa musc.",    unit:"kg"},
+  {k:"massamagra", label:"Massa magra",    unit:"kg"},
+  {k:"gordvisc",   label:"Gord. visceral", unit:"nív."},
+  {k:"agua",       label:"Água",           unit:"%"},
 ];
 let evMetric="peso";       // métrica exibida no gráfico
 let evRange=30;            // janela em dias (0 = tudo)
@@ -4245,6 +4279,7 @@ function openEvModal(date){
   });
   document.getElementById("ev-note").value = existente ? (existente.note||"") : "";
   document.getElementById("ev-del").style.display = existente ? "block" : "none";
+  bioLimpar();
   evModal.classList.add("on");
 }
 function closeEvModal(){ evModal.classList.remove("on"); }
@@ -4275,6 +4310,218 @@ document.getElementById("ev-del").onclick=()=>{
   METRICS = METRICS.filter(m=>m && m.date!==evEditDate);
   cloudSave(); closeEvModal(); renderEvolution();
 };
+
+/* ---- importar bioimpedância (PDF ou foto): lê no próprio aparelho e só PREENCHE o modal de
+   medidas pra você conferir — nada é salvo sozinho e o arquivo não é enviado a ninguém.
+   PDF com texto -> pdf.js; foto/PDF escaneado -> OCR (Tesseract.js). Os componentes são baixados
+   da internet só na 1ª vez que o botão é usado. ---- */
+const BIO_PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+const BIO_PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const BIO_TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+// faixa plausível de cada campo — descarta leitura errada do OCR (ex.: 8 em vez de 82)
+const BIO_LIMITES = {
+  peso:[20,300], gordura:[2,70], massamusc:[10,120], massamagra:[15,150], gordvisc:[1,30], agua:[20,80],
+  cintura:[40,200], quadril:[50,200], peito:[50,200], braco:[15,80], coxa:[25,100]
+};
+const BIO_MAPA = {PESO:"peso", GORD:"gordura", MUSC:"massamusc", MAGRA:"massamagra", VISC:"gordvisc", AGUA:"agua",
+  CINT:"cintura", QUAD:"quadril", PEIT:"peito", BRAC:"braco", COXA:"coxa"};
+const BIO_PERCENT = {gordura:1, agua:1};
+const BIO_KG = {peso:1, massamusc:1, massamagra:1};
+
+// troca cada rótulo conhecido (vários nomes/idiomas) por um marcador @XXX, pra depois pegar o número que vem logo em seguida
+function bioNormalizar(t){
+  let s = " " + String(t||"").replace(/[\u00a0\t]+/g," ").replace(/\r/g,"") + " ";
+  const tok = (re, nome)=>{ s = s.replace(re, " @"+nome+" "); };
+  tok(/rela[cç][aã]o\s+cintura\s*[-\/]?\s*quadril|\brcq\b|waist\s*[-\/]?\s*hip(?:\s*ratio)?/gi, "X");
+  tok(/controle\s+de\s+peso|peso\s+(?:ideal|alvo|meta|objetivo|saud[aá]vel|recomendado)|ideal\s+weight|target\s+weight|weight\s+control/gi, "X");
+  tok(/(?:gordura\s+)?subcut[aâ]nea|subcutaneous(?:\s+fat)?/gi, "X");
+  tok(/gordura\s+visceral|visceral\s+fat/gi, "VISC");
+  tok(/massa\s+(?:de\s+)?gordura(?:\s+corporal)?|massa\s+gorda|fat\s+mass/gi, "X");
+  tok(/massa\s+livre\s+de\s+gordura|massa\s+magra|lean\s+(?:body\s+)?mass|fat[\s-]*free\s+mass|\bffm\b/gi, "MAGRA");
+  tok(/massa\s+muscular(?:\s+esquel[eé]tica)?|m[uú]sculo\s+esquel[eé]tico|skeletal\s+muscle(?:\s+mass)?|muscle\s+mass|\bsmm\b/gi, "MUSC");
+  tok(/massa\s+[oó]ssea|bone\s+mass|bone\s+mineral\s+content|\bbmc\b/gi, "X");
+  tok(/[aá]gua\s+corporal(?:\s+total)?|total\s+body\s+water|body\s+water|\btbw\b|[aá]gua(?![a-zà-ú])|hidrata[cç][aã]o/gi, "AGUA");
+  tok(/percentual\s+de\s+gordura(?:\s+corporal)?|porcentagem\s+de\s+gordura(?:\s+corporal)?|%\s*(?:de\s+)?gordura(?:\s+corporal)?|gordura\s+corporal(?:\s+total)?|gordura\s*\(%\)|\bpgc\b|body\s+fat(?:\s*%|\s+percentage)?|\bbf\s*%/gi, "GORD");
+  tok(/\bgordura\b/gi, "GORD");
+  tok(/\bpeso(?:\s+corporal|\s+atual|\s+total)?\b|\bbody\s+weight\b|\bweight\b/gi, "PESO");
+  tok(/circunfer[eê]ncia\s+(?:da\s+)?cintura|circunfer[eê]ncia\s+abdominal|\bcintura\b|\bwaist\b/gi, "CINT");
+  tok(/\bquadril\b|\bhips?\b/gi, "QUAD");
+  tok(/t[oó]rax|tor[aá]cic[oa]|\bpeitoral\b|\bpeito\b|\bchest\b/gi, "PEIT");
+  tok(/\bbra[cç]os?\b|\barm\b/gi, "BRAC");
+  tok(/\bcoxas?\b|\bthigh\b/gi, "COXA");
+  return s;
+}
+// devolve {campo: número}. Só olha o PRIMEIRO número depois de cada rótulo (sem pular pra faixa "normal"
+// que vem depois) e só aceita se a unidade e a faixa forem plausíveis pra aquele campo.
+function bioExtrair(texto){
+  const s = bioNormalizar(texto);
+  const out = {};
+  const toks = [];
+  const reTok = /@([A-Z]+)/g;
+  let m;
+  while((m = reTok.exec(s))) toks.push({tk:m[1], ini:m.index, fim:m.index + m[0].length});
+  toks.forEach((t,i)=>{
+    const campo = BIO_MAPA[t.tk];
+    if(!campo || out[campo]!=null) return;
+    const limite = Math.min(s.length, t.fim + 80, (i+1 < toks.length) ? toks[i+1].ini : s.length);
+    const trecho = s.slice(t.fim, limite);
+    const mn = /(\d{1,4}(?:[.,]\d{1,2})?)(?!\d)\s*([a-z%]{0,4})/i.exec(trecho);
+    if(!mn) return;
+    const v = parseFloat(mn[1].replace(",","."));
+    const un = (mn[2]||"").toLowerCase();
+    if(BIO_PERCENT[campo]){ if(/^(kg|l(?![a-z])|lb|lit)/.test(un)) return; }
+    else if(BIO_KG[campo]){ if(/^(%|lb)/.test(un)) return; }
+    else { if(/^(%|kg|lb)/.test(un)) return; }
+    const [mi, ma] = BIO_LIMITES[campo];
+    if(!(v >= mi && v <= ma)) return;
+    out[campo] = v;
+  });
+  return out;
+}
+// data da avaliação (só se vier com rótulo "Data"/"Date"; ignora data de nascimento e datas absurdas)
+function bioData(texto, hoje){
+  const re = /(?:data|date)(?!\s+d[ea]\s+nascimento)(?:\s+d[ae]\s+(?:avalia[cç][aã]o|medi[cç][aã]o|exame|teste|an[aá]lise|consulta))?(?:\s*\/\s*hora)?\s*[:\-]?\s*(?:(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})|(\d{4})-(\d{2})-(\d{2}))/gi;
+  const ref = hoje ? new Date(hoje) : new Date();
+  let m;
+  while((m = re.exec(String(texto||"")))){
+    let a, mes, d;
+    if(m[4]){ a = +m[4]; mes = +m[5]; d = +m[6]; }
+    else { d = +m[1]; mes = +m[2]; a = +m[3]; if(a < 100) a += 2000; }
+    if(mes < 1 || mes > 12 || d < 1 || d > 31) continue;
+    const dt = new Date(a, mes-1, d);
+    if(dt.getMonth() !== mes-1) continue;
+    const dias = (ref - dt) / 86400000;
+    if(dias < -1 || dias > 365*3) continue;
+    return a + "-" + String(mes).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+  }
+  return null;
+}
+// junta os pedaços de texto de uma página do PDF em linhas (mesma altura = mesma linha), pra tabelas ficarem "Rótulo valor unidade"
+function bioLinhasDeItens(items){
+  const linhas = [];
+  items.forEach(it=>{
+    if(!it || !it.str || !it.transform) return;
+    const y = it.transform[5], x = it.transform[4];
+    let l = linhas.find(L=>Math.abs(L.y - y) < 3);
+    if(!l){ l = {y, partes:[]}; linhas.push(l); }
+    l.partes.push({x, str:it.str});
+  });
+  return linhas.sort((a,b)=>b.y - a.y).map(l=>l.partes.sort((a,b)=>a.x - b.x).map(p=>p.str).join(" ").replace(/\s+/g," ").trim()).filter(Boolean).join("\n");
+}
+
+function bioCarregarScript(src){
+  return new Promise((ok, err)=>{
+    if(document.querySelector('script[data-bio="'+src+'"]')) return ok();
+    const el = document.createElement("script");
+    el.src = src; el.dataset.bio = src;
+    el.onload = ()=>ok();
+    el.onerror = ()=>{ el.remove(); err(new Error("Falha ao carregar "+src)); };
+    document.head.appendChild(el);
+  });
+}
+// foto -> canvas em escala de cinza, redimensionado (rápido pro OCR) e com fundo claro (inverte tela escura)
+async function bioPrepararImagem(file){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((ok, err)=>{ const i = new Image(); i.onload = ()=>ok(i); i.onerror = ()=>err(new Error("imagem")); i.src = url; });
+    const maior = Math.max(img.naturalWidth, img.naturalHeight);
+    const esc = maior < 1200 ? 1600/maior : Math.min(1, 2000/maior);
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth*esc); c.height = Math.round(img.naturalHeight*esc);
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    const dados = ctx.getImageData(0, 0, c.width, c.height), px = dados.data;
+    let soma = 0;
+    for(let i=0;i<px.length;i+=4){ const g = (px[i]*299 + px[i+1]*587 + px[i+2]*114)/1000; px[i]=px[i+1]=px[i+2]=g; soma += g; }
+    if(soma/(px.length/4) < 110){ for(let i=0;i<px.length;i+=4){ px[i]=px[i+1]=px[i+2]=255-px[i]; } }
+    ctx.putImageData(dados, 0, 0);
+    return c;
+  } finally { URL.revokeObjectURL(url); }
+}
+async function bioOcr(fonte, setStatus){
+  await bioCarregarScript(BIO_TESS);
+  const worker = await window.Tesseract.createWorker("por+eng", 1, {
+    logger: m=>{
+      if(m.status === "recognizing text") setStatus("Lendo a imagem… "+Math.round((m.progress||0)*100)+"%");
+      else setStatus("Preparando a leitura (1ª vez demora um pouco)…");
+    }
+  });
+  try{ const r = await worker.recognize(fonte); return (r && r.data && r.data.text) || ""; }
+  finally { try{ await worker.terminate(); }catch(e){} }
+}
+async function bioTextoDoPdf(file, setStatus){
+  setStatus("Abrindo o PDF…");
+  await bioCarregarScript(BIO_PDFJS);
+  const pdfjs = window.pdfjsLib;
+  pdfjs.GlobalWorkerOptions.workerSrc = BIO_PDFJS_WORKER;
+  const pdf = await pdfjs.getDocument({data: await file.arrayBuffer()}).promise;
+  const paginas = Math.min(pdf.numPages, 4);
+  let texto = "";
+  for(let p=1; p<=paginas; p++){
+    const page = await pdf.getPage(p);
+    texto += "\n" + bioLinhasDeItens((await page.getTextContent()).items);
+  }
+  if(texto.replace(/\s/g,"").length >= 40) return texto;
+  // PDF escaneado (só imagem): desenha as páginas e passa no OCR
+  texto = "";
+  for(let p=1; p<=Math.min(paginas,2); p++){
+    setStatus("PDF sem texto — lendo como imagem (página "+p+")…");
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({scale:2});
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+    await page.render({canvasContext:c.getContext("2d"), viewport:vp}).promise;
+    texto += "\n" + await bioOcr(c, setStatus);
+  }
+  return texto;
+}
+function bioStatus(msg, tipo){
+  const el = document.getElementById("bio-status");
+  if(!el) return;
+  el.textContent = msg || "";
+  el.className = "bio-status" + (tipo ? " "+tipo : "");
+}
+function bioLimpar(){
+  bioStatus("");
+  document.querySelectorAll("#ev-modal .bio-filled").forEach(e=>e.classList.remove("bio-filled"));
+  const raw = document.getElementById("bio-raw"); if(raw){ raw.style.display = "none"; raw.open = false; }
+}
+function bioAplicar(texto){
+  const valores = bioExtrair(texto), data = bioData(texto);
+  const raw = document.getElementById("bio-raw"), rawTxt = document.getElementById("bio-raw-txt");
+  if(raw && rawTxt){ rawTxt.textContent = (texto||"").trim() || "(nenhum texto reconhecido)"; raw.style.display = ""; }
+  const achados = [];
+  EV_FIELDS.forEach(f=>{
+    const v = valores[f.k], el = document.getElementById("ev-"+f.k);
+    if(v == null || !el) return;
+    el.value = String(v).replace(".", ",");
+    el.classList.add("bio-filled");
+    achados.push(f.label+" "+evFmt(v)+(f.unit?(" "+f.unit):""));
+  });
+  if(data){ const d = document.getElementById("ev-date"); if(d && !evEditDate) d.value = data; }
+  if(!achados.length){
+    bioStatus("Não consegui reconhecer valores nesse arquivo. Preencha manualmente — em “Ver texto lido” dá pra ver o que foi lido.", "err");
+    return;
+  }
+  bioStatus("✓ Preenchi "+achados.length+" campo"+(achados.length>1?"s":"")+" (destacados): "+achados.join(" · ")+(data?" · data "+fmtBR(data):"")+". Confira com seu relatório antes de salvar.", "ok");
+}
+async function bioImportar(file){
+  const btn = document.getElementById("bio-btn");
+  if(btn) btn.disabled = true;
+  bioLimpar();
+  try{
+    let texto;
+    if(file.type === "application/pdf" || /\.pdf$/i.test(file.name||"")) texto = await bioTextoDoPdf(file, bioStatus);
+    else { bioStatus("Preparando a imagem…"); texto = await bioOcr(await bioPrepararImagem(file), bioStatus); }
+    bioAplicar(texto);
+  }catch(err){
+    console.warn("bio-importar", err);
+    bioStatus("⚠️ Não consegui ler esse arquivo. Confira a internet (a leitura baixa um componente na 1ª vez) e tente de novo, ou preencha manualmente.", "err");
+  } finally { if(btn) btn.disabled = false; }
+}
+document.getElementById("bio-btn").onclick = ()=>document.getElementById("bio-file").click();
+document.getElementById("bio-file").onchange = e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) bioImportar(f); };
+// ao editar um campo destacado à mão, tira o destaque
+document.getElementById("ev-modal").addEventListener("input", e=>{ if(e.target.classList) e.target.classList.remove("bio-filled"); });
 
 /* ---- modal de altura e meta de peso ---- */
 const goalsModal=document.getElementById("goals-modal");
