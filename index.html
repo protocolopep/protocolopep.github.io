@@ -1216,9 +1216,16 @@
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
   .card .ctrls{position:absolute;top:8px;right:10px;display:flex;gap:6px;z-index:3;}
-  .card .gear,.card .del{width:30px;height:30px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
-  .card .gear svg,.card .del svg{width:16px;height:16px;}
+  .card .gear,.card .del,.card .pausebtn{width:30px;height:30px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+  .card .gear svg,.card .del svg,.card .pausebtn svg{width:16px;height:16px;}
   .card .gear:hover{color:var(--primary);border-color:var(--primary);}
+  .card .pausebtn:hover{color:var(--primary);border-color:var(--primary);}
+  .card.paused{opacity:.72;}
+  .pause-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface3);color:var(--muted);margin-left:8px;vertical-align:middle;}
+  .resume-btn{font-family:inherit;border:1px solid var(--primary);color:var(--primary);background:transparent;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;}
+  .resume-btn:active{transform:scale(.97);}
+  .push-banner{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border2);background:var(--surface2);border-radius:12px;font-size:13px;line-height:1.4;color:var(--text);}
+  .push-banner .pb-btn{flex:none;font-family:inherit;border:0;background:var(--primary);color:#04201F;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
   .card .del:hover{color:var(--danger);border-color:var(--danger);}
   .card{padding-top:34px;}
 
@@ -2618,6 +2625,34 @@ Ana"></textarea>
   </div>
 </div>
 
+<!-- pausa de tratamento -->
+<div class="modal" id="pause-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="pause-title">Pausar tratamento</div>
+      <button class="sheet-x" id="pause-close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="desc" style="margin-bottom:12px">Durante a pausa o tratamento sai da conta do dia, não vira falta no histórico e os lembretes ficam desligados. Se ele for “a cada X dias”, o ciclo recomeça no dia da volta.</div>
+      <div class="fld"><label>Voltar quando?</label>
+        <div class="segbtns" id="pause-chips" style="flex-wrap:wrap">
+          <button type="button" data-d="7">Em 1 semana</button>
+          <button type="button" data-d="14" class="on">Em 2 semanas</button>
+          <button type="button" data-d="30">Em 1 mês</button>
+          <button type="button" data-d="date">Escolher data</button>
+          <button type="button" data-d="none">Sem data</button>
+        </div>
+        <input class="txt" id="pause-date" type="date" style="display:none;margin-top:10px">
+      </div>
+      <div class="desc" id="pause-resume-txt" style="margin-top:8px"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="pause-cancel">Cancelar</button>
+      <button class="btn-primary" id="pause-ok">Pausar</button>
+    </div>
+  </div>
+</div>
+
 <!-- botão flutuante "voltar ao topo" — aparece depois de rolar um pouco a tela -->
 <button type="button" id="back-to-top" aria-label="Voltar ao topo">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
@@ -2684,21 +2719,36 @@ const storage = getStorage(fbApp);
    "Certificados push da Web" > gerar par de chaves. Cole aqui antes de publicar. */
 const VAPID_KEY = "BE0N5kwhKtnv646-16h1xf2hM68Bw8I6PnUA1ElG0Fg7zWhPa2LS3CVJ-ipvjnfqdiPhZSvha3EE95UDvOc6hqc";
 let messaging = null;
-fcmIsSupported().then(ok=>{ if(ok){ try{ messaging = getMessaging(fbApp); iniciarOuvintePush(); }catch(e){ console.warn('messaging-init', e); } } })
-  .catch(()=>{});
+let PUSH_DIAG = "";        // último resultado do registro do token — aparece no aviso do app (aparelhos sem DevTools)
+let PUSH_TRIED = false;    // já tentou registrar o token nesta sessão
+// "messagingReady" resolve quando o suporte a FCM foi checado: o registro do token espera por ele
+// (antes, se o login terminasse primeiro, o registro saía em silêncio e o aparelho ficava sem token)
+const messagingReady = fcmIsSupported().then(ok=>{
+  if(ok){ try{ messaging = getMessaging(fbApp); iniciarOuvintePush(); }catch(e){ PUSH_DIAG='erro ao iniciar: '+((e&&(e.code||e.message))||e); console.warn('messaging-init', e); } }
+  else { PUSH_DIAG='unsupported'; }
+}).catch(()=>{ PUSH_DIAG='unsupported'; });
 
 // pede/usa o token do aparelho e guarda no próprio documento do usuário (users/{uid}.fcmTokens),
 // pra a Cloud Function saber pra quais aparelhos mandar o push.
 async function registerPushToken(){
+  PUSH_TRIED = true;
   try{
-    if(!messaging || !currentUser) return;
-    if(!("serviceWorker" in navigator)) return;
+    await messagingReady;
+    if(!messaging){ if(!PUSH_DIAG) PUSH_DIAG='unsupported'; return; }
+    if(!currentUser) return;
+    if(!("serviceWorker" in navigator)){ PUSH_DIAG='nosw'; return; }
     if(!("Notification" in window) || Notification.permission!=="granted") return;
-    if(VAPID_KEY.indexOf("COLE_AQUI") === 0){ console.warn('Configure a VAPID_KEY antes de usar push.'); return; }
+    if(VAPID_KEY.indexOf("COLE_AQUI") === 0){ PUSH_DIAG='sem VAPID_KEY'; console.warn('Configure a VAPID_KEY antes de usar push.'); return; }
     const reg = await navigator.serviceWorker.ready;
     const token = await getToken(messaging, {vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
-    if(token) await setDoc(doc(db,'users',currentUser.uid), {fcmTokens: arrayUnion(token)}, {merge:true});
-  }catch(e){ console.warn('push-token', e); }
+    if(token){
+      let tz=''; try{ tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }catch(e){}
+      // tz: a Cloud Function precisa do fuso pra disparar no horário local de cada pessoa
+      await setDoc(doc(db,'users',currentUser.uid), {fcmTokens: arrayUnion(token), tz, pushUpdatedAt: Date.now()}, {merge:true});
+      PUSH_DIAG='ok';
+    } else { PUSH_DIAG='notoken'; }
+  }catch(e){ PUSH_DIAG='erro: '+((e&&(e.code||e.message))||e); console.warn('push-token', e); }
+  try{ renderPushBanner(); }catch(e){}
 }
 // enquanto o app está ABERTO, o FCM não mostra nada sozinho — cabe a gente exibir.
 // (com o app fechado, quem mostra é o "push" event lá no sw.js.)
@@ -3055,11 +3105,28 @@ function daysBetween(aKey, bDate){
   return Math.round((b - a) / 86400000);
 }
 // decide se o peptídeo p é agendado para a data 'd' (objeto Date)
+// pausas do tratamento: p.pauses = [{from:'AAAA-MM-DD', until:'AAAA-MM-DD'|null}]
+// 'until' é o 1º dia de volta (null = pausado até a pessoa retomar)
+const isPausedOn = (p, d) => {
+  if(!Array.isArray(p.pauses) || !p.pauses.length) return false;
+  const k = dateKey(d);
+  return p.pauses.some(x => x && x.from && k >= x.from && (!x.until || k < x.until));
+};
+const pausaAtual = p => {
+  if(!Array.isArray(p.pauses)) return null;
+  const k = dateKey(new Date());
+  return p.pauses.find(x => x && x.from && k >= x.from && (!x.until || k < x.until)) || null;
+};
 const isSchedOn = (p, d) => {
+  if(isPausedOn(p, d)) return false;       // em pausa: não agenda, não cobra, não notifica
   if(p.interval && p.interval>0){
     // modo "a cada X dias": conta a partir da data de início (ou, se vazia, sempre alinhado)
     if(!p.start) return true; // sem início definido, mostra todo dia (não dá pra calcular o ciclo)
-    const diff = daysBetween(p.start, d);
+    // depois de uma pausa o ciclo recomeça no dia da volta
+    const dk = dateKey(d);
+    let ancora = p.start;
+    if(Array.isArray(p.pauses)) p.pauses.forEach(x=>{ if(x && x.until && x.until<=dk && x.until>ancora) ancora = x.until; });
+    const diff = daysBetween(ancora, d);
     if(diff < 0) return false;              // antes do início: não aplica
     return diff % p.interval === 0;         // dia de aplicação
   }
@@ -3090,9 +3157,12 @@ function nextDoseCountdown(p){
     }
 
     let diasRestantes;
-    if(ultimaData){
-      const prox = new Date(ultimaData+"T00:00:00");
-      prox.setDate(prox.getDate()+p.interval);
+    // se uma pausa terminou depois da última dose, o ciclo recomeça no dia da volta
+    let voltaPausa = null;
+    if(Array.isArray(p.pauses)) p.pauses.forEach(x=>{ if(x && x.until && x.until<=todayKey && (!ultimaData || x.until>ultimaData) && (!voltaPausa || x.until>voltaPausa)) voltaPausa = x.until; });
+    if(ultimaData || voltaPausa){
+      const prox = new Date((voltaPausa || ultimaData)+"T00:00:00");
+      if(!voltaPausa) prox.setDate(prox.getDate()+p.interval);
       diasRestantes = daysBetween(todayKey, prox);
     } else if(p.start){
       const diff = daysBetween(p.start, now);
@@ -3157,6 +3227,35 @@ function renderToday(){
     cont.innerHTML='<div class="empty-note">Nenhum peptídeo/hormônio no protocolo ainda.<br>Toque em "Adicionar peptídeos/Hormônios" para começar.</div>';
   }
   due.forEach(p=>{
+    // ---- tratamento pausado: card simples, fora do anel de progresso ----
+    const pz = pausaAtual(p);
+    if(pz){
+      const elp=document.createElement("div");
+      elp.className="card paused";
+      elp.style.setProperty('--acc',p.accent);
+      let volta = "sem data pra voltar";
+      if(pz.until){
+        const faltam = daysBetween(todayKey, new Date(pz.until+"T00:00:00"));
+        volta = `volta em ${fmtBR(pz.until)} · ${faltam} dia${faltam===1?'':'s'}`;
+      }
+      elp.innerHTML=`
+        <div class="info">
+          <div class="nm"><span class="dot"></span>${esc(p.name)}<span class="pause-badge">⏸ Pausado</span></div>
+          <div class="sub">${esc(p.sub||"")}</div>
+          <div class="meta"><span class="freq">${volta}</span></div>
+        </div>
+        <div class="ctrls">
+          <button class="gear" data-id="${p.id}" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+          <button class="del" data-id="${p.id}" aria-label="Remover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+        </div>
+        <div class="card-side"><button type="button" class="resume-btn" data-id="${p.id}">▶ Retomar</button></div>`;
+      cont.appendChild(elp);
+      return;
+    }
     const perDay = p.perDay || 1;
     const tomadas = dosesTaken(rec, p.id);
     const done = tomadas >= perDay;   // completou todas as doses do dia
@@ -3278,6 +3377,7 @@ function renderToday(){
         ${(p.start||p.note||p.time)?`<div class="note-line">${p.time?`<span class="note-start">⏰ ${p.time}</span>`:''}${p.start?`<span class="note-start">início ${fmtBR(p.start)}</span>`:''}${p.note?`<span class="note-txt">${esc(p.note)}</span>`:''}</div>`:''}
       </div>
       <div class="ctrls">
+        <button class="pausebtn" data-id="${p.id}" aria-label="Pausar tratamento" title="Pausar tratamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5v14M15 5v14"/></svg></button>
         <button class="gear" data-id="${p.id}" aria-label="Editar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
@@ -3288,10 +3388,11 @@ function renderToday(){
       <div class="card-side">${vialHTML}${bodyMapHTML}${ctrlHTML}</div>`;
     cont.appendChild(el);
   });
-  const totalUnidades = due.length;
+  const totalUnidades = due.filter(p=>!pausaAtual(p)).length;
   const takenArredondado = Math.round(taken*10)/10;
   document.getElementById("ring-n").textContent = `${Number.isInteger(takenArredondado)?takenArredondado:takenArredondado.toFixed(1)} / ${totalUnidades}`;
   drawRing(taken,totalUnidades);
+  try{ renderPushBanner(); }catch(e){}
   cont.querySelectorAll(".take").forEach(b=>b.onclick=(ev)=>{
     // efeito ripple no ponto do toque
     try{
@@ -3350,6 +3451,8 @@ function renderToday(){
   cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>{ VIAL_PULSE_ID=b.dataset.id; removeDose(b.dataset.id); });
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  cont.querySelectorAll(".pausebtn").forEach(b=>b.onclick=()=>abrirPausa(b.dataset.id));
+  cont.querySelectorAll(".resume-btn").forEach(b=>b.onclick=()=>retomarTratamento(b.dataset.id));
   cont.querySelectorAll(".vial-reset").forEach(b=>b.onclick=()=>{
     const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(!p) return;
     openVialSheet(p.id);
@@ -5586,7 +5689,7 @@ async function showApp(user){
   document.getElementById("acct-row").style.display = "flex";
   // se a pessoa já tinha permitido notificação antes, garante que o token do aparelho
   // atual está salvo (o token pode mudar entre sessões/reinstalações)
-  if(notifCfg.enabled && ("Notification" in window) && Notification.permission==="granted") registerPushToken();
+  if(("Notification" in window) && Notification.permission==="granted") registerPushToken();
   IS_SUPER_ADMIN = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   ROLE_GRANTED = ""; ROLE_ADIDS = [];
   recalcularPermissoes(); // já libera na hora pro dono original, sem esperar a leitura do papel
@@ -6130,6 +6233,109 @@ function runCatchUpCheck(){
 }
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") runCatchUpCheck(); });
 window.addEventListener("focus", runCatchUpCheck);
+
+/* ---------- pausa de tratamento ---------- */
+let PAUSA_ID = null, PAUSA_SEL = "14";
+const pauseModal = document.getElementById("pause-modal");
+function addDiasKey(n){ const d=new Date(); d.setDate(d.getDate()+n); return dateKey(d); }
+function pausaUntil(){
+  if(PAUSA_SEL==="none") return null;                                   // sem data: retoma manualmente
+  if(PAUSA_SEL==="date") return document.getElementById("pause-date").value || "";
+  return addDiasKey(parseInt(PAUSA_SEL,10));
+}
+function atualizarPausaUI(){
+  document.querySelectorAll("#pause-chips button").forEach(b=>b.classList.toggle("on", b.dataset.d===PAUSA_SEL));
+  const inp = document.getElementById("pause-date");
+  inp.style.display = PAUSA_SEL==="date" ? "block" : "none";
+  inp.min = addDiasKey(1);
+  const u = pausaUntil();
+  document.getElementById("pause-resume-txt").textContent =
+    u===null ? "Fica pausado até você tocar em Retomar." :
+    (u ? "Volta em "+fmtBR(u)+"." : "Escolha a data de volta.");
+}
+function abrirPausa(id){
+  const p = PEPTIDES.find(x=>x.id===id); if(!p) return;
+  PAUSA_ID = id; PAUSA_SEL = "14";
+  document.getElementById("pause-title").textContent = "Pausar "+p.name;
+  document.getElementById("pause-date").value = "";
+  atualizarPausaUI();
+  pauseModal.classList.add("on");
+}
+function fecharPausa(){ pauseModal.classList.remove("on"); PAUSA_ID = null; }
+document.querySelectorAll("#pause-chips button").forEach(b=>b.onclick=()=>{ PAUSA_SEL=b.dataset.d; atualizarPausaUI(); });
+document.getElementById("pause-date").addEventListener("change", atualizarPausaUI);
+document.getElementById("pause-close").onclick = fecharPausa;
+document.getElementById("pause-cancel").onclick = fecharPausa;
+pauseModal.onclick = e=>{ if(e.target===pauseModal) fecharPausa(); };
+document.getElementById("pause-ok").onclick = ()=>{
+  const p = PEPTIDES.find(x=>x.id===PAUSA_ID); if(!p) return;
+  const until = pausaUntil();
+  const hoje = dateKey(new Date());
+  if(until===""){ alert("Escolha a data de volta."); return; }
+  if(until && until<=hoje){ alert("A data de volta precisa ser depois de hoje."); return; }
+  const lista = Array.isArray(p.pauses) ? p.pauses.filter(x=>x && x.from) : [];
+  lista.push({from:hoje, until:until});
+  p.pauses = lista;
+  cloudSave(); fecharPausa();
+  renderToday(); renderWeek(); renderHistory();
+};
+function retomarTratamento(id){
+  const p = PEPTIDES.find(x=>x.id===id); if(!p) return;
+  const pz = pausaAtual(p); if(!pz) return;
+  if(!confirm("Retomar "+p.name+" a partir de hoje?")) return;
+  pz.until = dateKey(new Date());
+  cloudSave();
+  renderToday(); renderWeek(); renderHistory();
+}
+
+/* ---------- aviso de notificações ----------
+   Antes a permissão só era pedida ao marcar a caixinha "Notificar nesse horário". Quem já tinha
+   o lembrete marcado (ou instalou o app depois) nunca via o pedido, ficava sem token de push e
+   só recebia aviso com o app aberto. Agora o app mostra um botão quando falta permissão/token. */
+function pushPrecisa(){ return PEPTIDES.some(p=>p.time && p.remind!==false && !pausaAtual(p)); }
+async function ativarNotificacoes(){
+  ensureAudio();
+  try{
+    if("Notification" in window && Notification.permission!=="granted"){
+      const r = await Notification.requestPermission();   // 1ª coisa dentro do toque (exigência do iPhone)
+      if(r!=="granted"){ renderPushBanner(); return; }
+    }
+    notifCfg.enabled = true; saveNotifCfg();
+    await registerPushToken();
+  }catch(e){ PUSH_DIAG = 'erro: '+((e&&(e.code||e.message))||e); }
+  renderPushBanner();
+}
+function renderPushBanner(){
+  const cont = document.getElementById("today-cards");
+  if(!cont || !cont.parentNode) return;
+  let msg="", btn="";
+  if(pushPrecisa()){
+    const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent||'');
+    if(!("Notification" in window)){
+      msg = (ios && !standalone)
+        ? "📲 No iPhone, os lembretes só funcionam com o app instalado: toque em Compartilhar → <b>Adicionar à Tela de Início</b> e abra pelo ícone."
+        : "Este navegador não suporta notificações.";
+    } else if(Notification.permission==="denied"){
+      msg = "🔕 Notificações bloqueadas neste aparelho. Libere nas configurações do navegador/app e volte aqui.";
+    } else if(Notification.permission!=="granted"){
+      msg = "🔔 Ative as notificações pra receber o lembrete da dose <b>mesmo com o app fechado</b>.";
+      btn = "Ativar";
+    } else if(PUSH_DIAG==="ok"){
+      msg = "";
+    } else if(!PUSH_TRIED){
+      registerPushToken();                      // permissão já existe, só falta registrar este aparelho
+    } else if(PUSH_DIAG && PUSH_DIAG!=="ok"){
+      msg = "⚠️ Não consegui registrar este aparelho pra receber lembretes com o app fechado (" + PUSH_DIAG + ").";
+      btn = "Tentar de novo";
+    }
+  }
+  let b = document.getElementById("push-banner");
+  if(!msg){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement("div"); b.id="push-banner"; b.className="push-banner"; cont.parentNode.insertBefore(b, cont); }
+  b.innerHTML = `<div>${msg}</div>${btn?`<button type="button" class="pb-btn">${btn}</button>`:''}`;
+  const bt = b.querySelector(".pb-btn"); if(bt) bt.onclick = ativarNotificacoes;
+}
 
 
 /* =========================================================
